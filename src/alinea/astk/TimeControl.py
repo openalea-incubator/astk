@@ -46,7 +46,6 @@ class TimeControler:
             Allows to emulate 'discrete event'-like evaluation of timecontrol objects in a script
         """
         self._timedict = dict(kwd)
-        self.args = dict(kwd)
         self.numiter = 0
         
     def __iter__(self):
