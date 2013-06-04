@@ -1,4 +1,10 @@
-User guide
-##########
+.. _astk_user:
 
-Put whaterver you want here
+Alinea.astk User Guide
+#######################################
+
+:Version: |version|
+:Release: |release|
+:Date: |today|
+
+.. toctree::
