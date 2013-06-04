@@ -26,6 +26,23 @@ def geom2shape(vid, mesh):
 
 
 def run_caribu(sources, scene_geometry, output_by_triangle = False):
+    """ 
+    Calls Caribu for differents energy sources
+
+    :Parameters:
+    ------------
+    - `sources` (int)
+    - `scene_geometry`
+    - `output_by_triangle` (bool) 
+        Default 'False'. Return is done by id of geometry. If 'True', return is done by triangle. 
+
+    :Returns:
+    ---------
+    - 'out_moy' (dict)
+        A dict of intercepted variable (energy) per id
+    - 'out_tri' (dict) only if output_by_triangle = True, return a tuple (out_moy, out_tri)
+        A dict of intercepted variable (energy) per triangle
+    """
     c_scene = CaribuScene()
     shapes=[geom2shape(k,v) for k,v in scene_geometry.iteritems()]
     idmap = c_scene.add_Shapes(shapes)    
@@ -51,16 +68,17 @@ def turtle_interception(sectors, scene_geometry, energy, output_by_triangle = Fa
         e.g. Meteorological mean variables at the global scale. Could be:
             - 'PAR' : Quantum PAR (ppfd) in micromol.m-2.sec-1
             - 'Pluie' : Precipitation (mm)
+    - 'output_by_triangle' (bool)
+        Default 'False'. Choose if return is made by id of geometry or by triangle
 
     :Returns:
     ---------
-    - 'id_out' (dict) - Meteorological variable at the leaf scale
+    - 'out_moy' (dict)
+        Meteorological variable at the leaf scale
+    - 'out_tri' (dict)
+        Meteorological variable at the leaf scale
     """
     energie, emission, direction, elevation, azimuth = turtle.turtle(sectors=sectors, energy=energy) 
     sources = zip(energie,direction)
-    if output_by_triangle:
-        out_moy, out_tri = run_caribu(sources, scene_geometry, output_by_triangle = True)
-        return out_moy, out_tri
-    else:
-        id_out = run_caribu(sources, scene_geometry)
-        return id_out
+    return run_caribu(sources, scene_geometry, output_by_triangle=output_by_triangle)
+
