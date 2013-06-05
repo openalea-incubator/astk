@@ -2,7 +2,7 @@
 
 from openalea.core import *
 
-__name__ = 'astk'
+__name__ = 'alinea.astk'
 __version__ = '1.0.0'
 __license__ = 'CeCILL-C'
 __author__ = None
@@ -15,6 +15,15 @@ __icon__ = ''
 __alias__ = []
 
 __all__ = []
+
+astk_TimeControl = Factory(name='TimeControl',
+                nodemodule='alinea.astk.TimeControl',
+                nodeclass='TimeControl',
+                inputs=[{'interface': IInt, 'name': 'delay', 'value': 1, 'desc': ''},
+                        {'interface': IInt, 'name': 'steps', 'value': 2, 'desc': ''},
+                        {'interface': None, 'name': 'model', 'value': None, 'desc': ''}],
+               )
+__all__.append('astk_TimeControl')
 
 
     
