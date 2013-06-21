@@ -56,7 +56,7 @@ def run_caribu(sources, scene_geometry, output_by_triangle = False):
         return out_moy
 
 
-def turtle_interception(sectors, scene_geometry, energy, output_by_triangle = False):
+def turtle_interception(sectors, scene_geometry, energy, output_by_triangle = False, convUnit = 0.01):
     """ 
     Calls Caribu for differents energy sources
 
@@ -65,11 +65,13 @@ def turtle_interception(sectors, scene_geometry, energy, output_by_triangle = Fa
     - `sectors` (int)
     - `scene_geometry`
     - `energy` (float)
-        e.g. Meteorological mean variables at the global scale. Could be:
+        e.g. Meteorological mean variables at the global scale, per square meter. Could be:
             - 'PAR' : Quantum PAR (ppfd) in micromol.m-2.sec-1
             - 'Pluie' : Precipitation (mm)
     - 'output_by_triangle' (bool)
         Default 'False'. Choose if return is made by id of geometry or by triangle
+    - 'convUnit' (float)
+        Default '0.01'. Conversion factor to get meter from scene length unit.
 
     :Returns:
     ---------
@@ -78,7 +80,8 @@ def turtle_interception(sectors, scene_geometry, energy, output_by_triangle = Fa
     - 'out_tri' (dict)
         Meteorological variable at the leaf scale
     """
-    energie, emission, direction, elevation, azimuth = turtle.turtle(sectors=sectors, energy=energy) 
+    energy_scaled = float(energy) * convUnit**2
+    energie, emission, direction, elevation, azimuth = turtle.turtle(sectors=sectors, energy=energy_scaled) 
     sources = zip(energie,direction)
     return run_caribu(sources, scene_geometry, output_by_triangle=output_by_triangle)
 
