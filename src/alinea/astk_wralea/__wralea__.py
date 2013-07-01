@@ -21,10 +21,11 @@ astk_TimeControl = Factory(name='TimeControl',
                 nodeclass='TimeControl',
                 inputs=[{'interface': IInt, 'name': 'delay', 'value': 1, 'desc': ''},
                         {'interface': IInt, 'name': 'steps', 'value': 2, 'desc': ''},
-                        {'interface': None, 'name': 'model', 'value': None, 'desc': ''}],
+                        {'interface': None, 'name': 'model', 'value': None, 'desc': ''},
+                        {'interface': None, 'name': 'weather', 'value': None, 'desc': ''},
+                        {'interface': IStr, 'name': 'start_date', 'value': None, 'desc': ''}],
                )
 __all__.append('astk_TimeControl')
 
 
     
-
