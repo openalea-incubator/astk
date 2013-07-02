@@ -7,13 +7,13 @@ class TimeControlSet:
     def __init__(self, **kwd):
         """  Create a TimeControlSet , that is a simple class container for named object"""
         self.__dict__.update(kwd)
-        
+
     def check(self,attname,defaultvalue):
         """ Check if an attribute exists. If not create it with default value """
         if not hasattr(self,attname):
             setattr(self,attname,defaultvalue)
 
-            
+
 def simple_delay_timing(delay = 1, steps =1):
     return (TimeControlSet(dt=delay) if not i % delay  else TimeControlSet(dt=0) for i in range(steps))
             
@@ -27,7 +27,7 @@ class TimeControl:
         self.model = model
         self.weather = weather
         self.start_date = start_date
-        
+
         try:
             self._timing = model.timing(delay=delay, steps=steps, weather=weather, start_date=start_date)
         except:
@@ -37,10 +37,10 @@ class TimeControl:
                 self._timing =  simple_delay_timing(delay=delay, steps=steps)# a generator of timecontrolset objects to be used during a simulation
             except:
                 self._timing = simple_delay_timing()
-                
+
     def __iter__(self):
         return TimeControl(delay=self.delay, steps=self.steps, model=self.model, weather=self.weather, start_date=self.start_date) 
-    
+
     def next(self):
         return self._timing.next()
                   
