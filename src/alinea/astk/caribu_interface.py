@@ -77,7 +77,7 @@ def turtle_interception(sectors, scene_geometry, energy, output_by_triangle = Fa
     ---------
     - 'out_moy' (dict)
         Meteorological variable at the leaf scale
-    - 'out_tri' (dict)
+    - 'out_tri' (dict) [optional]
         Meteorological variable at the leaf scale
     """
     energy_scaled = float(energy) * convUnit**2
