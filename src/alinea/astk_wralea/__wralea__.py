@@ -17,11 +17,11 @@ __institutes__ = None
 __icon__ = ''
 
 
-__all__ = ['alinea.astk.TimeControl_TimeControl']
+__all__ = ['astk_TimeControl_TimeControl']
 
 
 
-alinea.astk.TimeControl_TimeControl = Factory(name='TimeControl',
+astk_TimeControl_TimeControl = Factory(name='TimeControl',
                 authors=' (wralea authors)',
                 description='',
                 category='Unclassified',
