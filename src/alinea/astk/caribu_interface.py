@@ -51,7 +51,8 @@ def run_caribu(sources, scene_geometry, output_by_triangle = False):
     out_moy = c_scene.output_by_id(output, idmap)
     if output_by_triangle:
         out_tri = c_scene.output_by_id(output, idmap, aggregate = False)
-        return out_moy, out_tri
+        indices = c_scene.scene_ids
+        return out_moy, out_tri, indices
     else:
         return out_moy
 
