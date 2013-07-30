@@ -1,10 +1,11 @@
 def new_canopy(plant_model, age = 0):
     g = plant_model.setup_canopy(age)
-    return g
+    return g, plant_model
 
 def grow_canopy(g,plant_model,time_control):
     plant_model.grow(g,time_control)
-    return g
+    return g, plant_model
 
 def plot_canopy(g,plant_model):
-    plant_model.plot()
+    s = plant_model.plot(g)
+    return s, plant_model
