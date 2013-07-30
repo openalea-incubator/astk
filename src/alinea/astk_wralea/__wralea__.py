@@ -17,7 +17,7 @@ __institutes__ = None
 __icon__ = ''
 
 
-__all__ = ['astk_TimeControl_TimeControl']
+__all__ = []
 
 
 
@@ -32,7 +32,43 @@ astk_TimeControl_TimeControl = Factory(name='TimeControl',
                 widgetmodule=None,
                 widgetclass=None,
                )
+__all__.append('astk_TimeControl_TimeControl') 
 
 
 
+astk_plant_interface_new_canopy = Factory(name='new_canopy',
+                authors=' (wralea authors)',
+                description='',
+                category='Unclassified',
+                nodemodule='alinea.astk.plant_interface',
+                nodeclass='new_canopy',
+                widgetmodule=None,
+                widgetclass=None,
+               )
+__all__.append('astk_plant_interface_new_canopy')
 
+
+
+astk_plant_interface_grow_canopy = Factory(name='grow_canopy',
+                authors=' (wralea authors)',
+                description='',
+                category='Unclassified',
+                nodemodule='alinea.astk.plant_interface',
+                nodeclass='grow_canopy',
+                widgetmodule=None,
+                widgetclass=None,
+               )
+__all__.append('astk_plant_interface_grow_canopy')
+
+
+
+astk_plant_interface_plot_canopy = Factory(name='plot_canopy',
+                authors=' (wralea authors)',
+                description='',
+                category='Unclassified',
+                nodemodule='alinea.astk.plant_interface',
+                nodeclass='plot_canopy',
+                widgetmodule=None,
+                widgetclass=None,
+               )
+__all__.append('astk_plant_interface_plot_canopy')
