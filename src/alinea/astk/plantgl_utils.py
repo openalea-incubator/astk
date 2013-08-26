@@ -26,3 +26,26 @@ def get_area_and_normal(scene_geometry):
         normals.update({vid:norm})
     return areas, normals
 
+def get_height(scene_geometry):
+    """ Calculate the height of objects in the scene
+    
+    Find the coordinates of the points that compose the object and 
+    compute the mean of the height coordinates, for each object
+    in the scene.
+    
+    Parameters
+    ----------
+    scene_geometry: dict([id, geometry])
+        Dictionnary of geometries of objects in the scene.
+    """
+    from numpy import mean
+    heights = {}
+    tesselator = pgl.Tesselator()
+    for vid,shape in scene_geometry.iteritems():
+        shape.apply(tesselator)
+        mesh = tesselator.triangulation
+        pts = mesh.pointList
+        H = mean([pt[2] for pt in pts])
+        heights.update({vid:H})
+    return heights
+        
