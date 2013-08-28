@@ -1,5 +1,12 @@
 from openalea.plantgl import all as pgl
 
+def _is_iterable(x):
+    try:
+        x = iter(x)
+    except TypeError: 
+        return False
+    return True
+
 
 def get_area_and_normal(scene_geometry):
 
@@ -15,13 +22,18 @@ def get_area_and_normal(scene_geometry):
     tesselator = pgl.Tesselator()
     areas={}
     normals={}
-    for vid,shape in scene_geometry.iteritems():
-        shape.apply(tesselator)
-        mesh = tesselator.triangulation
-        itri = range(mesh.indexListSize())
-        pts = mesh.pointList
-        S = [_surf(mesh.indexAt(i),pts) for i in itri]
-        norm = [_normal(mesh.indexAt(i),pts) for i in itri]
+    for vid,shapes in scene_geometry.iteritems():
+        S = []
+        norm = []
+        if not _is_iterable(shapes):
+            shapes = [shapes]
+        for shape in shapes:
+            shape.apply(tesselator)
+            mesh = tesselator.triangulation
+            itri = range(mesh.indexListSize())
+            pts = mesh.pointList
+            S +=[_surf(mesh.indexAt(i),pts) for i in itri]
+            norm += [_normal(mesh.indexAt(i),pts) for i in itri]
         areas.update({vid:S})
         normals.update({vid:norm})
     return areas, normals
@@ -38,14 +50,18 @@ def get_height(scene_geometry):
     scene_geometry: dict([id, geometry])
         Dictionnary of geometries of objects in the scene.
     """
-    from numpy import mean
     heights = {}
     tesselator = pgl.Tesselator()
-    for vid,shape in scene_geometry.iteritems():
-        shape.apply(tesselator)
-        mesh = tesselator.triangulation
-        pts = mesh.pointList
-        H = mean([pt[2] for pt in pts])
+    for vid,shapes in scene_geometry.iteritems():
+        S = []
+        H = []
+        if not _is_iterable(shapes):
+            shapes = [shapes]
+        for shape in shapes:
+            shape.apply(tesselator)
+            mesh = tesselator.triangulation
+            itri = range(mesh.indexListSize())
+            H += [mesh.faceCenter(i)[2] for i in itri]
         heights.update({vid:H})
     return heights
         
