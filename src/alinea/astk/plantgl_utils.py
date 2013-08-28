@@ -64,4 +64,16 @@ def get_height(scene_geometry):
             H += [mesh.faceCenter(i)[2] for i in itri]
         heights.update({vid:H})
     return heights
-        
+ 
+def get_lai(scene_geometry, domain_area = 1.0):
+    """ compute LAI of all objects in scene
+    
+    Parameters
+    ----------
+    scene_geometry: dict([id, geometry])
+        Dictionnary of geometries of objects in the scene.
+    domain_area: area (expressed in same units as scene objects) of soil occupied by plants in the scene
+    """
+    area,_ = get_area_and_normal(scene_geometry)
+    Stot = sum([sum(s) for s in area.itervalues()])
+    return Stot / domain_area
