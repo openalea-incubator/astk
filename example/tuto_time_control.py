@@ -20,18 +20,19 @@ rain_timing = Timing(delays,datas)
 delays,_ = time_split(seq, delay = 3)
 wheat_timing = Timing(delays)
 
-for i,elts in enumerate(zip(rain_timing, wheat_timing)):
-    rain,wheat = elts
+for i,controls in enumerate(zip(rain_timing, wheat_timing)):
+    raining,growing = controls
     print '\niteration %d'%(i)
-    if rain_timing.should_run(rain):
-        print 'rain runing'
+    if raining:
+        print 'it s raining'
+        print raining.data
     else:
-        print 'rain is sleeping'
+        print 'It s not raining'
         
-    if wheat_timing.should_run(wheat):
-        print 'wheat runing'
+    if growing:
+        print 'wheat is growing'
     else:
-        print 'wheat is sleeping'
+        print 'wheat is not growing'
  
 
     

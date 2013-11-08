@@ -69,6 +69,18 @@ class TimeControler:
 
 # new approach
 
+
+class TimingElement:
+
+    def __init__(self, data):
+        self.data = data
+        
+    def __nonzero__(self):
+        if self.data is not False:
+            return True
+        else:
+            return False
+    
     
 def delay_to_timing(delays, datas = None):
     if datas is not None:
@@ -84,20 +96,14 @@ class Timing:
     def __init__(self, delays, datas = None):
         self.delays = delays
         self.datas = datas
-        self._timing = iter(delay_to_timing(delays, datas))
+        self._timing = iter(map(TimingElement,delay_to_timing(delays, datas)))
         
     def __iter__(self):
         return Timing(self.delays, self.datas)
         
     def next(self):
         return self._timing.next()
-          
-    def should_run(self,timing_elt):
-        if timing_elt is not False:
-            return True
-        else:
-            return False
-   
+
     
   
 def time_split(time_sequence, weather_data = None, delay = 1):
