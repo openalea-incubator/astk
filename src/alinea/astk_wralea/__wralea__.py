@@ -19,6 +19,51 @@ __icon__ = ''
 
 __all__ = []
 
+iter_with_delays = Factory(name="iter with delays", 
+                  description="Iteration ", 
+                  category="flow control", 
+                  nodemodule="alinea.astk.TimeControl",
+                  nodeclass="IterWithDelaysNode",
+                  inputs = (dict(name="generator", interface=None, value=None),
+                            dict(name="delay generator", interface=None, value=None),
+                            ),
+                  outputs = ( dict(name="value", interface=None), ),
+
+                  )
+__all__.append('iter_with_delays')
+
+astk_time_split = Factory(name="time split", 
+                  nodemodule="alinea.astk.TimeControl",
+                  nodeclass="time_split",
+                  outputs = ( dict(name="values", interface=None),
+                              dict(name="delays", interface=None),),
+                  )
+__all__.append('astk_time_split')
+
+astk_rain_split = Factory(name="rain split", 
+                  nodemodule="alinea.astk.TimeControl",
+                  nodeclass="rain_split",
+                  outputs = ( dict(name="values", interface=None),
+                              dict(name="delays", interface=None),),
+                  )
+__all__.append('astk_rain_split')
+
+panda_date_range = Factory(name="date_range", 
+                  description="Time sequence creation", 
+                  category="flow control", 
+                  nodemodule="pandas.tseries.index",
+                  nodeclass="date_range",
+                  # inputs = (dict(name="start", interface=IDateTime, value=None),
+                            # dict(name="end", interface=IDateTime, value=None),
+                            # dict(name="periods", interface=IInt, value=None),
+                            # dict(name="freq", interface=IStr, value='H'),
+                            # dict(name="tz", interface=IStr, value='UTC'),
+                            # dict(name="normalise", interface=IBool, value=False),
+                            # dict(name="name", interface=IStr, value=None),
+                            #),
+                  )
+__all__.append('panda_date_range')
+
 
 
 astk_TimeControl_TimeControl = Factory(name='TimeControl',

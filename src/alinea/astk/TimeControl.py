@@ -69,44 +69,40 @@ class TimeControler:
 
 # new approach
 
-
-class TimingElement:
-
-    def __init__(self, data):
-        self.data = data
-        
-    def __nonzero__(self):
-        if self.data is not False:
-            return True
-        else:
-            return False
     
+def evaluation_sequence(delays):
+    seq = [[True if i == 0 else False for i in range(int(d))] for d in delays]
+    return reduce(lambda x,y: x + y, seq)
+
+class EvalValue:
     
-def delay_to_timing(delays, datas = None):
-    if datas is not None:
-        timing = [[dat if i == 0 else False for i in range(int(d))] for d,dat in zip(delays,datas)]
-    else :
-        timing = [[True if i == 0 else False for i in range(int(d))] for d in delays]
-    return reduce(lambda x,y: x + y, timing)
+    def __init__(self, eval, value):
+        self.eval = eval
+        self.value = value
 
+class IterWithDelays:
 
-
-class Timing:
-
-    def __init__(self, delays, datas = None):
+    def __init__(self, values = [None], delays = [1]):
         self.delays = delays
-        self.datas = datas
-        self._timing = iter(map(TimingElement,delay_to_timing(delays, datas)))
+        self.values = values
+        self._evalseq = iter(evaluation_sequence(delays))
+        self._iterable = iter(values)
         
     def __iter__(self):
-        return Timing(self.delays, self.datas)
+        return IterWithDelays(self.values, self.delays)
         
     def next(self):
-        return self._timing.next()
+        self.ev = self._evalseq.next()
+        if self.ev : 
+            try: #prevent value exhaustion to stop iterating
+                self.val = self._iterable.next()
+            except StopIteration:
+                pass
+        return EvalValue(self.ev,self.val)
 
     
   
-def time_split(time_sequence, weather_data = None, delay = 1):
+def time_split(time_sequence, weather= None, delay = 1):
     """ split weather[time_sequence] into a list of tuple (delay, data), one tuple being a period of delay hours long
     
     :Parameters:
@@ -126,12 +122,12 @@ def time_split(time_sequence, weather_data = None, delay = 1):
     filter = [t % delay == 0 for t in time]
     starts = time_sequence[filter]
     ends = starts[1:].tolist() + [time_sequence[-1] + 1]
-    if weather_data is not None:
-        events = [((end - start).total_seconds() / 3600, weather_data.truncate(before = start, after = end).ix[:-1,]) for start,end in zip(starts,ends)]
+    if weather is not None:
+        events = [((end - start).total_seconds() / 3600, weather.data.truncate(before = start, after = end).ix[:-1,]) for start,end in zip(starts,ends)]
     else:
         events = [((end - start).total_seconds() / 3600, None) for start,end in zip(starts,ends)]
     delays, data = zip(*events)
-    return delays, data
+    return data, delays
     
 def rain_filter(time_sequence, weather_data):
     """ filter every date in the time sequence that is not a start of a rain event or a start of a dry event according to rain data found in weather
@@ -151,7 +147,7 @@ def rain_filter(time_sequence, weather_data):
     filter = [True] +(rain[1:] != rain[:-1]).tolist()
     return time_sequence[filter]
     
-def rain_split(time_sequence, weather_data):
+def rain_split(time_sequence, weather):
     """ split weather[time_sequence] into a list of tuple (delay, data), one tuple being a period of contiguous rain or contiguous no rain
     
     :Parameters:
@@ -164,11 +160,51 @@ def rain_split(time_sequence, weather_data):
     ---------
    - a list of tuples [(delays), (datas)]
     """
+    weather_data = weather.data
     starts = rain_filter(time_sequence, weather_data).tolist()
     ends = starts[1:] + [time_sequence[-1] + 1]
     events = [((end - start).total_seconds() / 3600, weather_data.truncate(before = start, after = end).ix[:-1,]) for start,end in zip(starts,ends)]
     delays, data = zip(*events)
-    return delays, data
+    return data, delays
+
+    
+from openalea.core.system.systemnodes import IterNode    
+    
+class IterWithDelaysNode(IterNode):
+    """ Iteration Node """
+
+    def eval(self):
+        """
+        Return True if the node need a reevaluation
+        """
+        try:
+            if self.iterable == "Empty":
+                self.iterable = iter(self.inputs[0])
+                self.iterdelay = iter(self.inputs[1])
+                self.wait = self.inputs[1][-1]
+
+            if(hasattr(self, "nextval")):
+                self.outputs[0] = self.nextval
+            else:
+                self.outputs[0] = self.iterable.next()
+
+            self.nextval = self.iterable.next()
+            delay = self.iterdelay.next()
+            return delay
+
+        except TypeError, e:
+            self.outputs[0] = self.inputs[0]
+            return False
+
+        except StopIteration, e:
+            if self.wait > 1:
+                self.wait -= 1
+                return True
+            else:
+                self.iterable = "Empty"
+                if(hasattr(self, "nextval")):
+                    del self.nextval
+                return False
 
 
 #from datetime import datetime, timedelta

@@ -14,22 +14,23 @@ t_deb = "2000-10-01 01:00:00"
 weather = Weather(data_file=meteo_path, sep="\t")
 seq = pandas.date_range(start = "2000-10-02", periods=24, freq='H', tz='UTC')
 
-delays, datas = rain_split(seq, weather.data)
-rain_timing = Timing(delays,datas)
+datas, delays = rain_split(seq, weather)
+rain_timing = IterWithDelays(datas, delays)
 
-delays,_ = time_split(seq, delay = 3)
-wheat_timing = Timing(delays)
+_,delays = time_split(seq, delay = 3)
+wheat_timing = IterWithDelays(delays = delays)
 
-for i,controls in enumerate(zip(rain_timing, wheat_timing)):
-    raining,growing = controls
+for i,evalvalues in enumerate(zip(rain_timing, wheat_timing)):
+    rain,wheat = evalvalues
     print '\niteration %d'%(i)
-    if raining:
-        print 'it s raining'
-        print raining.data
+    if rain.eval:
+        if rain.value.rain.sum() > 0:
+            print 'it s raining'
+            print rain.value
     else:
         print 'It s not raining'
         
-    if growing:
+    if wheat.eval:
         print 'wheat is growing'
     else:
         print 'wheat is not growing'
