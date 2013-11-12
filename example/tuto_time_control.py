@@ -9,9 +9,12 @@ from alinea.echap.microclimate_leaf import *
 import alinea.septo3d
 from alinea.septo3d.Rapilly import *
 
+from alinea.astk.Weather import Weather
+
+
 meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
 t_deb = "2000-10-01 01:00:00"
-weather = Weather(data_file=meteo_path, sep="\t")
+weather = Weather(data_file=meteo_path)
 seq = pandas.date_range(start = "2000-10-02", periods=24, freq='H', tz='UTC')
 
 every_rain = rain_filter(seq, weather)
