@@ -1,6 +1,8 @@
 """
 Provides utilities for scheduling models in simulation
 """
+import numpy as np
+
 
 class TimeControlSet:
 
@@ -71,6 +73,8 @@ class TimeControler:
 
     
 def evaluation_sequence(delays):
+    """ retrieve evaluation filter from sequence of delays
+    """
     seq = [[True if i == 0 else False for i in range(int(d))] for d in delays]
     return reduce(lambda x,y: x + y, seq)
 
@@ -79,6 +83,9 @@ class EvalValue:
     def __init__(self, eval, value):
         self.eval = eval
         self.value = value
+        
+    def __nonzero__(self):
+        return self.eval
 
 class IterWithDelays:
 
@@ -100,74 +107,77 @@ class IterWithDelays:
                 pass
         return EvalValue(self.ev,self.val)
 
+def time_control(time_sequence, eval_filter, weather=None):
+    """ Produces controls for multi-delay or weather dependant models 
+    return splited weather data (if given) and delays
+      
+    :Parameters:
+    ----------
+    - `time_sequence` (panda dateTime index)
+        A sequence of TimeStamps indicating the dates of all elementary time steps of the simulation
+    - `eval_filter` a list (same length as time_sequence) of bools indicating the steps at which an evaluation is needed
+    - `data` (panda dataframe indexed by date)
+        data for the model   
+    - `weather' a weather object containing the data
+    """
     
+    starts = time_sequence[eval_filter]
+    ends = starts[1:].tolist() + [time_sequence[-1] + 1]
+    if weather is not None:
+        controls = [((end - start).total_seconds() / 3600, weather.data.truncate(before = start, after = end).ix[:-1,]) for start,end in zip(starts,ends)]
+    else:
+        controls = [((end - start).total_seconds() / 3600, None) for start,end in zip(starts,ends)]
+    delays, values = zip(*controls)
+    return values, delays
+ 
   
-def time_split(time_sequence, weather= None, delay = 1):
-    """ split weather[time_sequence] into a list of tuple (delay, data), one tuple being a period of delay hours long
+  
+def time_filter(time_sequence, delay = 1):
+    """ return an evaluation filter being True at regular period
     
     :Parameters:
     ----------
     - `time_sequence` (panda dateTime index)
-        A sequence of TimeStamps indicating the dates of interest in weather_data
-    - `weather_data` (panda dataframe indexed by date)
-        weather database (should contain rain column) 
+        A sequence of TimeStamps indicating the dates of all elementary time steps of the simulation
     - `delay` (int)
         The duration of each period
-    :Returns:
-    ---------
-    - a list of tuples [(delays), (datas)]
+
     """
     
     time = [(t - time_sequence[0]).total_seconds() / 3600 for t in time_sequence]
     filter = [t % delay == 0 for t in time]
-    starts = time_sequence[filter]
-    ends = starts[1:].tolist() + [time_sequence[-1] + 1]
-    if weather is not None:
-        events = [((end - start).total_seconds() / 3600, weather.data.truncate(before = start, after = end).ix[:-1,]) for start,end in zip(starts,ends)]
-    else:
-        events = [((end - start).total_seconds() / 3600, None) for start,end in zip(starts,ends)]
-    delays, data = zip(*events)
-    return data, delays
+    return filter
+
+def time_filter_node(time_sequence, delay = 1):
+    filter = time_filter(time_sequence, delay)
+    return time_sequence, filter
+#time_filter_node.__doc__ = time_filter.__doc__
     
-def rain_filter(time_sequence, weather_data):
-    """ filter every date in the time sequence that is not a start of a rain event or a start of a dry event according to rain data found in weather
+def rain_filter(time_sequence, weather):
+    """ return an evaluation filter iterating every rain event and every  between-rain event
+    
     :Parameters:
     ----------
     - `time_sequence` (panda dateTime index)
-        A sequence of TimeStamps indicating the dates of interest in weather_data
-    - `weather_data` (panda dataframe indexed by date)
+        A sequence of TimeStamps indicating the dates  of all elementary time steps of the simulation
+    - `weather` (weather instance)
         weather database (should contain rain column) 
-    :Returns:
-    ---------
-    - 'time_sequence' (panda dateTime index)
-        TimeStamps of date indicating a start of a rain or dry events
     """
-    rain = weather_data.rain[time_sequence]
+    try:
+        rain = weather.data.rain[time_sequence]
+    except:
+        #strange extract needed on visualea 1.0 (to test again with ipython in visualea)
+        rain_data = weather.data[['rain']]
+        rain = np.array([float(rain_data.loc[d]) for d in time_sequence])
+    #rain = weather_data.rain[time_sequence]   
     rain[rain > 0] = 1
     filter = [True] +(rain[1:] != rain[:-1]).tolist()
-    return time_sequence[filter]
+    return filter
     
-def rain_split(time_sequence, weather):
-    """ split weather[time_sequence] into a list of tuple (delay, data), one tuple being a period of contiguous rain or contiguous no rain
-    
-    :Parameters:
-    ----------
-    - `time_sequence` (panda dateTime index)
-        A sequence of TimeStamps indicating the dates of interest in weather_data
-    - `weather_data` (panda dataframe indexed by date)
-        weather database (should contain rain column) 
-    :Returns:
-    ---------
-   - a list of tuples [(delays), (datas)]
-    """
-    weather_data = weather.data
-    starts = rain_filter(time_sequence, weather_data).tolist()
-    ends = starts[1:] + [time_sequence[-1] + 1]
-    events = [((end - start).total_seconds() / 3600, weather_data.truncate(before = start, after = end).ix[:-1,]) for start,end in zip(starts,ends)]
-    delays, data = zip(*events)
-    return data, delays
-
-    
+def rain_filter_node(time_sequence, weather):
+    filter = rain_filter(time_sequence, weather)
+    return time_sequence, filter, weather
+   
 from openalea.core.system.systemnodes import IterNode    
     
 class IterWithDelaysNode(IterNode):

@@ -32,21 +32,30 @@ iter_with_delays = Factory(name="iter with delays",
                   )
 __all__.append('iter_with_delays')
 
-astk_time_split = Factory(name="time split", 
+astk_time_control = Factory(name="time_control", 
                   nodemodule="alinea.astk.TimeControl",
-                  nodeclass="time_split",
+                  nodeclass="time_control",
                   outputs = ( dict(name="values", interface=None),
                               dict(name="delays", interface=None),),
                   )
-__all__.append('astk_time_split')
+__all__.append('astk_time_control')
 
-astk_rain_split = Factory(name="rain split", 
+astk_rain_filter = Factory(name="rain filter", 
                   nodemodule="alinea.astk.TimeControl",
-                  nodeclass="rain_split",
-                  outputs = ( dict(name="values", interface=None),
-                              dict(name="delays", interface=None),),
+                  nodeclass="rain_filter_node",
+                  outputs = ( dict(name='time_sequence', interface = None),
+                              dict(name='filter', interface = None),
+                              dict(name='weather', interface = None),),
                   )
-__all__.append('astk_rain_split')
+__all__.append('astk_rain_filter')
+
+astk_time_filter = Factory(name="time filter", 
+                  nodemodule="alinea.astk.TimeControl",
+                  nodeclass="time_filter_node",
+                  outputs = ( dict(name='time_sequence', interface = None),
+                              dict(name='filter', interface = None),)
+                  )
+__all__.append('astk_time_filter')
 
 panda_date_range = Factory(name="date_range", 
                   description="Time sequence creation", 
