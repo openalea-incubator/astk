@@ -3,7 +3,6 @@ Provides utilities for scheduling models in simulation
 """
 import numpy as np
 
-
 class TimeControlSet:
 
     def __init__(self, **kwd):
@@ -178,6 +177,77 @@ def rain_filter_node(time_sequence, weather):
     filter = rain_filter(time_sequence, weather)
     return time_sequence, filter, weather
    
+class DegreeDayModel:
+    """ Classical degreeday model equation
+    """
+    
+    import numpy as np
+    
+    def __init__(self, Tbase = 0):
+        self.Tbase = Tbase
+        
+    def __call__(self, time_sequence, weather_data):
+        """ Compute thermal time accumulation over time_sequence
+           
+        :Parameters:
+        ----------
+        - `time_sequence` (panda dateTime index)
+            A sequence of TimeStamps indicating the dates of all elementary time steps of the simulation
+        - weather (alinea.astk.Weather instance)
+            A Weather database
+
+        """    
+
+        try:
+            Tair = weather_data.temperature_air[time_sequence]
+        except:
+            #strange extract needed on visualea 1.0 (to test again with ipython in visualea)
+            T_data = weather_data[['temperature_air']]
+            Tair = np.array([float(T_data.loc[d]) for d in time_sequence])
+        Tcut = np.maximum(np.zeros_like(Tair), Tair - self.Tbase)
+        days = [(t - time_sequence[0]).total_seconds() / 3600 / 24 for t in time_sequence]
+        dt = np.array([0] + np.diff(days).tolist())
+        return np.cumsum(Tcut * dt)
+            
+# functional call for nodes
+def degree_day_model(Tbase = 0):
+    return DegreeDayModel(Tbase)
+            
+def thermal_time(time_sequence, weather_data, model = DegreeDayModel(Tbase = 0)):
+    return model(time_sequence, weather_data)
+ 
+ 
+def thermal_time_filter(time_sequence, weather, model = DegreeDayModel(Tbase = 0), delay = 10):
+    """ return an evaluation filter being True at regular thermal time period
+    
+    :Parameters:
+    ----------
+    - `time_sequence` (panda dateTime index)
+        A sequence of TimeStamps indicating the dates of all elementary time steps of the simulation
+    - weather (alinea.astk.Weather instance)
+        A Weather database
+    - `model` a model returning Thermal Time accumulation as a function of time_sequence and weather
+    - `delay` (int)
+        The duration of each period
+
+    """
+    
+    TT = thermal_time(time_sequence, weather.data, model)
+    intTT = np.array(map(int,TT / delay))
+    filter = [True] +(intTT[1:] != intTT[:-1]).tolist()
+    return filter
+   
+   
+def thermal_time_filter_node(time_sequence, weather, model, delay):
+    filter = thermal_time_filter(time_sequence, weather, model, delay)
+    return time_sequence, filter, weather, model
+   
+def filter_or(filters):
+    return reduce(lambda x,y: np.array(x) | np.array(y), filters)
+ 
+def filter_and(filters):
+    return reduce(lambda x,y: np.array(x) & np.array(y), filters)
+ 
 from openalea.core.system.systemnodes import IterNode    
     
 class IterWithDelaysNode(IterNode):
