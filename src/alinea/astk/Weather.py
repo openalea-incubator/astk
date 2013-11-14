@@ -88,7 +88,7 @@ class Weather(object):
         """
         return self.data[what][time_sequence]
 
-    def check_var(self, varnames = [], models = {}):
+    def check(self, varnames = [], models = {}):
         """ Check if varnames are in data and try to create them if absent using defaults models or models provided in arg.
         Return a bool list with True if the variable is present or has been succesfully created, False otherwise.
         
@@ -114,6 +114,15 @@ class Weather(object):
                     check.append(False)
         return check
         
+        
+def weather_node(weather_path):
+    return Weather(weather_path)
+    
+def weather_check_node(weather, vars, models):
+    ok = weather.check(vars, models)
+    if not np.all(ok):
+        print "weather_check: warning, missing  variables!!!"
+    return weather
     # def add_global_radiation(self):
         # """ Add the column 'global_radiation' to the data frame.
         # """

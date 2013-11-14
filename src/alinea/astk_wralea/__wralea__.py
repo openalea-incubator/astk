@@ -67,6 +67,23 @@ astk_thermal_time_filter = Factory(name="thermal_time filter",
                   )
 __all__.append('astk_thermal_time_filter')
 
+astk_weather = Factory(name='Weather',
+                nodemodule='alinea.astk.Weather',
+                nodeclass='weather_node',
+                inputs=[{'interface': IFileStr, 'name': 'data_file', 'value': None, 'desc': 'Path to the meteo data file'}],
+               )
+__all__.append('astk_weather')
+
+default_check = ['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain', 'global_radiation', 'vapor_pressure']
+astk_weather_check = Factory(name='Weather check',
+                nodemodule='alinea.astk.Weather',
+                nodeclass='weather_check_node',
+                inputs=( dict(name= 'Weather', interface = None),
+                         dict(name= 'Variables', interface = ISequence, value = default_check),
+                         dict(name= 'Models', interface = IDict, value = {}),),
+               )
+__all__.append('astk_weather_check')
+
 panda_date_range = Factory(name="date_range", 
                   description="Time sequence creation", 
                   category="flow control", 
