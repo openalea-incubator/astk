@@ -115,6 +115,8 @@ class Weather(object):
         return check
         
         
+        
+        
 def weather_node(weather_path):
     return Weather(weather_path)
     
@@ -123,6 +125,10 @@ def weather_check_node(weather, vars, models):
     if not np.all(ok):
         print "weather_check: warning, missing  variables!!!"
     return weather
+    
+def weather_data_node(weather):
+    return weather.data
+    
     # def add_global_radiation(self):
         # """ Add the column 'global_radiation' to the data frame.
         # """

@@ -106,7 +106,14 @@ class IterWithDelays:
                 pass
         return EvalValue(self.ev,self.val)
 
-def time_control(time_sequence, eval_filter, weather=None):
+
+def _truncdata(data, before, after, last):
+    d = data.truncate(before = before, after = after)
+    if after.to_datetime() < last.to_datetime():
+        d = d.ix[:-1,]
+    return d
+        
+def time_control(time_sequence, eval_filter, data=None):
     """ Produces controls for multi-delay or weather dependant models 
     return splited weather data (if given) and delays
       
@@ -117,13 +124,13 @@ def time_control(time_sequence, eval_filter, weather=None):
     - `eval_filter` a list (same length as time_sequence) of bools indicating the steps at which an evaluation is needed
     - `data` (panda dataframe indexed by date)
         data for the model   
-    - `weather' a weather object containing the data
     """
     
     starts = time_sequence[eval_filter]
-    ends = starts[1:].tolist() + [time_sequence[-1] + 1]
-    if weather is not None:
-        controls = [((end - start).total_seconds() / 3600, weather.data.truncate(before = start, after = end).ix[:-1,]) for start,end in zip(starts,ends)]
+    ends = starts[1:].tolist() + [time_sequence[-1]]
+    last = time_sequence[-1]
+    if data is not None:
+        controls = [((end - start).total_seconds() / 3600, _truncdata(data, start, end, last)) for start,end in zip(starts,ends)]
     else:
         controls = [((end - start).total_seconds() / 3600, None) for start,end in zip(starts,ends)]
     delays, values = zip(*controls)
@@ -151,6 +158,19 @@ def time_filter_node(time_sequence, delay = 1):
     filter = time_filter(time_sequence, delay)
     return time_sequence, filter
 #time_filter_node.__doc__ = time_filter.__doc__
+
+def date_filter(time_sequence, time_data):
+    """
+    Return evaluation filter being True at date in time_data
+   - time_data : a datetimle indexed panda dataframe
+    """
+    
+    filter = [True if d.to_datetime() in time_data.index.to_datetime() else False for d in time_sequence]
+    return filter
+    
+def date_filter_node(time_sequence, time_data):
+    filter = date_filter(time_sequence, time_data)
+    return time_sequence, filter, time_data
     
 def rain_filter(time_sequence, weather):
     """ return an evaluation filter iterating every rain event and every  between-rain event
@@ -175,7 +195,7 @@ def rain_filter(time_sequence, weather):
     
 def rain_filter_node(time_sequence, weather):
     filter = rain_filter(time_sequence, weather)
-    return time_sequence, filter, weather
+    return time_sequence, filter, weather.data
    
 class DegreeDayModel:
     """ Classical degreeday model equation
@@ -240,7 +260,7 @@ def thermal_time_filter(time_sequence, weather, model = DegreeDayModel(Tbase = 0
    
 def thermal_time_filter_node(time_sequence, weather, model, delay):
     filter = thermal_time_filter(time_sequence, weather, model, delay)
-    return time_sequence, filter, weather, model
+    return time_sequence, filter, weather.data, model
    
 def filter_or(filters):
     return reduce(lambda x,y: np.array(x) | np.array(y), filters)

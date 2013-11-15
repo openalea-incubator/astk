@@ -57,6 +57,15 @@ astk_time_filter = Factory(name="time filter",
                   )
 __all__.append('astk_time_filter')
 
+astk_date_filter = Factory(name="date filter", 
+                  nodemodule="alinea.astk.TimeControl",
+                  nodeclass="date_filter_node",
+                  outputs = ( dict(name='time_sequence', interface = None),
+                              dict(name='filter', interface = None),
+                              dict(name='time_data', interface = None),)
+                  )
+__all__.append('astk_date_filter')
+
 astk_thermal_time_filter = Factory(name="thermal_time filter", 
                   nodemodule="alinea.astk.TimeControl",
                   nodeclass="thermal_time_filter_node",
@@ -83,6 +92,12 @@ astk_weather_check = Factory(name='Weather check',
                          dict(name= 'Models', interface = IDict, value = {}),),
                )
 __all__.append('astk_weather_check')
+
+astk_weather_data = Factory(name='Weather data',
+                nodemodule='alinea.astk.Weather',
+                nodeclass='weather_data_node',
+               )
+__all__.append('astk_weather_data')
 
 panda_date_range = Factory(name="date_range", 
                   description="Time sequence creation", 
