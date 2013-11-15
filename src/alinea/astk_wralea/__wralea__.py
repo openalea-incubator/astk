@@ -27,7 +27,9 @@ iter_with_delays = Factory(name="iter with delays",
                   inputs = (dict(name="generator", interface=None, value=None),
                             dict(name="delay generator", interface=None, value=None),
                             ),
-                  outputs = ( dict(name="value", interface=None), ),
+                  outputs = ( dict(name="value", interface=None),
+                              dict(name="delay", interface=None),
+                             ),
 
                   )
 __all__.append('iter_with_delays')

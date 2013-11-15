@@ -287,13 +287,15 @@ class IterWithDelaysNode(IterNode):
                 self.outputs[0] = self.nextval
             else:
                 self.outputs[0] = self.iterable.next()
-
+                
             self.nextval = self.iterable.next()
             delay = self.iterdelay.next()
+            self.outputs[1] = delay
             return delay
 
         except TypeError, e:
             self.outputs[0] = self.inputs[0]
+            self.outputs[1] = self.inputs[1]
             return False
 
         except StopIteration, e:
@@ -304,6 +306,7 @@ class IterWithDelaysNode(IterNode):
                 self.iterable = "Empty"
                 if(hasattr(self, "nextval")):
                     del self.nextval
+
                 return False
 
 
