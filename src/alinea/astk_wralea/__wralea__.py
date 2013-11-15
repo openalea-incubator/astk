@@ -99,6 +99,13 @@ astk_weather_data = Factory(name='Weather data',
                )
 __all__.append('astk_weather_data')
 
+astk_weather_start = Factory(name='Weather at start',
+                nodemodule='alinea.astk.Weather',
+                nodeclass='weather_start_node',
+               )
+__all__.append('astk_weather_start')
+
+
 panda_date_range = Factory(name="date_range", 
                   description="Time sequence creation", 
                   category="flow control", 

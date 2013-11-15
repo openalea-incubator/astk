@@ -81,7 +81,12 @@ class Weather(object):
         """ Return weather data for a given time sequence
         """
         return self.data.truncate(before = time_sequence[0], after = time_sequence[-1])
-      
+    
+    def get_weather_start(self, time_sequence):
+        """ Return weather data at start of timesequence
+        """
+        return self.data.truncate(before = time_sequence[0], after = time_sequence[0])
+    
     def get_variable(self, what, time_sequence):
         """
         return values of what at date specified in time sequence
@@ -128,7 +133,10 @@ def weather_check_node(weather, vars, models):
     
 def weather_data_node(weather):
     return weather.data
-    
+   
+def weather_start_node(timesequence, weather):
+    return weather.get_weather_start(timesequence),
+   
     # def add_global_radiation(self):
         # """ Add the column 'global_radiation' to the data frame.
         # """
