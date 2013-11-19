@@ -79,9 +79,10 @@ def evaluation_sequence(delays):
 
 class EvalValue:
     
-    def __init__(self, eval, value):
+    def __init__(self, eval, value, dt):
         self.eval = eval
         self.value = value
+        self.dt = dt
         
     def __nonzero__(self):
         return self.eval
@@ -93,6 +94,7 @@ class IterWithDelays:
         self.values = values
         self._evalseq = iter(evaluation_sequence(delays))
         self._iterable = iter(values)
+        self._iterdelays = iter(delays)
         
     def __iter__(self):
         return IterWithDelays(self.values, self.delays)
@@ -102,9 +104,10 @@ class IterWithDelays:
         if self.ev : 
             try: #prevent value exhaustion to stop iterating
                 self.val = self._iterable.next()
+                self.dt = self._iterdelays.next()
             except StopIteration:
                 pass
-        return EvalValue(self.ev,self.val)
+        return EvalValue(self.ev, self.val, self.dt)
 
 
 def _truncdata(data, before, after, last):
