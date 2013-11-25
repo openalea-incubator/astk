@@ -137,6 +137,21 @@ def weather_data_node(weather):
 def weather_start_node(timesequence, weather):
     return weather.get_weather_start(timesequence),
    
+   
+def sample_weather():
+    """ provides a sample weather instance for testing other modules
+    """
+    from openalea.deploy.shared_data import shared_data
+    import alinea.septo3d
+    
+    meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
+    t_deb = "2000-10-01 01:00:00"
+    seq = pd.date_range(start = "2000-10-02", periods=24, freq='H')
+    weather = Weather(data_file=meteo_path)
+    
+    return seq, weather
+    
+    
     # def add_global_radiation(self):
         # """ Add the column 'global_radiation' to the data frame.
         # """
