@@ -204,7 +204,7 @@ class DegreeDayModel:
     """ Classical degreeday model equation
     """
     
-    import numpy as np
+    #import numpy as np
     
     def __init__(self, Tbase = 0):
         self.Tbase = Tbase
@@ -294,6 +294,7 @@ class IterWithDelaysNode(IterNode):
             self.nextval = self.iterable.next()
             delay = self.iterdelay.next()
             self.outputs[1] = delay
+            self.outputs[2] = np.random.random() #used to trigger lazy nodes every delay
             return delay
 
         except TypeError, e:

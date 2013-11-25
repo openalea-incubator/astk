@@ -29,6 +29,7 @@ iter_with_delays = Factory(name="iter with delays",
                             ),
                   outputs = ( dict(name="value", interface=None),
                               dict(name="delay", interface=None),
+                              dict(name="trigger", interface=None),
                              ),
 
                   )
