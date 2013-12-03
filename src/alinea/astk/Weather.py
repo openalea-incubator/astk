@@ -5,7 +5,7 @@ Created on Wed Apr 24 14:29:15 2013
 @author: lepse
 """
 
-import pandas as pd
+import pandas
 import numpy as np
 from datetime import datetime, timedelta
 from math import exp
@@ -23,7 +23,7 @@ def septo3d_reader(data_file):
         delta = timedelta(days=jour, hours=heure)
         return dt + delta
 
-    data = pd.read_csv(data_file, parse_dates={'datetime':['An','Jour','hhmm']},
+    data = pandas.read_csv(data_file, parse_dates={'datetime':['An','Jour','hhmm']},
                                date_parser=parse, sep = '\t',
                                usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
 
@@ -146,7 +146,7 @@ def sample_weather():
     
     meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
     t_deb = "2000-10-01 01:00:00"
-    seq = pd.date_range(start = "2000-10-02", periods=24, freq='H')
+    seq = pandas.date_range(start = "2000-10-02", periods=24, freq='H')
     weather = Weather(data_file=meteo_path)
     
     return seq, weather

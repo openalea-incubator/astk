@@ -112,7 +112,7 @@ __all__.append('astk_weather_start')
 panda_date_range = Factory(name="date_range", 
                   description="Time sequence creation", 
                   category="flow control", 
-                  nodemodule="pandas.tseries.index",
+                  nodemodule="pandas",
                   nodeclass="date_range",
                   # inputs = (dict(name="start", interface=IDateTime, value=None),
                             # dict(name="end", interface=IDateTime, value=None),
