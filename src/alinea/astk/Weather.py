@@ -6,7 +6,7 @@ Created on Wed Apr 24 14:29:15 2013
 """
 
 import pandas
-import numpy as np
+import numpy
 from datetime import datetime, timedelta
 from math import exp
 
@@ -46,7 +46,7 @@ def PPFD_to_global(data):
 def Psat(T):
     """ Saturating water vapor pressure (kPa) at temperature T (Celcius) with Tetens formula
     """
-    return 0.6108 * np.exp(17.27 * T / (237.3 + T))
+    return 0.6108 * numpy.exp(17.27 * T / (237.3 + T))
 
 def humidity_to_vapor_pressure(data):
     """ Convert the relative humidity (%) in water vapor pressure (kPa)
@@ -127,7 +127,7 @@ def weather_node(weather_path):
     
 def weather_check_node(weather, vars, models):
     ok = weather.check(vars, models)
-    if not np.all(ok):
+    if not numpy.all(ok):
         print "weather_check: warning, missing  variables!!!"
     return weather
     
@@ -137,6 +137,8 @@ def weather_data_node(weather):
 def weather_start_node(timesequence, weather):
     return weather.get_weather_start(timesequence),
    
+def date_range_node(start, end, periods, freq, tz, normalize, name): # nodemodule = pandas in wralea result in import errors
+    return pandas.date_range(start, end, periods, freq, tz, normalize, name)
    
 def sample_weather():
     """ provides a sample weather instance for testing other modules

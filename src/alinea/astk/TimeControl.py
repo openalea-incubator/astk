@@ -1,7 +1,7 @@
 """
 Provides utilities for scheduling models in simulation
 """
-import numpy as np
+import numpy
 
 class TimeControlSet:
 
@@ -190,7 +190,7 @@ def rain_filter(time_sequence, weather):
     except:
         #strange extract needed on visualea 1.0 (to test again with ipython in visualea)
         rain_data = weather.data[['rain']]
-        rain = np.array([float(rain_data.loc[d]) for d in time_sequence])
+        rain = numpy.array([float(rain_data.loc[d]) for d in time_sequence])
     #rain = weather_data.rain[time_sequence]   
     rain[rain > 0] = 1
     filter = [True] +(rain[1:] != rain[:-1]).tolist()
@@ -226,11 +226,11 @@ class DegreeDayModel:
         except:
             #strange extract needed on visualea 1.0 (to test again with ipython in visualea)
             T_data = weather_data[['temperature_air']]
-            Tair = np.array([float(T_data.loc[d]) for d in time_sequence])
-        Tcut = np.maximum(np.zeros_like(Tair), Tair - self.Tbase)
+            Tair = numpy.array([float(T_data.loc[d]) for d in time_sequence])
+        Tcut = numpy.maximum(numpy.zeros_like(Tair), Tair - self.Tbase)
         days = [(t - time_sequence[0]).total_seconds() / 3600 / 24 for t in time_sequence]
-        dt = np.array([0] + np.diff(days).tolist())
-        return np.cumsum(Tcut * dt)
+        dt = numpy.array([0] + numpy.diff(days).tolist())
+        return numpy.cumsum(Tcut * dt)
             
 # functional call for nodes
 def degree_day_model(Tbase = 0):
@@ -256,7 +256,7 @@ def thermal_time_filter(time_sequence, weather, model = DegreeDayModel(Tbase = 0
     """
     
     TT = thermal_time(time_sequence, weather.data, model)
-    intTT = np.array(map(int,TT / delay))
+    intTT = numpy.array(map(int,TT / delay))
     filter = [True] +(intTT[1:] != intTT[:-1]).tolist()
     return filter
    
@@ -266,10 +266,10 @@ def thermal_time_filter_node(time_sequence, weather, model, delay):
     return time_sequence, filter, weather.data, model
    
 def filter_or(filters):
-    return reduce(lambda x,y: np.array(x) | np.array(y), filters)
+    return reduce(lambda x,y: numpy.array(x) | numpy.array(y), filters)
  
 def filter_and(filters):
-    return reduce(lambda x,y: np.array(x) & np.array(y), filters)
+    return reduce(lambda x,y: numpy.array(x) & numpy.array(y), filters)
  
 from openalea.core.system.systemnodes import IterNode    
     
@@ -294,7 +294,7 @@ class IterWithDelaysNode(IterNode):
             self.nextval = self.iterable.next()
             delay = self.iterdelay.next()
             self.outputs[1] = delay
-            self.outputs[2] = np.random.random() #used to trigger lazy nodes every delay
+            self.outputs[2] = numpy.random.random() #used to trigger lazy nodes every delay
             return delay
 
         except TypeError, e:
