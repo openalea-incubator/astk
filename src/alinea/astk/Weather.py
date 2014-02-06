@@ -140,7 +140,7 @@ def weather_start_node(timesequence, weather):
 def date_range_node(start, end, periods, freq, tz, normalize, name): # nodemodule = pandas in wralea result in import errors
     return pandas.date_range(start, end, periods, freq, tz, normalize, name)
    
-def sample_weather():
+def sample_weather(periods = 24):
     """ provides a sample weather instance for testing other modules
     """
     from openalea.deploy.shared_data import shared_data
@@ -148,9 +148,9 @@ def sample_weather():
     
     meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
     t_deb = "2000-10-01 01:00:00"
-    seq = pandas.date_range(start = "2000-10-02", periods=24, freq='H')
+    seq = pandas.date_range(start = "2000-10-02", periods=periods, freq='H')
     weather = Weather(data_file=meteo_path)
-    
+    weather.check(['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain', 'global_radiation', 'vapor_pressure'])
     return seq, weather
     
     
