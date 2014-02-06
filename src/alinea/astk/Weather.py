@@ -153,6 +153,15 @@ def sample_weather(periods = 24):
     weather.check(['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain', 'global_radiation', 'vapor_pressure'])
     return seq, weather
     
+def climate_todict(x):
+    if isinstance(x,pandas.DataFrame):
+        return x.to_dict('list')
+    elif isinstance(x, pandas.Series):
+        return x.to_dict()
+    else:
+        return x
+
+
     
     # def add_global_radiation(self):
         # """ Add the column 'global_radiation' to the data frame.
