@@ -119,7 +119,13 @@ class Weather(object):
                     check.append(False)
         return check
         
+    def split_weather(self, time_step, t_deb, n_steps):
         
+        """ return a list of sub-part of the meteo data, each corresponding to one time-step"""
+        tdeb = pandas.date_range(t_deb, periods=1, freq='H')[0]
+        tstep = [tdeb + i * timedelta(hours=time_step) for i in range(n_steps)]
+        return [self.data.truncate(before = t, after = t + timedelta(hours=time_step - 1)) for t in tstep]
+   
         
         
 def weather_node(weather_path):
