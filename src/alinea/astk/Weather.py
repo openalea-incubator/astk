@@ -35,12 +35,20 @@ def septo3d_reader(data_file):
                                  'Pluie':'rain'})
     return data
 
+    
 def PPFD_to_global(data):
     """ Convert the PAR (ppfd in micromol.m-2.sec-1) in global radiation (J.m-2.s-1, ie W/m2)
     1 WattsPAR.m-2 = 4.6 ppfd, 1 Wglobal = 0.48 WattsPAR)
     """
     PAR = data[['PPFD']].values
     return (PAR * 1./4.6) / 0.48
+    
+def global_to_PPFD(data):
+    """ Convert the global radiation (J.m-2.s-1, ie W/m2) in PAR (ppfd in micromol.m-2.sec-1)
+    1 WattsPAR.m-2 = 4.6 ppfd, 1 Wglobal = 0.48 WattsPAR)
+    """
+    Rg = data[['global_radiation']].values
+    return Rg * 0.48 * 4.6
 
 
 def Psat(T):
@@ -65,17 +73,20 @@ class Weather(object):
             - 'PAR' : Quantum PAR (ppfd) in micromol.m-2.sec-1
             - 'Pluie' : Precipitation (mm)
             - 'Tair' : Temperature of air (Celcius)
-            - 'HR': Humidity of air (kPa)
+            - 'HR': Humidity of air (%)
             - 'Vent' : Wind speed (m.s-1)
     """
-    def __init__(self, data_file='', reader = septo3d_reader):
+    def __init__(self, data_file='', reader = septo3d_reader, wind_screen = 2, temperature_screen = 2):
         self.data_path = data_file
         self.models = {'global_radiation': PPFD_to_global, 
-                        'vapor_pressure': humidity_to_vapor_pressure}
+                        'vapor_pressure': humidity_to_vapor_pressure,
+                        'PPFD': global_to_PPFD}
         if data_file is '':
             self.data = None
         else:
             self.data = reader(data_file)
+        self.wind_screen = wind_screen
+        self.temperature_screen = temperature_screen
 
     def get_weather(self, time_sequence):
         """ Return weather data for a given time sequence
