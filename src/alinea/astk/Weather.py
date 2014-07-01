@@ -62,7 +62,6 @@ def humidity_to_vapor_pressure(data):
     humidity = data[['relative_humidity']].values
     Tair = data[['temperature_air']].values
     return humidity / 100. * Psat(Tair)
-
             
 class Weather(object):
     """ Class compliying echap local_microclimate model protocol (meteo_reader).
@@ -104,7 +103,7 @@ class Weather(object):
         """
         return self.data[what][time_sequence]
 
-    def check(self, varnames = [], models = {}):
+    def check(self, varnames = [], models = {}, **kwds):
         """ Check if varnames are in data and try to create them if absent using defaults models or models provided in arg.
         Return a bool list with True if the variable is present or has been succesfully created, False otherwise.
         
@@ -123,7 +122,7 @@ class Weather(object):
                 check.append(True)
             else:
                 if v in models.keys():
-                    values = models[v](self.data)
+                    values = models[v](self.data, **kwds)
                     self.data[v] = values
                     check.append(True)
                 else:

@@ -87,7 +87,7 @@ class EvalValue:
     def __nonzero__(self):
         return self.eval
 
-class IterWithDelays:
+class IterWithDelays(object):
 
     def __init__(self, values = [None], delays = [1]):
         self.delays = delays
