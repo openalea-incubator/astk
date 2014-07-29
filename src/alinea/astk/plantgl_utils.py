@@ -77,3 +77,19 @@ def get_lai(scene_geometry, domain_area = 1.0):
     area,_ = get_area_and_normal(scene_geometry)
     Stot = sum([sum(s) for s in area.itervalues()])
     return Stot / domain_area
+    
+def as_tuples(pgl_3List, offset=0):
+    """ return pgl list of 3 numbers kind (indes3, vector3) as a list of python tuples
+    """
+    if not _is_iterable(offset):
+        offset = [offset] * 3
+    return [(i[0] + offset[0], i[1] + offset[1], i[2] + offset[2]) for i in pgl_3List]
+    
+def addSets(pglset1,pglset2, translate = (0,0,0)):
+    """ create a new TriangleSet by addition of two existing ones
+    if translate is not None, pglset2 is translated with vector translate
+    """
+    points = as_tuples(pglset1.pointList) + as_tuples(pglset2.pointList, offset= translate)
+    index = as_tuples(pglset1.indexList) + as_tuples(pglset2.indexList, offset = len(pglset1.pointList))
+    return pgl.TriangleSet(points, index)
+    
