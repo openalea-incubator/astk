@@ -220,7 +220,6 @@ class DegreeDayModel:
             A Weather database
 
         """    
-
         try:
             Tair = weather_data.temperature_air[time_sequence]
         except:
@@ -228,8 +227,8 @@ class DegreeDayModel:
             T_data = weather_data[['temperature_air']]
             Tair = numpy.array([float(T_data.loc[d]) for d in time_sequence])
         Tcut = numpy.maximum(numpy.zeros_like(Tair), Tair - self.Tbase)
-        days = [(t - time_sequence[0]).total_seconds() / 3600 / 24 for t in time_sequence]
-        dt = numpy.array([0] + numpy.diff(days).tolist())
+        days = [0] + [((t - time_sequence[0]).total_seconds()+ 3600) / 3600 / 24 for t in time_sequence]
+        dt = numpy.diff(days).tolist()
         return numpy.cumsum(Tcut * dt)
             
 # functional call for nodes
@@ -238,8 +237,7 @@ def degree_day_model(Tbase = 0):
             
 def thermal_time(time_sequence, weather_data, model = DegreeDayModel(Tbase = 0)):
     return model(time_sequence, weather_data)
- 
- 
+  
 def thermal_time_filter(time_sequence, weather, model = DegreeDayModel(Tbase = 0), delay = 10):
     """ return an evaluation filter being True at regular thermal time period
     
@@ -259,8 +257,7 @@ def thermal_time_filter(time_sequence, weather, model = DegreeDayModel(Tbase = 0
     intTT = numpy.array(map(int,TT / delay))
     filter = [True] +(intTT[1:] != intTT[:-1]).tolist()
     return filter
-   
-   
+  
 def thermal_time_filter_node(time_sequence, weather, model, delay):
     filter = thermal_time_filter(time_sequence, weather, model, delay)
     return time_sequence, filter, weather.data, model
