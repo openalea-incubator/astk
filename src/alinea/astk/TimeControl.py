@@ -175,7 +175,7 @@ def date_filter_node(time_sequence, time_data):
     filter = date_filter(time_sequence, time_data)
     return time_sequence, filter, time_data
     
-def rain_filter(time_sequence, weather):
+def rain_filter(time_sequence, weather, rain_min = 0.2):
     """ return an evaluation filter iterating every rain event and every  between-rain event
     
     :Parameters:
@@ -192,6 +192,7 @@ def rain_filter(time_sequence, weather):
         rain_data = weather.data[['rain']]
         rain = numpy.array([float(rain_data.loc[d]) for d in time_sequence])
     #rain = weather_data.rain[time_sequence]   
+    rain[rain <= rain_min] = 0
     rain[rain > 0] = 1
     filter = [True] +(rain[1:] != rain[:-1]).tolist()
     return filter
