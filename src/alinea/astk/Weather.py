@@ -62,7 +62,23 @@ def humidity_to_vapor_pressure(data):
     humidity = data[['relative_humidity']].values
     Tair = data[['temperature_air']].values
     return humidity / 100. * Psat(Tair)
-            
+
+def linear_degree_days(data, start_date = None, base_temp=0., max_temp=35.):
+    df = data['temperature_air'].copy()
+    if start_date is None:
+        start_date = data.index[0]
+    df[df<base_temp]=0.
+    df[df>max_temp]=0.
+    dd = numpy.zeros(len(df))
+    if isinstance(start_date, str):
+        start_date = datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S')
+    ind_start = len(df.ix[:start_date+timedelta(0,60)])
+    seq = pandas.date_range(start=df.index[0], end=start_date-timedelta(0,60), freq='H')
+    seq = seq.order(ascending=False)
+    dd[ind_start:]=numpy.cumsum((df.ix[start_date+timedelta(0,60):].values-base_temp)/24.)
+    dd[:len(seq)]=-numpy.cumsum((df.ix[seq].values[::-1]-base_temp)/24.)[::-1]
+    return dd
+    
 class Weather(object):
     """ Class compliying echap local_microclimate model protocol (meteo_reader).
         expected variables of the data_file are:
@@ -79,7 +95,8 @@ class Weather(object):
         self.data_path = data_file
         self.models = {'global_radiation': PPFD_to_global, 
                         'vapor_pressure': humidity_to_vapor_pressure,
-                        'PPFD': global_to_PPFD}
+                        'PPFD': global_to_PPFD,
+                        'degree_days':linear_degree_days}
         if data_file is '':
             self.data = None
         else:
