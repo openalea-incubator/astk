@@ -9,8 +9,7 @@ import pandas
 import numpy
 from datetime import datetime, timedelta
 from math import exp
-
-    
+from alinea.astk.TimeControl import *    
     
 def septo3d_reader(data_file):
     """ reader for septo3D meteo files """
@@ -186,6 +185,12 @@ def sample_weather(periods = 24):
     weather.check(['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain', 'global_radiation', 'vapor_pressure'])
     return seq, weather
     
+def sample_weather_with_rain():
+    seq, weather = sample_weather()
+    every_rain = rain_filter(seq, weather)  
+    rain_timing = IterWithDelays(*time_control(seq, every_rain, weather.data))
+    return rain_timing.next().value
+
 def climate_todict(x):
     if isinstance(x,pandas.DataFrame):
         return x.to_dict('list')
