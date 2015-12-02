@@ -9,7 +9,7 @@ import pandas
 import numpy
 from datetime import datetime, timedelta
 from math import exp
-from alinea.astk.TimeControl import *    
+from alinea.astk.TimeControl import *    import pytzimport alinea.astk.astro as astro
     
 def septo3d_reader(data_file):
     """ reader for septo3D meteo files """
@@ -78,6 +78,47 @@ def linear_degree_days(data, start_date = None, base_temp=0., max_temp=35.):
     dd[:len(seq)]=-numpy.cumsum((df.ix[seq].values[::-1]-base_temp)/24.)[::-1]
     return dd
     
+def spitters(Rg, DOY, heureTU, latitude):
+    """ fraction diffus/Global en fonction du rapport Global(Sgd)/Extraterrestre(Sod)- pas de temps horaire """
+    hrad = 2 * numpy.pi / 24 * (heureTU - 12)
+    lat = numpy.radians(latitude)
+    declinaison = numpy.vectorize(astro.DecliSun)
+    dec = declinaison(DOY)
+    costheta = numpy.sin(lat) * numpy.sin(dec) + numpy.cos(lat) * numpy.cos(dec) * numpy.cos(hrad)
+    Io = 1370 * (1 + 0.033 * numpy.cos(2 * numpy.pi * (DOY - 4) / 366))#eclairement (w/m2) a la limitte de l'atmosphere dans un plan perpendiculaire aux rayons du soleil, fonction du jour
+    So = Io * costheta #eclairement dans un plan parallele a la surface du sol
+    RsRso = Rg / So
+    R = 0.847 - 1.61 * costheta + 1.04 * costheta * costheta
+    K = (1.47 - R) / 1.66
+    RdRs = numpy.where(RsRso <= 0.22, 1, 
+        numpy.where(RsRso <= 0.35, 1 - 6.4 * (RsRso - 0.22)**2,
+        numpy.where(RsRso <= K, 1.47 - 1.66 * RsRso, R)))
+    return RdRs
+    
+
+def RgH (Rg,hTU,DOY,latitude) :
+    """ compute hourly value of Rg at hour hTU for a given day at a given latitude
+    Rg is in J.m-2.day-1
+    latidude in degrees
+    output is J.m-2.h-1
+    """
+    
+    dec = DecliSun(DOY)
+    lat = radians(latitude)
+    pi = 3.14116
+    a = sin(lat) * sin(dec)
+    b = cos(lat) * cos(dec)
+    Psi = numpy.pi * Rg / 86400 / (a * acos(-a / b) + b * sqrt(1 - (a / b)^2))
+    A = -b * Psi
+    B = a * Psi
+    RgH = A * cos (2 * pi * hTU / 24) + B
+    # Note that this formula works for h beteween hsunset eand hsunrise
+    hsunrise = 12 - 12/pi * acos(-a / b)
+    hsunset = 12 + 12/pi * acos (-a / b)
+    return RgH
+     
+
+ 
 class Weather(object):
     """ Class compliying echap local_microclimate model protocol (meteo_reader).
         expected variables of the data_file are:
@@ -89,19 +130,31 @@ class Weather(object):
             - 'Tair' : Temperature of air (Celcius)
             - 'HR': Humidity of air (%)
             - 'Vent' : Wind speed (m.s-1)
+        - localisation is a {'name':city, 'lontitude':lont, 'latitude':lat} dict
+        - timezone indicates the standard timezone name (see pytz infos) to be used for interpreting the date (default 'UTC')
     """
-    def __init__(self, data_file='', reader = septo3d_reader, wind_screen = 2, temperature_screen = 2):
+    def __init__(self, data_file='', reader = septo3d_reader, wind_screen = 2, temperature_screen = 2, localisation = {'city': 'Montpellier', 'latitude':43.61, 'longitude':3.87}, timezone='UTC'):
         self.data_path = data_file
         self.models = {'global_radiation': PPFD_to_global, 
                         'vapor_pressure': humidity_to_vapor_pressure,
                         'PPFD': global_to_PPFD,
                         'degree_days':linear_degree_days}
+                        
+        self.timezone = pytz.timezone(timezone)
         if data_file is '':
             self.data = None
         else:
             self.data = reader(data_file)
+            date = self.data['date']
+            date = map(lambda x: self.timezone.localize(x), date)
+            utc = map(lambda x: x.astimezone(pytz.utc), date)
+            self.data.index = utc
+            self.data.index.name='date_utc'           
+            
         self.wind_screen = wind_screen
         self.temperature_screen = temperature_screen
+        self.localisation = localisation
+
 
     def get_weather(self, time_sequence):
         """ Return weather data for a given time sequence
@@ -145,6 +198,16 @@ class Weather(object):
                     check.append(False)
         return check
         
+    def add_RdRs(self):
+        """ Estimate the diffuse (Rd) and direct('Rs') radiation 
+        """
+        heureTU = self.data.index.hour
+        DOY = self.data.index.dayofyear
+        Rg = self.data['global_radiation']
+        rdrs = spitters(Rg, DOY, heureTU, latitude=self.localisation['latitude'])
+        self.data['diffuse_radiation'] = rdrs * self.data['global_radiation']
+        self.data['direct_radiation'] = (1 - rdrs) * self.data['global_radiation']
+        
     def split_weather(self, time_step, t_deb, n_steps):
         
         """ return a list of sub-part of the meteo data, each corresponding to one time-step"""
@@ -152,6 +215,26 @@ class Weather(object):
         tstep = [tdeb + i * timedelta(hours=time_step) for i in range(n_steps)]
         return [self.data.truncate(before = t, after = t + timedelta(hours=time_step - 1)) for t in tstep]
    
+    def sun_course(self, seq):
+        """ to do : add equation of time
+        """
+        data = self.get_weather(seq)
+        data = data.ix[data['direct_radiation'] > 0,['global_radiation', 'direct_radiation']]
+        
+        heureTU = data.index.hour
+        DOY = data.index.dayofyear
+        hrad = 2 * numpy.pi / 24 * (heureTU - 12)
+        lat = numpy.radians(self.localisation['latitude'])
+        declinaison = numpy.vectorize(astro.DecliSun)
+        dec = declinaison(DOY)
+        data['sun_elevation'] = numpy.degrees(numpy.arcsin(numpy.sin(lat) * numpy.sin(dec) + numpy.cos(lat) * numpy.cos(dec) * numpy.cos(hrad)))
+        xsun = numpy.sin(lat) * numpy.sin(dec) - numpy.cos(lat) * numpy.cos(dec) * numpy.cos(hrad)
+        ysun = numpy.sin(hrad) * numpy.cos(dec)
+        phi = numpy.arctan2(ysun, xsun)
+        data['sun_azimuth'] = numpy.degrees(numpy.where(phi < 0, phi + 2 * numpy.pi, phi))
+        #costheta = numpy.sin(lat) * numpy.sin(dec) + numpy.cos(lat) * numpy.cos(dec) * numpy.cos(hrad)
+        #data['Iorel'] = data['direct_radiation'] * costheta
+        return data
         
         
 def weather_node(weather_path):
