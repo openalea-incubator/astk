@@ -7,9 +7,12 @@ Created on Wed Apr 24 14:29:15 2013
 
 import pandas
 import numpy
+import pytz
 from datetime import datetime, timedelta
 from math import exp
-from alinea.astk.TimeControl import *    import pytzimport alinea.astk.astro as astro
+
+from alinea.astk.TimeControl import *    
+import alinea.astk.astro as astro
     
 def septo3d_reader(data_file):
     """ reader for septo3D meteo files """
