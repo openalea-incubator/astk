@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from math import exp
 
 from alinea.astk.TimeControl import *    
-import alinea.astk.astro as astro
+import alinea.astk.sun_and_sky as sunsky
     
 def septo3d_reader(data_file):
     """ reader for septo3D meteo files """
@@ -20,16 +20,17 @@ def septo3d_reader(data_file):
     def parse(yr, doy, hr):
         """ Convert the 'An', 'Jour' and 'hhmm' variables of the meteo dataframe in a datetime object (%Y-%m-%d %H:%M:%S format)
         """
-        an, jour, heure = [int(x) for x in [yr, doy, hr/100]]
+        an, jour, heure = [int(x) for x in [yr, doy, int(hr)/100]]
         dt = datetime(an - 1, 12, 31)
         delta = timedelta(days=jour, hours=heure)
         return dt + delta
 
-    data = pandas.read_csv(data_file, parse_dates={'datetime':['An','Jour','hhmm']},
-                               date_parser=parse, sep = '\t',
-                               usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
+    data = pandas.read_csv(data_file, parse_dates={'date':['An','Jour','hhmm']},
+                               date_parser=parse, sep = '\t')
+                               #,
+                               #usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
 
-    data.index = data.datetime
+    data.index = data.date
     data = data.rename(columns={'PAR':'PPFD',
                                  'Tair':'temperature_air',
                                  'HR':'relative_humidity',
@@ -81,45 +82,14 @@ def linear_degree_days(data, start_date = None, base_temp=0., max_temp=35.):
     dd[:len(seq)]=-numpy.cumsum((df.ix[seq].values[::-1]-base_temp)/24.)[::-1]
     return dd
     
-def spitters(Rg, DOY, heureTU, latitude):
-    """ fraction diffus/Global en fonction du rapport Global(Sgd)/Extraterrestre(Sod)- pas de temps horaire """
-    hrad = 2 * numpy.pi / 24 * (heureTU - 12)
-    lat = numpy.radians(latitude)
-    declinaison = numpy.vectorize(astro.DecliSun)
-    dec = declinaison(DOY)
-    costheta = numpy.sin(lat) * numpy.sin(dec) + numpy.cos(lat) * numpy.cos(dec) * numpy.cos(hrad)
-    Io = 1370 * (1 + 0.033 * numpy.cos(2 * numpy.pi * (DOY - 4) / 366))#eclairement (w/m2) a la limitte de l'atmosphere dans un plan perpendiculaire aux rayons du soleil, fonction du jour
-    So = Io * costheta #eclairement dans un plan parallele a la surface du sol
-    RsRso = Rg / So
-    R = 0.847 - 1.61 * costheta + 1.04 * costheta * costheta
-    K = (1.47 - R) / 1.66
-    RdRs = numpy.where(RsRso <= 0.22, 1, 
-        numpy.where(RsRso <= 0.35, 1 - 6.4 * (RsRso - 0.22)**2,
-        numpy.where(RsRso <= K, 1.47 - 1.66 * RsRso, R)))
-    return RdRs
-    
-
-def RgH (Rg,hTU,DOY,latitude) :
-    """ compute hourly value of Rg at hour hTU for a given day at a given latitude
-    Rg is in J.m-2.day-1
-    latidude in degrees
-    output is J.m-2.h-1
+def diffuse_fraction(data, localisation) :       
+    """ Estimate the diffuse to global fraction 
     """
-    
-    dec = DecliSun(DOY)
-    lat = radians(latitude)
-    pi = 3.14116
-    a = sin(lat) * sin(dec)
-    b = cos(lat) * cos(dec)
-    Psi = numpy.pi * Rg / 86400 / (a * acos(-a / b) + b * sqrt(1 - (a / b)^2))
-    A = -b * Psi
-    B = a * Psi
-    RgH = A * cos (2 * pi * hTU / 24) + B
-    # Note that this formula works for h beteween hsunset eand hsunrise
-    hsunrise = 12 - 12/pi * acos(-a / b)
-    hsunset = 12 + 12/pi * acos (-a / b)
-    return RgH
-     
+    heureTU = data.index.hour + data.index.minute / 60.
+    DOY = data.index.dayofyear
+    Rg = data['global_radiation']
+    rdrs = sunsky.diffuse_fraction(Rg, heureTU, DOY, longitude=localisation['longitude'], latitude=localisation['latitude'])
+    return rdrs
 
  
 class Weather(object):
@@ -141,7 +111,8 @@ class Weather(object):
         self.models = {'global_radiation': PPFD_to_global, 
                         'vapor_pressure': humidity_to_vapor_pressure,
                         'PPFD': global_to_PPFD,
-                        'degree_days':linear_degree_days}
+                        'degree_days':linear_degree_days,
+                        'diffuse_fraction':diffuse_fraction}
                         
         self.timezone = pytz.timezone(timezone)
         if data_file is '':
@@ -175,7 +146,7 @@ class Weather(object):
         """
         return self.data[what][time_sequence]
 
-    def check(self, varnames = [], models = {}, **kwds):
+    def check(self, varnames = [], models = {}, args={}):
         """ Check if varnames are in data and try to create them if absent using defaults models or models provided in arg.
         Return a bool list with True if the variable is present or has been succesfully created, False otherwise.
         
@@ -194,22 +165,13 @@ class Weather(object):
                 check.append(True)
             else:
                 if v in models.keys():
-                    values = models[v](self.data, **kwds)
+                    values = models[v](self.data, **args.get(v,{}))
                     self.data[v] = values
                     check.append(True)
                 else:
                     check.append(False)
         return check
         
-    def add_RdRs(self):
-        """ Estimate the diffuse (Rd) and direct('Rs') radiation 
-        """
-        heureTU = self.data.index.hour
-        DOY = self.data.index.dayofyear
-        Rg = self.data['global_radiation']
-        rdrs = spitters(Rg, DOY, heureTU, latitude=self.localisation['latitude'])
-        self.data['diffuse_radiation'] = rdrs * self.data['global_radiation']
-        self.data['direct_radiation'] = (1 - rdrs) * self.data['global_radiation']
         
     def split_weather(self, time_step, t_deb, n_steps):
         
@@ -218,26 +180,59 @@ class Weather(object):
         tstep = [tdeb + i * timedelta(hours=time_step) for i in range(n_steps)]
         return [self.data.truncate(before = t, after = t + timedelta(hours=time_step - 1)) for t in tstep]
    
-    def sun_course(self, seq):
-        """ to do : add equation of time
+    def sun_path(self, seq, azimuth_origin='North'):
+        """ Return position of the sun corresponing to a sequence of date
         """
-        data = self.get_weather(seq)
-        data = data.ix[data['direct_radiation'] > 0,['global_radiation', 'direct_radiation']]
-        
-        heureTU = data.index.hour
-        DOY = data.index.dayofyear
-        hrad = 2 * numpy.pi / 24 * (heureTU - 12)
-        lat = numpy.radians(self.localisation['latitude'])
-        declinaison = numpy.vectorize(astro.DecliSun)
-        dec = declinaison(DOY)
-        data['sun_elevation'] = numpy.degrees(numpy.arcsin(numpy.sin(lat) * numpy.sin(dec) + numpy.cos(lat) * numpy.cos(dec) * numpy.cos(hrad)))
-        xsun = numpy.sin(lat) * numpy.sin(dec) - numpy.cos(lat) * numpy.cos(dec) * numpy.cos(hrad)
-        ysun = numpy.sin(hrad) * numpy.cos(dec)
-        phi = numpy.arctan2(ysun, xsun)
-        data['sun_azimuth'] = numpy.degrees(numpy.where(phi < 0, phi + 2 * numpy.pi, phi))
-        #costheta = numpy.sin(lat) * numpy.sin(dec) + numpy.cos(lat) * numpy.cos(dec) * numpy.cos(hrad)
-        #data['Iorel'] = data['direct_radiation'] * costheta
+        data = self.get_weather(seq)        
+        hUTC = data.index.hour + data.index.minute / 60.
+        dayofyear = data.index.dayofyear
+        latitude = self.localisation['latitude']
+        longitude = self.localisation['longitude']
+        data['sun_elevation'] = sunsky.sun_elevation(hUTC, dayofyear, longitude, latitude)
+        data['sun_azimuth'] = sunsky.sun_azimuth(hUTC, dayofyear, longitude, latitude, origin=azimuth_origin)
+        data['sun_irradiance'] = sunsky.sun_irradiance(hUTC, dayofyear, longitude, latitude)
         return data
+        
+    def light_sources(self, seq, what='global_radiation', sky='turtle46', azimuth_origin='North', irradiance ='horizontal'):
+        """ return direct and diffuse ligh sources representing the sky and the sun
+         for a given time period indicated by seq
+        """
+        self.check([what,'diffuse_fraction'], args={'diffuse_fraction':{'localisation':self.localisation}})
+        data = self.get_weather(seq)
+        latitude = self.localisation['latitude']
+        longitude = self.localisation['longitude']
+        
+        hUTC = data.index.hour + data.index.minute / 60.
+        dayofyear = data.index.dayofyear
+        sun_elevation = sunsky.sun_elevation(hUTC, dayofyear, longitude, latitude)
+        sun_azimuth = sunsky.sun_azimuth(hUTC, dayofyear, longitude, latitude, origin=azimuth_origin)
+        sun_irradiance = data[what] * (1 - data['diffuse_fraction'])
+        #normalise by mean to allow multiplying by sequence duration later on
+        sun_irradiance = sun_irradiance / sun_irradiance.sum() * sun_irradiance.mean()
+        if irradiance == 'normal':
+            sun_irradiance = sunsky.normal_irradiance(sun_irradiance, sun_elevation)
+            
+            
+        sky_elevation, sky_azimuth, sky_fraction = sunsky.sky_discretisation(type=sky)
+        #to do : compute clear sky / diffuse sky depending on Rd/Rs
+        sky_irradiance = sunsky.diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction, sky_type = 'soc', irradiance = 'horizontal')
+        sky_irradiance *=  (data[what] * data['diffuse_fraction']).mean()
+            
+        if irradiance == 'normal':
+            sky_irradiance = sunsky.normal_irradiance(sky_irradiance, sky_elevation)
+        
+        sunny = numpy.where((sun_elevation > 0) & (sun_irradiance > 0))
+        sun = {'elevation':sun_elevation[sunny], 'azimuth': sun_azimuth[sunny], 'irradiance':numpy.array(sun_irradiance)[sunny]}
+        sky = {'elevation':sky_elevation, 'azimuth': sky_azimuth, 'irradiance':sky_irradiance}
+        
+        duration = int((seq[-1] - seq[0]).seconds)
+        
+        return sun, sky, duration
+        
+    def daylength(self, seq):
+        """
+        """
+        return sunsky.day_length(self.localisation['latitude'], seq.dayofyear)
         
         
 def weather_node(weather_path):

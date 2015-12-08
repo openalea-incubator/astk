@@ -78,7 +78,7 @@ def sinh(hUTC, dayofyear, longitude, latitude):
     decli = declination(dayofyear)
     omega = hour_angle(hUTC, dayofyear, longitude)
     
-    return sinh
+    return numpy.sin(latitude) * numpy.sin(decli) + numpy.cos(latitude) * numpy.cos(decli) * numpy.cos(omega)
     
 def sun_elevation(hUTC, dayofyear, longitude, latitude):
     """ sun elevation angle (degrees)
@@ -140,7 +140,7 @@ def sun_clear_sky_direct_normal_irradiance(hUTC, dayofyear, longitude, latitude)
         
         A. B. Meinel and M. P. Meinel, Applied solar energy. Reading, MA: Addison-Wesley Publishing Co., 1976
     """
-    Io = extraterrestrial_radiation(dayofyear)
+    Io = sun_extraterrestrial_radiation(dayofyear)
     sinel = sinh(hUTC, dayofyear, longitude, latitude)
     AM = 1 / sinel
     return Io * sinel * numpy.power(0.7, numpy.power(AM, 0.678))
@@ -219,8 +219,8 @@ def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction, sky_type 
          'horizontal' (default) return the irradiance measured on an horizontal surface
         - sun_elevation, sun_azimuth: sun position (degrees): only needed for clear_sky distribution
     """    
-    el = numpy.radians(elevation)
-    az = numpy.radians(azimuth)
+    el = numpy.radians(sky_elevation)
+    az = numpy.radians(sky_azimuth)
     sky_fraction = numpy.array(sky_fraction) / numpy.sum(sky_fraction)
     
     if sun_elevation is not None:
@@ -237,13 +237,13 @@ def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction, sky_type 
     
     return lum / sum(lum)
     
-def diffuse_fraction(GHI, hUTC, dayofyear, longitude, latitude, model='Spitters'):
+def diffuse_fraction(Ghi, hUTC, dayofyear, longitude, latitude, model='Spitters'):
     """ Estimate the diffuse fraction of the global horizontal irradiance (GHI)
         measured at ground level
         
         Estimated after Spitters (1986)
     """
-    Io = extraterrestrial_radiation(dayofyear)
+    Io = sun_extraterrestrial_radiation(dayofyear)
     costheta = sinh(hUTC, dayofyear, longitude, latitude)
     So = Io * costheta 
     RsRso = Ghi / So
@@ -255,7 +255,12 @@ def diffuse_fraction(GHI, hUTC, dayofyear, longitude, latitude, model='Spitters'
     return RdRs
       
   
+def sky_discretisation(type='turtle46', nb_az=None, nb_el=None):
+    elevations46 = [9.23] * 10 + [10.81] * 5 + [26.57] * 5 + [31.08] * 10 + [47.41] * 5 + [52.62] * 5 + [69.16] * 5 +  [90]
+    azimuths46 = [12.23, 59.77, 84.23, 131.77, 156.23, 203.77, 228.23, 275.77, 300.23, 347.77, 36, 108, 180, 252, 324, 0, 72, 144, 216, 288, 23.27, 48.73, 95.27, 120.73,167.27, 192.73, 239.27, 264.73, 311.27, 336.73, 0, 72, 144, 216, 288, 36, 108, 180, 252, 324, 0, 72, 144, 216, 288, 180]
+    steradians46 = [0.1355] * 10 + [0.1476] * 5 + [0.1207] * 5 + [0.1375] * 10 + [0.1364] * 5 + [0.1442] * 5 + [0.1378] * 5 + [0.1196]
 
+    return elevations46, azimuths46, steradians46
 
     
 # def RgH (Rg,hTU,DOY,latitude) :
