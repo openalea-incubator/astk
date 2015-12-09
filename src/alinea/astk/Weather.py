@@ -196,19 +196,23 @@ class Weather(object):
     def light_sources(self, seq, what='global_radiation', sky='turtle46', azimuth_origin='North', irradiance ='horizontal'):
         """ return direct and diffuse ligh sources representing the sky and the sun
          for a given time period indicated by seq
+         Irradiance are accumulated over the whole time period and multiplied by the duration of the period (second)
         """
         self.check([what,'diffuse_fraction'], args={'diffuse_fraction':{'localisation':self.localisation}})
         data = self.get_weather(seq)
         latitude = self.localisation['latitude']
         longitude = self.localisation['longitude']
+        #expect the first interval to be like the second
+        dt = numpy.diff((data.index - data.index[0]).seconds).astype(int).tolist()
+        dt = numpy.array([dt[0]] + dt)
+        
         
         hUTC = data.index.hour + data.index.minute / 60.
         dayofyear = data.index.dayofyear
         sun_elevation = sunsky.sun_elevation(hUTC, dayofyear, longitude, latitude)
         sun_azimuth = sunsky.sun_azimuth(hUTC, dayofyear, longitude, latitude, origin=azimuth_origin)
-        sun_irradiance = data[what] * (1 - data['diffuse_fraction'])
-        #normalise by mean to allow multiplying by sequence duration later on
-        sun_irradiance = sun_irradiance / sun_irradiance.sum() * sun_irradiance.mean()
+        sun_irradiance = data[what] * (1 - data['diffuse_fraction']) * dt
+
         if irradiance == 'normal':
             sun_irradiance = sunsky.normal_irradiance(sun_irradiance, sun_elevation)
             
@@ -216,7 +220,7 @@ class Weather(object):
         sky_elevation, sky_azimuth, sky_fraction = sunsky.sky_discretisation(type=sky)
         #to do : compute clear sky / diffuse sky depending on Rd/Rs
         sky_irradiance = sunsky.diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction, sky_type = 'soc', irradiance = 'horizontal')
-        sky_irradiance *=  (data[what] * data['diffuse_fraction']).mean()
+        sky_irradiance *=  (data[what] * data['diffuse_fraction']).sum() * dt.sum()
             
         if irradiance == 'normal':
             sky_irradiance = sunsky.normal_irradiance(sky_irradiance, sky_elevation)
@@ -225,9 +229,9 @@ class Weather(object):
         sun = {'elevation':sun_elevation[sunny], 'azimuth': sun_azimuth[sunny], 'irradiance':numpy.array(sun_irradiance)[sunny]}
         sky = {'elevation':sky_elevation, 'azimuth': sky_azimuth, 'irradiance':sky_irradiance}
         
-        duration = int((seq[-1] - seq[0]).seconds)
+
         
-        return sun, sky, duration
+        return sun, sky
         
     def daylength(self, seq):
         """
