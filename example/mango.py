@@ -33,9 +33,9 @@ mango = adel.setup_canopy(500)
 # meteo
 weather = Weather('rayostpierre2002.csv', reader=reader, timezone='Indian/Reunion', localisation={'city':'Saint-Pierre', 'latitude':-21.32, 'longitude':55.5})
 # sun/sky for one day
-day = pandas.date_range(start = "2002-10-02", periods=24, freq='H')
-#see also weather.split for generating a list of days
-sun, sky, = weather.light_sources(day, 'PPFD', irradiance='normal', scale=1e-6)
+one_day = weather.date_range_index('2002-10-02')
+#see weather.date_range_index for generating a list of days
+sun, sky, = weather.light_sources(one_day, 'PPFD', irradiance='normal', scale=1e-6)
 # sun and sky irradiance are in mol.m-2 (PPFD in micromol.m-2.s-1 * dt (s) * scale)
 
 

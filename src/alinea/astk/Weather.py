@@ -130,6 +130,22 @@ class Weather(object):
         self.localisation = localisation
 
 
+    def date_range_index(self, start, end=None, by=24):
+        """ return a (list of) time sequence that allow indexing one or several time intervals between start and end every 'by' hours
+        if end is None, only one time interval of 'by' hours is returned
+        
+        start and end are expected in local time
+        """
+        if end is None:
+            seq = pandas.date_range(start = start, periods=by, freq='H', tz = self.timezone.zone)
+            return seq.tz_convert('UTC')
+        else:
+            seq = pandas.date_range(start = start, end=end, freq='H', tz = self.timezone.zone)
+            seq = seq.tz_convert('UTC')
+            bins = pandas.date_range(start = start, end=end, freq=str(by) + 'H', tz = self.timezone.zone)
+            bins = bins.tz_convert('UTC')
+            return [seq[(seq >= bins[i]) & (seq < bins[i+1])] for i in range(len(bins) - 1)]
+        
     def get_weather(self, time_sequence):
         """ Return weather data for a given time sequence
         """
@@ -219,6 +235,7 @@ class Weather(object):
             
         sky_elevation, sky_azimuth, sky_fraction = sunsky.sky_discretisation(type=sky)
         #to do : compute clear sky / diffuse sky depending on Rd/Rs
+        # irradiance is supposed to be horizontal in meteo file
         sky_irradiance = sunsky.diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction, sky_type = 'soc', irradiance = 'horizontal')
         sky_irradiance *=  (data[what] * data['diffuse_fraction']).sum() * dt.sum() * scale
             
