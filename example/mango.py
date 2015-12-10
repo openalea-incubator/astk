@@ -35,8 +35,8 @@ weather = Weather('rayostpierre2002.csv', reader=reader, timezone='Indian/Reunio
 # sun/sky for one day
 day = pandas.date_range(start = "2002-10-02", periods=24, freq='H')
 #see also weather.split for generating a list of days
-sun, sky, = weather.light_sources(day, 'PPFD', irradiance='normal')
-# sun and sky irradiance are in micromol.m-2
+sun, sky, = weather.light_sources(day, 'PPFD', irradiance='normal', scale=1e-6)
+# sun and sky irradiance are in mol.m-2 (PPFD in micromol.m-2.s-1 * dt (s) * scale)
 
 
 
@@ -53,23 +53,6 @@ def azel2vect(az, el, north=0):
 
 scene = adel.scene(mango)
 directions =zip(sun['azimuth'],sun['elevation'], sun['irradiance']) + zip(sky['azimuth'],sky['elevation'], sky['irradiance'])  
-res = directionalInterception(scene, directions, azel2vect = azel2vect)
-# calcul direct :
-# on utilise sun : elevation, azimuth et direct_radiation (W.m2).
-# TODO : convention x/Nord => convention azimuth
-# TO do : add step in sun_path to choose more sun positions
-# call fractalysis
-# => resulat en W, pour passage en MJ, multiplier par le delta time = le vrai daylength (to do : more smart/flexible output)
-# or : on choisit un jour et on renvoie les position de soileil + la duree qu'il faut pour obtenir les MJ
-#
-# proto:
-# sun_sources, duration = weather.sun_sources(date (day))
-# directMJ = fractalysis.run(mtg, sun_sources) * duration (seconds)
-#
-# diffus
-#
-# sky = turtle.sky(46)
-# sky_sources, duraction = weather.sky_sources(date (day), sky)
-# diffuseMJ = fractalysis.run(mtg, sun_sources) * duration (seconds)
-#
-# PAR = directMJ  + diffuseMJ (* conversion to PPFD)
+
+#res = directionalInterception(scene, directions, azel2vect = azel2vect)
+

@@ -193,10 +193,10 @@ class Weather(object):
         data['sun_irradiance'] = sunsky.sun_irradiance(hUTC, dayofyear, longitude, latitude)
         return data
         
-    def light_sources(self, seq, what='global_radiation', sky='turtle46', azimuth_origin='North', irradiance ='horizontal'):
+    def light_sources(self, seq, what='global_radiation', sky='turtle46', azimuth_origin='North', irradiance ='horizontal', scale=1e-6):
         """ return direct and diffuse ligh sources representing the sky and the sun
          for a given time period indicated by seq
-         Irradiance are accumulated over the whole time period and multiplied by the duration of the period (second)
+         Irradiance are accumulated over the whole time period and multiplied by the duration of the period (second) and by scale
         """
         self.check([what,'diffuse_fraction'], args={'diffuse_fraction':{'localisation':self.localisation}})
         data = self.get_weather(seq)
@@ -211,7 +211,7 @@ class Weather(object):
         dayofyear = data.index.dayofyear
         sun_elevation = sunsky.sun_elevation(hUTC, dayofyear, longitude, latitude)
         sun_azimuth = sunsky.sun_azimuth(hUTC, dayofyear, longitude, latitude, origin=azimuth_origin)
-        sun_irradiance = data[what] * (1 - data['diffuse_fraction']) * dt
+        sun_irradiance = data[what] * (1 - data['diffuse_fraction']) * dt * scale
 
         if irradiance == 'normal':
             sun_irradiance = sunsky.normal_irradiance(sun_irradiance, sun_elevation)
@@ -220,7 +220,7 @@ class Weather(object):
         sky_elevation, sky_azimuth, sky_fraction = sunsky.sky_discretisation(type=sky)
         #to do : compute clear sky / diffuse sky depending on Rd/Rs
         sky_irradiance = sunsky.diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction, sky_type = 'soc', irradiance = 'horizontal')
-        sky_irradiance *=  (data[what] * data['diffuse_fraction']).sum() * dt.sum()
+        sky_irradiance *=  (data[what] * data['diffuse_fraction']).sum() * dt.sum() * scale
             
         if irradiance == 'normal':
             sky_irradiance = sunsky.normal_irradiance(sky_irradiance, sky_elevation)
