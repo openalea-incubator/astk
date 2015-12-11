@@ -7,9 +7,10 @@ from alinea.astk.Weather import Weather
 import openalea.plantgl.all as pgl
 
 from math import radians, pi
-from alinea.adel.astk_interface import AdelWheat
+#from alinea.adel.astk_interface import AdelWheat
+from vplants.mangosim.util_path import data
 
-
+from vplants.fractalysis.light.directLight import directionalInterception
 
 def reader(data_file='rayostpierre2002.csv'):
     """ reader for mango meteo files """
@@ -28,15 +29,9 @@ def reader(data_file='rayostpierre2002.csv'):
     return data
   
 # a strange mango tree
-adel = AdelWheat()
-mango = adel.setup_canopy(500)  
+mango = pgl.Scene(data('generated_mtg/fruitstructure.bgeom'))  
 # meteo
-weather = Weather('rayostpierre2002.csv', reader=reader, timezone='Indian/Reunion', localisation={'city':'Saint-Pierre', 'latitude':-21.32, 'longitude':55.5})
-# sun/sky for one day
-one_day = weather.date_range_index('2002-10-02')
-#see weather.date_range_index for generating a list of days
-sun, sky, = weather.light_sources(one_day, 'PPFD', irradiance='normal', scale=1e-6)
-# sun and sky irradiance are in mol.m-2 (PPFD in micromol.m-2.s-1 * dt (s) * scale)
+weather = Weather(data('environment/rayostpierre2002.csv'), reader=reader, timezone='Indian/Reunion', localisation={'city':'Saint-Pierre', 'latitude':-21.32, 'longitude':55.5})
 
 
 
@@ -51,8 +46,16 @@ def azel2vect(az, el, north=0):
   v.normalize()
   return v
 
-scene = adel.scene(mango)
-directions =zip(sun['azimuth'],sun['elevation'], sun['irradiance']) + zip(sky['azimuth'],sky['elevation'], sky['irradiance'])  
+for one_day in weather.date_range_index('2002-10-02','2002-10-15'):
+  # sun/sky for one day
+  #see weather.date_range_index for generating a list of days
+  sun, sky, = weather.light_sources(one_day, 'PPFD', irradiance='normal', scale=1e-6)
+  # sun and sky irradiance are in mol.m-2 (PPFD in micromol.m-2.s-1 * dt (s) * scale)
+  print len(sun['irradiance'])
+  print sun
+  directions =zip(sun['azimuth'],sun['elevation'], sun['irradiance']) #+ zip(sky['azimuth'],sky['elevation'], sky['irradiance'])  
 
-#res = directionalInterception(scene, directions, azel2vect = azel2vect)
+  res = directionalInterception(mango, directions, azel2vect = azel2vect)
+
+  print res
 
