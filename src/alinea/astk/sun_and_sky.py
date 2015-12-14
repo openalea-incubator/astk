@@ -132,7 +132,7 @@ def sun_irradiance(hUTC, dayofyear, longitude, latitude):
     sinel = sinh(hUTC, dayofyear, longitude, latitude)
     return Io * sinel
     
-def sun_clear_sky_direct_normal_irradiance(hUTC, dayofyear, longitude, latitude):
+def sun_clear_sky_direct_normal_irradiance(hUTC, dayofyear, longitude, latitude, irradiance='horizontal'):
     """ Direct normal irradiance (W.m2) of the sun reaching the soil on a clear day
         
         Direct normal irradiance means through a plane perpendicular to sun direction
@@ -142,8 +142,11 @@ def sun_clear_sky_direct_normal_irradiance(hUTC, dayofyear, longitude, latitude)
     """
     Io = sun_extraterrestrial_radiation(dayofyear)
     sinel = sinh(hUTC, dayofyear, longitude, latitude)
-    AM = 1 / sinel
-    return Io * sinel * numpy.power(0.7, numpy.power(AM, 0.678))
+    AM = 1. / sinel
+    if irradiance == 'normal':
+        return Io * sinel * numpy.power(0.7, numpy.power(AM, 0.678))
+    else:
+        return Io * numpy.power(0.7, numpy.power(AM, 0.678))
 
 def horizontal_irradiance(normal_irradiance, elevation):
     """ irradiance measured on an horizontal surface from a source with known elevation (degrees) and known normal irradiance
@@ -210,7 +213,10 @@ def cie_relative_luminance(sky_elevation, sky_azimuth=None, sun_elevation=None, 
         raise ValueError, 'Unknown sky type'
     
 def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction, sky_type = 'soc', irradiance = 'horizontal', sun_elevation=None, sun_azimuth=None):
-    """ compute normalised diffuse light irradiance (sum(irradiances) = 1) for a sky reprsented by a given set of directions
+    """ Normalised diffuse light irradiance for a sky reprsented by a given set of directions
+    
+        Normalisation is for the sum of irradiance received on an horizontal surface.
+        if irradiance == 'normal', the sum of irradiance will be greater than 1
     
         - elevation, azimuth : elevation and azimuth angle (degrees) of directions sampling the sky hemisphere
         - sky_fraction: relative proportion of sky represented by the directions (or any vector proportinal to these fraction)
@@ -229,13 +235,14 @@ def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction, sky_type 
         sun_azimuth = numpy.radians(sun_azimuth)
         
     lum = cie_relative_luminance(el, az, sun_elevation, sun_azimuth, type=sky_type)
+    # use horizontal convention for normalisation
+    lum = lum * numpy.sin(el) * sky_fraction
+    lum /= sum(lum)
     
-    if irradiance == 'horizontal':
-        lum = lum * numpy.sin(el)
+    if irradiance == 'normal':
+        lum /= numpy.sin(el)
         
-    lum = lum * sky_fraction
-    
-    return lum / sum(lum)
+    return lum
     
 def diffuse_fraction(Ghi, hUTC, dayofyear, longitude, latitude, model='Spitters'):
     """ Estimate the diffuse fraction of the global horizontal irradiance (GHI)

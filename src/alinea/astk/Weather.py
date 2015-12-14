@@ -207,6 +207,7 @@ class Weather(object):
         data['sun_elevation'] = sunsky.sun_elevation(hUTC, dayofyear, longitude, latitude)
         data['sun_azimuth'] = sunsky.sun_azimuth(hUTC, dayofyear, longitude, latitude, origin=azimuth_origin)
         data['sun_irradiance'] = sunsky.sun_irradiance(hUTC, dayofyear, longitude, latitude)
+        data['sun_ground_irradiance'] = sun_clear_sky_direct_normal_irradiance(hUTC, dayofyear, longitude, latitude, 'horizontal')
         return data
         
     def light_sources(self, seq, what='global_radiation', sky='turtle46', azimuth_origin='North', irradiance ='horizontal', scale=1e-6):
@@ -236,18 +237,13 @@ class Weather(object):
         sky_elevation, sky_azimuth, sky_fraction = sunsky.sky_discretisation(type=sky)
         #to do : compute clear sky / diffuse sky depending on Rd/Rs
         # irradiance is supposed to be horizontal in meteo file
-        sky_irradiance = sunsky.diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction, sky_type = 'soc', irradiance = 'horizontal')
+        sky_irradiance = sunsky.diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction, sky_type = 'soc', irradiance = irradiance)
         sky_irradiance *=  (data[what] * data['diffuse_fraction']).sum() * dt.sum() * scale
             
-        if irradiance == 'normal':
-            sky_irradiance = sunsky.normal_irradiance(sky_irradiance, sky_elevation)
-        
         sunny = numpy.where((sun_elevation > 0) & (sun_irradiance > 0))
         sun = {'elevation':sun_elevation[sunny], 'azimuth': sun_azimuth[sunny], 'irradiance':numpy.array(sun_irradiance)[sunny]}
         sky = {'elevation':sky_elevation, 'azimuth': sky_azimuth, 'irradiance':sky_irradiance}
-        
-
-        
+              
         return sun, sky
         
     def daylength(self, seq):
