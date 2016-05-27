@@ -46,16 +46,17 @@ def azel2vect(az, el, north=0):
   v.normalize()
   return v
 
-for one_day in weather.date_range_index('2002-10-02','2002-10-15'):
+for one_day in weather.date_range_index('2002-12-02','2002-12-15'):
   # sun/sky for one day
   #see weather.date_range_index for generating a list of days
   sun, sky, = weather.light_sources(one_day, 'PPFD', irradiance='normal', scale=1e-6)
   # sun and sky irradiance are in mol.m-2 (PPFD in micromol.m-2.s-1 * dt (s) * scale)
+  print one_day[0],
   print len(sun['irradiance'])
-  print sun
+  #print sun
   directions =zip(sun['azimuth'],sun['elevation'], sun['irradiance']) #+ zip(sky['azimuth'],sky['elevation'], sky['irradiance'])  
 
   res = directionalInterception(mango, directions, azel2vect = azel2vect)
 
-  print res
+  #print res
 
