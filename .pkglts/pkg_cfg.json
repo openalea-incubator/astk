@@ -1,0 +1,52 @@
+{
+  "_pkglts": {
+    "auto_install": true, 
+    "install_front_end": "stdout", 
+    "use_prompts": false, 
+    "version": 2
+  }, 
+  "base": {
+    "authors": [
+      [
+        "Christian Fournier",
+        "christian.fournier __at__ supagro.inra.fr"
+      ],
+      [ "Guillaume Garin", "guillaume.garin __at__ itk.fr"],
+      [ "Romain Chapuis", "romain.chapuis __at__ supagro.inra.fr"]
+    ], 
+    "namespace": "alinea",
+    "pkgname": "astk", 
+    "url": null
+  }, 
+  "coverage": {}, 
+  "doc": {
+    "description": "The Alinea.astk package provides utilities for simulation of FSPM models builds under alinea standards",
+    "keywords": []
+  }, 
+  "github": {
+    "owner": "{{ base.authors[0][0] }}", 
+    "project": "{{ base.pkgname }}", 
+    "url": "https://github.com/{{ github.owner }}/{{ github.project }}"
+  }, 
+  "license": {
+    "name": "cecill-c", 
+    "organization": "organization", 
+    "project": "{{ base.pkgname }}", 
+    "year": 2015
+  }, 
+  "pysetup": {
+    "intended_versions": [
+      "27"
+    ]
+  }, 
+  "sphinx": {
+    "autodoc_dvlpt": true, 
+    "theme": "default"
+  }, 
+  "test": {}, 
+  "version": {
+    "major": 0, 
+    "minor": 1, 
+    "post": 0
+  }
+}

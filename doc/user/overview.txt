@@ -1,1 +1,0 @@
-Alinea.astk is a package for Alinea Simulation Tools Kit.
