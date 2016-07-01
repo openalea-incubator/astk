@@ -8,19 +8,26 @@
   "base": {
     "authors": [
       [
-        "Christian Fournier",
+        "Christian Fournier", 
         "christian.fournier __at__ supagro.inra.fr"
-      ],
-      [ "Guillaume Garin", "guillaume.garin __at__ itk.fr"],
-      [ "Romain Chapuis", "romain.chapuis __at__ supagro.inra.fr"]
+      ], 
+      [
+        "Guillaume Garin", 
+        "guillaume.garin __at__ itk.fr"
+      ], 
+      [
+        "Romain Chapuis", 
+        "romain.chapuis __at__ supagro.inra.fr"
+      ]
     ], 
-    "namespace": "alinea",
+    "namespace": "alinea", 
     "pkgname": "astk", 
     "url": null
   }, 
   "coverage": {}, 
+  "data": {}, 
   "doc": {
-    "description": "The Alinea.astk package provides utilities for simulation of FSPM models builds under alinea standards",
+    "description": "The Alinea.astk package provides utilities for simulation of FSPM models builds under alinea standards", 
     "keywords": []
   }, 
   "github": {
