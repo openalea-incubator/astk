@@ -4,6 +4,8 @@ C. Fournier, 2015
 """
 
 import numpy
+import datetime
+import pandas
 
 
 # Sun models and equations
@@ -52,9 +54,12 @@ def declination(dayofyear, method="default"):
               - 0.399912 * numpy.cos(x) + 0.070257 * numpy.sin(x) \
               - 0.006758 * numpy.cos(2 * x) + 0.000907 * numpy.sin(2 * x) \
               - 0.002697 * numpy.cos(3 * x) + 0.001480 * numpy.sin(3 * x)
+    elif method == 'SunAlign':
+        obliquity = -23.44 # constant approximation
+        cst = 360 / 365.24
+        sidec = numpy.sin(numpy.radians(obliquity)) * numpy.cos(numpy.radians( cst*(dayofyear+10)) + 2*0.0167*numpy.sin(cst*(dayofyear-2))  )
+        dec = numpy.arcsin(sidec)
     else:
-        #
-        #
         obliquity = 23.44  # constant approximation
         sidec = numpy.sin(numpy.radians(obliquity)) * numpy.sin(
             ecliptic_longitude(dayofyear))
@@ -67,6 +72,8 @@ def eot(dayofyear):
     local solar time
     Approximation formula by Grebet (1993),
     in Crop structure and light microclimate
+    
+    Seems buggy at least for south hemisphere
 
     Args:
         dayofyear: (int) the day of year
@@ -130,8 +137,10 @@ def sun_elevation(hUTC, dayofyear, longitude, latitude):
     """ sun elevation angle (degrees)
     """
     sinel = sinh(hUTC, dayofyear, longitude, latitude)
-
     return numpy.degrees(numpy.arcsin(sinel))
+        
+        
+
 
 
 def sun_azimuth(hUTC, dayofyear, longitude, latitude, origin='North'):
@@ -155,7 +164,27 @@ def sun_azimuth(hUTC, dayofyear, longitude, latitude, origin='North'):
 
     return numpy.degrees(az)
 
-
+def ephem_sun_position(hUTC, dayofyear, year, longitude, latitude):
+    import ephem
+    observer = ephem.Observer()
+    observer.date = datetime.datetime.strptime('%d %d %d' % (year, dayofyear, hUTC), '%Y %j %H')
+    observer.lat = numpy.radians(latitude)
+    observer.lon = numpy.radians(longitude)
+    sun = ephem.Sun(observer)
+    sun.compute(observer)
+    return numpy.degrees(sun.alt), numpy.degrees(sun.az) 
+    
+def sun_position(hUTC, dayofyear, year, longitude, latitude):
+    """ compute sun position (sun elevation(degree) and sun azimuth( degree, Noth clockwise convention using ephem
+    """
+    try:
+        import ephem
+    except ImportError:
+        return(sun_elevation(hUTC, dayofyear, longitude, latitude), sun_azimuth(hUTC, dayofyear, longitude, latitude, origin='North'))
+    fun = numpy.frompyfunc(ephem_sun_position, 5, 2)
+    alt, az = fun(hUTC, dayofyear, year, longitude, latitude)
+    return alt.astype(float), az.astype(float)
+    
 def sun_extraterrestrial_radiation(dayofyear, method='Spencer'):
     """ Extraterrestrial radiation (W.m2) at the top of the earth atmosphere
     """
@@ -176,16 +205,16 @@ def sun_extraterrestrial_radiation(dayofyear, method='Spencer'):
     return Io
 
 
-def sun_irradiance(hUTC, dayofyear, longitude, latitude):
+def sun_irradiance(dayofyear, sun_elevation):
     """ sun irradiance (W.m2) at the top of the atmosphere through a plane perpendicular
+    
         to sun direction at a given time and location
     """
     Io = sun_extraterrestrial_radiation(dayofyear)
-    sinel = sinh(hUTC, dayofyear, longitude, latitude)
-    return Io * sinel
+    return Io * numpy.sin(numpy.radians(sun_elevation))
 
 
-def sun_clear_sky_direct_normal_irradiance(hUTC, dayofyear, longitude, latitude,
+def sun_clear_sky_direct_normal_irradiance(sun_elevation, dayofyear,
                                            irradiance='horizontal'):
     """ Direct normal irradiance (W.m2) of the sun
         reaching the soil on a clear day
@@ -199,8 +228,8 @@ def sun_clear_sky_direct_normal_irradiance(hUTC, dayofyear, longitude, latitude,
         Reading, MA: Addison-Wesley Publishing Co., 1976
     """
     Io = sun_extraterrestrial_radiation(dayofyear)
-    sinel = sinh(hUTC, dayofyear, longitude, latitude)
-    AM = 1. / sinel
+    sinel = numpy.sin(sun_elevation)
+    AM = numpy.where(sinel == 0, 1. / numpy.sin(0.01), 1. / sinel)
     if irradiance == 'normal':
         return Io * sinel * numpy.power(0.7, numpy.power(AM, 0.678))
     else:
@@ -347,7 +376,27 @@ def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
     return lum
 
 
-def diffuse_fraction(Ghi, hUTC, dayofyear, longitude, latitude,
+def sun_path(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
+             azimuth_origin='North', day_only=True):
+    """ Return position of the sun corresponding to a sequence of date
+    """
+    hUTC = range(24)
+    elevation, azimuth = sun_position(hUTC, dayofyear, year, longitude,
+                                      latitude)
+
+    toa_irradiance = sun_irradiance(dayofyear, elevation)
+    # ground_irradiance = sun_clear_sky_direct_normal_irradiance(
+    #    elevation, dayofyear, 'horizontal')
+    df = pandas.DataFrame(
+        {'dayofyear': dayofyear, 'hUTC': hUTC, 'elevation': elevation,
+         'azimuth': azimuth, 'DNI': toa_irradiance})
+    if day_only:
+        return df.loc[df['elevation'] > 0, :]
+    else:
+        return df
+
+
+def diffuse_fraction(Ghi, dayofyear, elevation,
                      model='Spitters'):
     """ Estimate the diffuse fraction of the global horizontal irradiance (GHI)
         measured at ground level
@@ -355,7 +404,7 @@ def diffuse_fraction(Ghi, hUTC, dayofyear, longitude, latitude,
         Estimated after Spitters (1986)
     """
     Io = sun_extraterrestrial_radiation(dayofyear)
-    costheta = sinh(hUTC, dayofyear, longitude, latitude)
+    costheta = numpy.sin(elevation)
     So = Io * costheta
     RsRso = Ghi / So
     R = 0.847 - 1.61 * costheta + 1.04 * costheta * costheta
@@ -369,7 +418,7 @@ def diffuse_fraction(Ghi, hUTC, dayofyear, longitude, latitude,
 
 def sky_discretisation(type='turtle46', nb_az=None, nb_el=None):
     elevations46 = [9.23] * 10 + [10.81] * 5 + [26.57] * 5 + [31.08] * 10 + [
-                    47.41] * 5 + [52.62] * 5 + [69.16] * 5 + [0]
+                    47.41] * 5 + [52.62] * 5 + [69.16] * 5 + [90]
     azimuths46 = [12.23, 59.77, 84.23, 131.77, 156.23, 203.77, 228.23, 275.77,
                   300.23, 347.77, 36, 108, 180, 252, 324, 0, 72, 144, 216, 288,
                   23.27, 48.73, 95.27, 120.73, 167.27, 192.73, 239.27, 264.73,
@@ -380,6 +429,33 @@ def sky_discretisation(type='turtle46', nb_az=None, nb_el=None):
                        0.1196]
 
     return elevations46, azimuths46, steradians46
+
+
+def light_sources(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
+             type='soc', dicretisation='turtle_46'):
+    """ normalised light sources for one day
+    """
+    elevation, azimuth, strd = sky_discretisation(type=dicretisation)
+    fraction = numpy.array(strd) / sum(strd)
+
+    if type == 'soc' or type == 'uoc':
+        irradiance = diffuse_light_irradiance(elevation, azimuth, fraction,
+                                              sky_type=type,
+                                              irradiance='horizontal')
+    elif type == 'clear_sky':
+        sun = sun_path(dayofyear, year, latitude, longitude)
+        sun['weight'] = sun['DNI'] / sum(sun['DNI'])
+        irradiance = numpy.zeros_like(fraction)
+        for i, row in sun.iterrows():
+            irr = diffuse_light_irradiance(elevation, azimuth, fraction,
+                             sky_type='clear_sky', irradiance='horizontal',
+                             sun_elevation=row['elevation'], sun_azimuth=row['azimuth'])
+            irradiance += (irr * row['weight'])
+    else:
+        raise ValueError(
+            'unknown type: ' + type + ' (should be one of uoc, soc, clear_sky')
+
+    return elevation, azimuth, strd, irradiance
 
 # def RgH (Rg,hTU,DOY,latitude) :
 # """ compute hourly value of Rg at hour hTU for a given day at a given latitude
