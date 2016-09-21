@@ -16,6 +16,7 @@ this is a python implementation of the C code found here:
 http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 """
 import math
+import numpy
 import openalea.plantgl.all as pgl
 
 
@@ -54,6 +55,7 @@ def icosahedron():
     unit_sphere"""
 
     t = (1.0 + math.sqrt(5.0)) / 2.0
+    # align one point with z
     rot = math.atan2(t,1)
     vertices = []
     vertices.append(norm(roty((-1, t, 0), rot)))
@@ -151,6 +153,60 @@ def icosphere(recursion=1):
             faces.append((va, vb, vc))
 
     return vertices, faces
+
+
+def mass_center(face, points):
+    x, y, z = zip([points[i] for i in face])
+    return numpy.mean(x), numpy.mean(y), numpy.mean(z)
+
+def dual(vertices, faces):
+    """ generate the dual polyhedron of the input spherical mesh"""
+
+    centers = []
+    dual_vertices = []
+    dual_faces = []
+    cache = {}
+    for icenter, center in enumerate(vertices):
+        new_face = []
+        centers.append(center)
+        ifaces = [i for i,f in enumerate(faces) if icenter in f]
+        next_face = 0
+        for j in range(len(ifaces)):
+            iface = ifaces.pop(next_face)
+            face = faces[iface]
+            if len(ifaces) > 1:
+                next_pt = face[((numpy.where(numpy.array(face) == icenter)[0] + 2) % 3)[0]]
+                next_face = [i for i,f in enumerate(ifaces) if next_pt in faces[f]][0]
+            else:
+                next_face = 0
+            if iface in cache:
+                new_face.append(cache[iface])
+            else:
+                cache[iface] = len(dual_vertices)
+                new_face.append(len(dual_vertices))
+                dual_vertices.append(mass_center(faces[iface], vertices))
+        dual_faces.append(new_face)
+
+
+
+        face_centers = [mass_center(faces[i], vertices) for i in ifaces]
+
+        origin = numpy.array(center)
+        vect = [numpy.array(c) - origin for c in face_centers]
+        order = numpy.argsort([numpy.arctan2(
+            numpy.linalg.norm(numpy.cross(vect[0], v)), numpy.dot(vect[0], v))
+                               for v in vect])
+        new_face = []
+        for o in order:
+            if ifaces[o] in cache:
+                new_face.append(cache[ifaces[o]])
+            else:
+                cache[ifaces[o]] = len(dual_vertices)
+                new_face.append(len(dual_vertices))
+                dual_vertices.append(face_centers[o])
+        dual_faces.append(new_face)
+    return dual_vertices, dual_faces, centers
+
 
 
 def hemi_icosphere(recursion=1):
