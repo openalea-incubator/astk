@@ -20,10 +20,14 @@ import numpy
 import openalea.plantgl.all as pgl
 
 
-def display(vertices, faces):
+def display(vertices, faces, color=None):
     """ Visualisation of a mesh with PlantGl"""
 
-    shape = pgl.Shape(pgl.FaceSet(pointList=vertices, indexList=faces))
+    if color is None:
+        shape = pgl.Shape(pgl.FaceSet(pointList=vertices, indexList=faces))
+    else:
+        m = pgl.Material(pgl.Color3(*color))
+        shape = pgl.Shape(pgl.FaceSet(pointList=vertices, indexList=faces), m)
     pgl.Viewer.display(shape)
 
 
@@ -155,57 +159,46 @@ def icosphere(recursion=1):
     return vertices, faces
 
 
-def mass_center(face, points):
-    x, y, z = zip([points[i] for i in face])
+def centroid(points):
+    x, y, z = zip(*points)
     return numpy.mean(x), numpy.mean(y), numpy.mean(z)
+
+
+def sorted_faces(center, face_indices, faces):
+    """ return face indices sorted to form a counter clockwise rotation
+     around center"""
+    indices = [i for i in face_indices]
+    sorted = [indices.pop(0)]
+    while len(indices) > 0:
+        last = faces[sorted[-1]]
+        next_pt = last[((numpy.where(numpy.array(last) == center)[0] + 2) % 3)[0]]
+        next_index = [i for i, f in enumerate(indices) if next_pt in faces[f]][0]
+        sorted.append(indices.pop(next_index))
+    return sorted
+
 
 def dual(vertices, faces):
     """ generate the dual polyhedron of the input spherical mesh"""
 
-    centers = []
+    # centers = []
     dual_vertices = []
     dual_faces = []
     cache = {}
     for icenter, center in enumerate(vertices):
         new_face = []
-        centers.append(center)
+        # centers.append(center)
         ifaces = [i for i,f in enumerate(faces) if icenter in f]
-        next_face = 0
-        for j in range(len(ifaces)):
-            iface = ifaces.pop(next_face)
-            face = faces[iface]
-            if len(ifaces) > 1:
-                next_pt = face[((numpy.where(numpy.array(face) == icenter)[0] + 2) % 3)[0]]
-                next_face = [i for i,f in enumerate(ifaces) if next_pt in faces[f]][0]
-            else:
-                next_face = 0
+        for iface in sorted_faces(icenter, ifaces, faces):
             if iface in cache:
                 new_face.append(cache[iface])
             else:
                 cache[iface] = len(dual_vertices)
                 new_face.append(len(dual_vertices))
-                dual_vertices.append(mass_center(faces[iface], vertices))
+                points = [vertices[i] for i in faces[iface]]
+                dual_vertices.append(centroid(points))
         dual_faces.append(new_face)
 
-
-
-        face_centers = [mass_center(faces[i], vertices) for i in ifaces]
-
-        origin = numpy.array(center)
-        vect = [numpy.array(c) - origin for c in face_centers]
-        order = numpy.argsort([numpy.arctan2(
-            numpy.linalg.norm(numpy.cross(vect[0], v)), numpy.dot(vect[0], v))
-                               for v in vect])
-        new_face = []
-        for o in order:
-            if ifaces[o] in cache:
-                new_face.append(cache[ifaces[o]])
-            else:
-                cache[ifaces[o]] = len(dual_vertices)
-                new_face.append(len(dual_vertices))
-                dual_vertices.append(face_centers[o])
-        dual_faces.append(new_face)
-    return dual_vertices, dual_faces, centers
+    return dual_vertices, dual_faces
 
 
 
