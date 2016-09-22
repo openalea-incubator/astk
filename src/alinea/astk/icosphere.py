@@ -17,6 +17,7 @@ http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 """
 import math
 import numpy
+import heapq
 import openalea.plantgl.all as pgl
 
 
@@ -164,6 +165,13 @@ def centroid(points):
     return numpy.mean(x), numpy.mean(y), numpy.mean(z)
 
 
+def spherical(points):
+    """ zenital and azimutal coordinate of a list of points"""
+    x, y, z = zip(*points)
+    return numpy.arccos(z), numpy.arctan2(y, x)
+
+
+
 def sorted_faces(center, face_indices, faces):
     """ return face indices sorted to form a counter clockwise rotation
      around center"""
@@ -178,7 +186,7 @@ def sorted_faces(center, face_indices, faces):
 
 
 def dual(vertices, faces):
-    """ generate the dual polyhedron of the input spherical mesh"""
+    """ generate the dual polyhedron associated to an icosphere"""
 
     # centers = []
     dual_vertices = []
@@ -199,6 +207,34 @@ def dual(vertices, faces):
         dual_faces.append(new_face)
 
     return dual_vertices, dual_faces
+
+
+def fused(vertices, faces):
+    """ generate a fused polyhedron associated to an icosphere"""
+
+    fused_vertices = []
+    fused_faces = []
+    cache = []
+    theta, phi = spherical(vertices)
+    # start at to of icosphere
+    icenters = [numpy.argmin(numpy.abs(theta))]
+    while len(icenters) > 0:
+        icenter = icenters.pop()
+        cache.append(icenter)
+        new_face = []
+        # centers.append(vertices[icenter])
+        ifaces = [i for i, f in enumerate(faces) if icenter in f]
+        for iface in sorted_faces(icenter, ifaces, faces):
+            face = numpy.array(faces[iface])
+            ipts = [((numpy.where(face == icenter)[0] + i) % 3)[0] for i in range(3)]
+            new_face.append(len(fused_vertices))
+            fused_vertices.append(vertices[face[ipts[2]]])
+            edge = set([face[ipts[1]]] + [face[ipts[2]]])
+            not_edge = [(set(f) - edge).pop() for f in faces if len(edge.intersection(f)) > 1]
+            icenters.extend([v for v in not_edge if v not in cache])
+        fused_faces.append(new_face)
+
+    return fused_vertices, fused_faces
 
 
 
