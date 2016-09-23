@@ -17,7 +17,6 @@ http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 """
 import math
 import numpy
-import heapq
 import openalea.plantgl.all as pgl
 
 
@@ -33,7 +32,7 @@ def display(vertices, faces, color=None):
 
 
 def norm(point):
-    """ normalised coordinate of (0,point) vector
+    """ normalised coordinates of (0,point) vector
     """
     x, y, z = point
     radius = math.sqrt(x ** 2 + y ** 2 + z ** 2)
@@ -47,12 +46,24 @@ def roty(pt, theta):
            y, \
            -x * math.sin(theta) + z * math.cos(theta)
 
+
 def middle_point(p1, p2):
     """ coordinates of the middle point between p1 and p2
     """
     x1, y1, z1 = p1
     x2, y2, z2 = p2
     return (x1 + x2) / 2., (y1 + y2) / 2., (z1 + z2) / 2.,
+
+
+def centroid(points):
+    x, y, z = zip(*points)
+    return numpy.mean(x), numpy.mean(y), numpy.mean(z)
+
+
+def spherical(points):
+    """ zenital and azimutal coordinate of a list of points"""
+    x, y, z = zip(*points)
+    return numpy.arccos(z), numpy.arctan2(y, x)
 
 
 def icosahedron():
@@ -112,64 +123,44 @@ def icosahedron():
     return vertices, faces
 
 
-def icosphere(recursion=1):
-    """ Create the vertex and faces of the icosphere obtained after n recursions
-     of the icosahedron face spliting
+def split_triangles(vertices, faces):
+    # cache is a (index_p1, index_p2): middle_point_index dict refering
+    # to vertices
+    cache = {}
+    for i in range(len(faces)):
+        face = faces.pop(0)
+        v1, v2, v3 = face
+        p1 = vertices[v1]
+        p2 = vertices[v2]
+        p3 = vertices[v3]
+        ka = tuple(sorted((v1, v2)))
+        kb = tuple(sorted((v2, v3)))
+        kc = tuple(sorted((v1, v3)))
+        if ka in cache:
+            va = cache[ka]
+        else:
+            vertices.append(norm(middle_point(p1, p2)))
+            va = len(vertices) - 1
+            cache.update({ka: va})
+        if kb in cache:
+            vb = cache[kb]
+        else:
+            vertices.append(norm(middle_point(p2, p3)))
+            vb = len(vertices) - 1
+            cache.update({kb: vb})
+        if kc in cache:
+            vc = cache[kc]
+        else:
+            vertices.append(norm(middle_point(p1, p3)))
+            vc = len(vertices) - 1
+            cache.update({kc: vc})
 
-     The number of faces obtained after n recursion is 20*(n + 1)"""
-
-    vertices, faces = icosahedron()
-
-    for i in range(recursion):
-        # cache is a (index_p1, index_p2): middle_point_index dict refering
-        # to vertices
-        cache = {}
-        for j in range(len(faces)):
-            face = faces.pop(0)
-            v1, v2, v3 = face
-            p1 = vertices[v1]
-            p2 = vertices[v2]
-            p3 = vertices[v3]
-            ka = tuple(sorted((v1, v2)))
-            kb = tuple(sorted((v2, v3)))
-            kc = tuple(sorted((v1, v3)))
-            if ka in cache:
-                va = cache[ka]
-            else:
-                vertices.append(norm(middle_point(p1, p2)))
-                va = len(vertices) - 1
-                cache.update({ka: va})
-            if kb in cache:
-                vb = cache[kb]
-            else:
-                vertices.append(norm(middle_point(p2, p3)))
-                vb = len(vertices) - 1
-                cache.update({kb: vb})
-            if kc in cache:
-                vc = cache[kc]
-            else:
-                vertices.append(norm(middle_point(p1, p3)))
-                vc = len(vertices) - 1
-                cache.update({kc: vc})
-
-            faces.append((v1, va, vc))
-            faces.append((v2, vb, va))
-            faces.append((v3, vc, vb))
-            faces.append((va, vb, vc))
+        faces.append((v1, va, vc))
+        faces.append((v2, vb, va))
+        faces.append((v3, vc, vb))
+        faces.append((va, vb, vc))
 
     return vertices, faces
-
-
-def centroid(points):
-    x, y, z = zip(*points)
-    return numpy.mean(x), numpy.mean(y), numpy.mean(z)
-
-
-def spherical(points):
-    """ zenital and azimutal coordinate of a list of points"""
-    x, y, z = zip(*points)
-    return numpy.arccos(z), numpy.arctan2(y, x)
-
 
 
 def sorted_faces(center, face_indices, faces):
@@ -203,38 +194,49 @@ def dual(vertices, faces):
                 cache[iface] = len(dual_vertices)
                 new_face.append(len(dual_vertices))
                 points = [vertices[i] for i in faces[iface]]
-                dual_vertices.append(centroid(points))
+                dual_vertices.append(norm(centroid(points)))
         dual_faces.append(new_face)
 
     return dual_vertices, dual_faces
 
 
-def fused(vertices, faces):
-    """ generate a fused polyhedron associated to an icosphere"""
+def split_faces(vertices, faces):
+    """ Split the faces of a dual icosphere"""
 
-    fused_vertices = []
-    fused_faces = []
-    cache = []
-    theta, phi = spherical(vertices)
-    # start at to of icosphere
-    icenters = [numpy.argmin(numpy.abs(theta))]
-    while len(icenters) > 0:
-        icenter = icenters.pop()
-        cache.append(icenter)
-        new_face = []
-        # centers.append(vertices[icenter])
-        ifaces = [i for i, f in enumerate(faces) if icenter in f]
-        for iface in sorted_faces(icenter, ifaces, faces):
-            face = numpy.array(faces[iface])
-            ipts = [((numpy.where(face == icenter)[0] + i) % 3)[0] for i in range(3)]
-            new_face.append(len(fused_vertices))
-            fused_vertices.append(vertices[face[ipts[2]]])
-            edge = set([face[ipts[1]]] + [face[ipts[2]]])
-            not_edge = [(set(f) - edge).pop() for f in faces if len(edge.intersection(f)) > 1]
-            icenters.extend([v for v in not_edge if v not in cache])
-        fused_faces.append(new_face)
+    for i in range(len(faces)):
+        face = faces.pop(0)
+        center = norm(centroid([vertices[p] for p in face]))
+        icenter = len(vertices)
+        vertices.append(center)
+        for j in range(len(face) - 1):
+            faces.append((face[j], face[j + 1], icenter))
+        faces.append((face[-1], face[0], icenter))
 
-    return fused_vertices, fused_faces
+    return vertices, faces
+
+
+def icosphere(recursion=1, type=1):
+    """ Create the vertex and faces of the (type I) icosphere obtained after n recursions
+     of the icosahedron face spliting
+
+     The number of faces obtained after n recursion is 20*(n + 1)"""
+
+    if recursion < 1:
+        return icosahedron()
+
+    if type == 1:
+        vertices, faces = icosahedron()
+        for i in range(recursion):
+            vertices, faces = split_triangles(vertices, faces)
+    elif type == 2:
+        dodecahedron = dual(*icosahedron())
+        vertices, faces = split_faces(*dodecahedron)
+        for i in range(recursion - 1):
+            vertices, faces = split_triangles(vertices, faces)
+    else:
+        raise ValueError('unknown icosphere type: ' + str(type))
+    return vertices, faces
+
 
 
 
