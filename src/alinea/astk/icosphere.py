@@ -1,6 +1,6 @@
 # -*- python -*-
 #
-#       Copyright 2015 INRIA - CIRAD - INRA
+#       Copyright 2016 INRIA - CIRAD - INRA
 #
 #       Distributed under the Cecill-C License.
 #       See accompanying file LICENSE.txt or copy at
@@ -10,25 +10,52 @@
 #
 # ==============================================================================
 """
-generation of icosphere
+Generation of regular spherical polyhedrons: icospheres and their
+hexagonal/pentagonal duals.
 
-this is a python implementation of the C code found here:
+Starting point for developing this module was the C code found here:
 http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 """
+
 import math
 import numpy
-import openalea.plantgl.all as pgl
+import warnings
+
+display_enable = True
+try:
+    import openalea.plantgl.all as pgl
+except ImportError:
+    warnings.warn('PlantGL not installed: display is not enable!')
+    display_enable = False
 
 
-def display(vertices, faces, color=None):
-    """ Visualisation of a mesh with PlantGl"""
+def display(vertices, faces, color=None, view=True):
+    """3D display of a polyhedron with PlantGL
 
-    if color is None:
-        shape = pgl.Shape(pgl.FaceSet(pointList=vertices, indexList=faces))
+    Args:
+        vertices (list of tuples): list of 3D coordinates of polyhedron vertices
+        faces (list of tuple): list of vertex indices defining the faces
+        color: a (r,g,b) tuple defining color.
+        If None (default), default PlantGL material is used.
+        view (bool): should the shape be displayed ?
+
+    Returns:
+        a pgl shape
+    """
+    global display_enable
+    if display_enable:
+        if color is None:
+            shape = pgl.Shape(pgl.FaceSet(pointList=vertices, indexList=faces))
+        else:
+            m = pgl.Material(pgl.Color3(*color))
+            shape = pgl.Shape(pgl.FaceSet(pointList=vertices, indexList=faces),
+                              m)
+        if view:
+            pgl.Viewer.display(shape)
     else:
-        m = pgl.Material(pgl.Color3(*color))
-        shape = pgl.Shape(pgl.FaceSet(pointList=vertices, indexList=faces), m)
-    pgl.Viewer.display(shape)
+        warnings.warn('PlantGL not installed: display is not enable!')
+        shape = None
+    return shape
 
 
 def norm(point):
@@ -42,9 +69,8 @@ def norm(point):
 def roty(pt, theta):
     """ rotated coordinate of pt arround z-axis"""
     x, y, z = pt
-    return x * math.cos(theta) + z * math.sin(theta), \
-           y, \
-           -x * math.sin(theta) + z * math.cos(theta)
+    return x * math.cos(theta) + z * math.sin(theta), y, -x * math.sin(
+        theta) + z * math.cos(theta)
 
 
 def middle_point(p1, p2):
@@ -67,12 +93,16 @@ def spherical(points):
 
 
 def icosahedron():
-    """ Creates the vertices and faces of an icosahedron incribed in a 
-    unit_sphere"""
+    """ Creates the vertices and faces of an icosahedron inscribed in the
+    unit_sphere and with one vertex aligned on Z+ axis
+
+    Returns:
+        a list of vertices and a list of faces
+    """
 
     t = (1.0 + math.sqrt(5.0)) / 2.0
     # align one point with z
-    rot = math.atan2(t,1)
+    rot = math.atan2(t, 1)
     vertices = []
     vertices.append(norm(roty((-1, t, 0), rot)))
     vertices.append(norm(roty((1, t, 0), rot)))
@@ -124,6 +154,17 @@ def icosahedron():
 
 
 def split_triangles(vertices, faces):
+    """ Divide each face of a triangular mesh into 4 triangles.
+
+    Args:
+        vertices (list of tuples): list of 3D coordinates of polyhedron vertices
+        faces (list of tuple): list of vertex indices defining the faces
+    Returns:
+        a list of vertices and a list of faces
+
+    This is a python implementation of the C code found here:
+    http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
+"""
     # cache is a (index_p1, index_p2): middle_point_index dict refering
     # to vertices
     cache = {}
@@ -167,17 +208,25 @@ def sorted_faces(center, face_indices, faces):
     """ return face indices sorted to form a counter clockwise rotation
      around center"""
     indices = [i for i in face_indices]
-    sorted = [indices.pop(0)]
+    sorted_indices = [indices.pop(0)]
     while len(indices) > 0:
-        last = faces[sorted[-1]]
+        last = faces[sorted_indices[-1]]
         next_pt = last[((numpy.where(numpy.array(last) == center)[0] + 2) % 3)[0]]
         next_index = [i for i, f in enumerate(indices) if next_pt in faces[f]][0]
-        sorted.append(indices.pop(next_index))
-    return sorted
+        sorted_indices.append(indices.pop(next_index))
+    return sorted_indices
 
 
 def dual(vertices, faces):
-    """ generate the dual polyhedron associated to an icosphere"""
+    """Generate the dual polyhedron associated to an icosphere
+    triangular mesh.
+
+    Args:
+        vertices (list of tuples): list of 3D coordinates of polyhedron vertices
+        faces (list of tuple): list of vertex indices defining the faces
+    Returns:
+        a list of vertices and a list of faces
+    """
 
     # centers = []
     dual_vertices = []
@@ -201,7 +250,7 @@ def dual(vertices, faces):
 
 
 def split_faces(vertices, faces):
-    """ Split the faces of a dual icosphere"""
+    """ Split the faces of a dual icosphere into triangles"""
 
     for i in range(len(faces)):
         face = faces.pop(0)
@@ -215,20 +264,29 @@ def split_faces(vertices, faces):
     return vertices, faces
 
 
-def icosphere(recursion=1, type=1):
-    """ Create the vertex and faces of the (type I) icosphere obtained after n recursions
-     of the icosahedron face spliting
+def icosphere(recursion=1, icotype=1):
+    """Generate the icosphere obtained after n recursions of the icosahedron
+    triangular face-split.
 
-     The number of faces obtained after n recursion is 20*(n + 1)"""
+    Args:
+        recursion: the number of recursion to perform
+        icotype (int): type controls the relative orientation of pentagons on dual
+         polyhedron of the icosphere.
+            icotype 1 yield 'edge facing vertex' pentagons
+            icotype 2 yield 'vertex facing vertex' pentagons
+
+    Returns:
+        a list of vertices and a list of faces
+"""
 
     if recursion < 1:
         return icosahedron()
 
-    if type == 1:
+    if icotype == 1:
         vertices, faces = icosahedron()
         for i in range(recursion):
             vertices, faces = split_triangles(vertices, faces)
-    elif type == 2:
+    elif icotype == 2:
         dodecahedron = dual(*icosahedron())
         vertices, faces = split_faces(*dodecahedron)
         for i in range(recursion - 1):
