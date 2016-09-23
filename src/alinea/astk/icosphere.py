@@ -8,13 +8,16 @@
 #
 #       WebSite : https://github.com/openalea-incubator/astk
 #
+#       File author(s): Christian Fournier <Christian.Fournier@supagro.inra.fr>
+#
+#       Credits:
+#       Starting point for developing this module was the C code found here:
+#   http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
+#
 # ==============================================================================
 """
 Generation of regular spherical polyhedrons: icospheres and their
 hexagonal/pentagonal duals.
-
-Starting point for developing this module was the C code found here:
-http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 """
 
 import math
@@ -58,12 +61,20 @@ def display(vertices, faces, color=None, view=True):
     return shape
 
 
-def norm(point):
+def normed(point):
     """ normalised coordinates of (0,point) vector
     """
     x, y, z = point
     radius = math.sqrt(x ** 2 + y ** 2 + z ** 2)
     return x / radius, y / radius, z / radius
+
+
+def norm(point):
+    """ distance of [0,point] segment
+    """
+    x, y, z = point
+    return math.sqrt(x ** 2 + y ** 2 + z ** 2)
+
 
 
 def roty(pt, theta):
@@ -104,20 +115,20 @@ def icosahedron():
     # align one point with z
     rot = math.atan2(t, 1)
     vertices = []
-    vertices.append(norm(roty((-1, t, 0), rot)))
-    vertices.append(norm(roty((1, t, 0), rot)))
-    vertices.append(norm(roty((-1, -t, 0), rot)))
-    vertices.append(norm(roty((1, -t, 0), rot)))
+    vertices.append(normed(roty((-1, t, 0), rot)))
+    vertices.append(normed(roty((1, t, 0), rot)))
+    vertices.append(normed(roty((-1, -t, 0), rot)))
+    vertices.append(normed(roty((1, -t, 0), rot)))
 
-    vertices.append(norm(roty((0, -1, t), rot)))
-    vertices.append(norm(roty((0, 1, t), rot)))
-    vertices.append(norm(roty((0, -1, -t), rot)))
-    vertices.append(norm(roty((0, 1, -t), rot)))
+    vertices.append(normed(roty((0, -1, t), rot)))
+    vertices.append(normed(roty((0, 1, t), rot)))
+    vertices.append(normed(roty((0, -1, -t), rot)))
+    vertices.append(normed(roty((0, 1, -t), rot)))
 
-    vertices.append(norm(roty((t, 0, -1), rot)))
-    vertices.append(norm(roty((t, 0, 1), rot)))
-    vertices.append(norm(roty((-t, 0, -1), rot)))
-    vertices.append(norm(roty((-t, 0, 1), rot)))
+    vertices.append(normed(roty((t, 0, -1), rot)))
+    vertices.append(normed(roty((t, 0, 1), rot)))
+    vertices.append(normed(roty((-t, 0, -1), rot)))
+    vertices.append(normed(roty((-t, 0, 1), rot)))
 
     # create 20 triangles of the icosahedron
     faces = []
@@ -180,19 +191,19 @@ def split_triangles(vertices, faces):
         if ka in cache:
             va = cache[ka]
         else:
-            vertices.append(norm(middle_point(p1, p2)))
+            vertices.append(normed(middle_point(p1, p2)))
             va = len(vertices) - 1
             cache.update({ka: va})
         if kb in cache:
             vb = cache[kb]
         else:
-            vertices.append(norm(middle_point(p2, p3)))
+            vertices.append(normed(middle_point(p2, p3)))
             vb = len(vertices) - 1
             cache.update({kb: vb})
         if kc in cache:
             vc = cache[kc]
         else:
-            vertices.append(norm(middle_point(p1, p3)))
+            vertices.append(normed(middle_point(p1, p3)))
             vc = len(vertices) - 1
             cache.update({kc: vc})
 
@@ -243,7 +254,7 @@ def dual(vertices, faces):
                 cache[iface] = len(dual_vertices)
                 new_face.append(len(dual_vertices))
                 points = [vertices[i] for i in faces[iface]]
-                dual_vertices.append(norm(centroid(points)))
+                dual_vertices.append(normed(centroid(points)))
         dual_faces.append(new_face)
 
     return dual_vertices, dual_faces
@@ -254,7 +265,7 @@ def split_faces(vertices, faces):
 
     for i in range(len(faces)):
         face = faces.pop(0)
-        center = norm(centroid([vertices[p] for p in face]))
+        center = normed(centroid([vertices[p] for p in face]))
         icenter = len(vertices)
         vertices.append(center)
         for j in range(len(face) - 1):
@@ -265,19 +276,19 @@ def split_faces(vertices, faces):
 
 
 def icosphere(recursion=1, icotype=1):
-    """Generate the icosphere obtained after n recursions of the icosahedron
-    triangular face-split.
+    """Generate the icosphere obtained after n recursions of triangular
+    face-split of a base icosphere.
 
     Args:
         recursion: the number of recursion to perform
-        icotype (int): type controls the relative orientation of pentagons on dual
-         polyhedron of the icosphere.
-            icotype 1 yield 'edge facing vertex' pentagons
-            icotype 2 yield 'vertex facing vertex' pentagons
+        icotype (int): controls the base to recurse on.
+            icotype 1 iters on an icosahedron
+            icotype 2 iters on a triangular split of a dodecahedron
+            icotype 3 iters on a triangular split of a truncated icosahedron
 
     Returns:
         a list of vertices and a list of faces
-"""
+    """
 
     if recursion < 1:
         return icosahedron()
@@ -291,28 +302,82 @@ def icosphere(recursion=1, icotype=1):
         vertices, faces = split_faces(*dodecahedron)
         for i in range(recursion - 1):
             vertices, faces = split_triangles(vertices, faces)
+    elif icotype == 3:
+        truncated_icosahedron = dual(*icosphere(1, 2))
+        vertices, faces = split_faces(*truncated_icosahedron)
+        for i in range(recursion - 1):
+            vertices, faces = split_triangles(vertices, faces)
     else:
-        raise ValueError('unknown icosphere type: ' + str(type))
+        raise ValueError('unknown icotype: ' + str(icotype))
     return vertices, faces
 
 
+def turtle_hemisphere(recursion=1, icotype=2):
+    """Generate faces of a dual icosphere polyhedron mapping the Z+ hemisphere
+
+    Args:
+        recursion: the number of recursion of the dual icosphere
+        icotype (int): the dual icosphere type
+
+    Returns:
+        a list of vertices and a list of faces"""
+
+    vertices, faces = dual(*icosphere(recursion, icotype))
+    centers = [centroid([vertices[p] for p in face]) for face in faces]
+    median_height = numpy.median([c[2] for c in centers])
+    edge = [vertices[v] for v in faces[0]]
+    t = norm(numpy.array(edge[1]) - numpy.array(edge[0]))
+    median_height -= (t / 4.)
+    new_faces = [f for c, f in zip(centers, faces) if c[2] > median_height]
+    filtered = sum(new_faces, [])
+    mapping = {}
+    new_vertices = []
+    for v, pt in enumerate(vertices):
+        if v in filtered :
+            mapping[v] = len(new_vertices)
+            new_vertices.append(pt)
+    new_faces = [[mapping.get(v) for v in face] for face in new_faces]
+
+    return new_vertices, new_faces
+
+# rem : the turtle serie
+# recursion,  type, faces
+# 0 1 6
+# 1 2 16
+# 1 1 26
+# 1 3 46
+# 2 2 66
+# 2 1 91
+# 2 3 196
+# 3 2 251
+# 3 1 341
+# 3 3 751
 
 
 def hemi_icosphere(recursion=1):
     """ generate a Z+ hemi-icosphere"""
     vertices, faces = icosphere(recursion)
+    centers = [centroid([vertices[p] for p in face]) for face in faces]
+    median_height = numpy.median([c[2] for c in centers])
+    new_faces = [f for c, f in zip(centers, faces) if c > median_height]
+    filtered = sum(new_faces, [])
     mapping = {}
-    filtered = []
+    new_vertices = []
     for i, v in enumerate(vertices):
-        if v[2] >= -1e-6:
-            mapping[i] = len(filtered)
-            filtered.append(v)
-    faces = [tuple([mapping.get(iv) for iv in f]) for f in faces if all([index in mapping for index in f])]
-    return filtered, faces
+        if v in filtered :
+            mapping[i] = len(new_vertices)
+            new_vertices.append(v)
+    new_faces = [[mapping.get(v) for v in face] for face in new_faces]
+
+    return new_vertices, new_faces
 
 
 def turtle_direction(recursion=1):
     """ generate the turtle directions at a given level of recursion"""
+
+
+    centers = [centroid([vertices[p] for p in face]) for face in faces]
+    theta, phi = spherical(centers)
 
     vertices, faces = icosphere(recursion)
     theta = [math.pi / 2 - math.acos(v[2]) for v in vertices]
