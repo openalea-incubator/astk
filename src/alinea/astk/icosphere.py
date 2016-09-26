@@ -11,8 +11,8 @@
 #       File author(s): Christian Fournier <Christian.Fournier@supagro.inra.fr>
 #
 #       Credits:
-#       Starting point for developing this module was the C code found here:
-#   http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
+#       Starting point for developing this module the C code found here:
+#   http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html.
 #
 # ==============================================================================
 """
@@ -69,19 +69,45 @@ def normed(point):
     return x / radius, y / radius, z / radius
 
 
-def norm(point):
-    """ distance of [0,point] segment
+def norm(vector):
+    """ norm of a vector
     """
-    x, y, z = point
+    x, y, z = vector
     return math.sqrt(x ** 2 + y ** 2 + z ** 2)
 
 
+def spherical(points):
+    """ zenital and azimutal coordinate of a list of points"""
+    x, y, z = zip(*points)
+    return numpy.arccos(z), numpy.arctan2(y, x)
 
-def roty(pt, theta):
-    """ rotated coordinate of pt arround z-axis"""
-    x, y, z = pt
-    return x * math.cos(theta) + z * math.sin(theta), y, -x * math.sin(
-        theta) + z * math.cos(theta)
+
+def rotation_matrix(axis, theta):
+    """
+    Return the rotation matrix associated with counterclockwise rotation about
+    the given axis by theta radians.
+    """
+    axis = numpy.asarray(axis)
+    axis = axis / norm(axis)
+    a = math.cos(theta / 2.0)
+    b, c, d = -axis * math.sin(theta / 2.0)
+    aa, bb, cc, dd = a * a, b * b, c * c, d * d
+    bc, ad, ac, ab, bd, cd = b * c, a * d, a * c, a * b, b * d, c * d
+    return numpy.array([[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
+                     [2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
+                     [2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]])
+
+
+def rotate(points, rotation_matrix):
+    return [numpy.dot(rotation_matrix, p) for p in points]
+
+
+def inverse_rotation(points, theta, phi):
+    """rotate points -phi around z, then -theta around y"""
+
+    rotz = rotation_matrix([0, 0, 1], -phi)
+    roty = rotation_matrix([0, 1, 0], - theta)
+    return rotate(rotate(points, rotz), roty)
 
 
 def middle_point(p1, p2):
@@ -97,11 +123,6 @@ def centroid(points):
     return numpy.mean(x), numpy.mean(y), numpy.mean(z)
 
 
-def spherical(points):
-    """ zenital and azimutal coordinate of a list of points"""
-    x, y, z = zip(*points)
-    return numpy.arccos(z), numpy.arctan2(y, x)
-
 
 def icosahedron():
     """ Creates the vertices and faces of an icosahedron inscribed in the
@@ -112,23 +133,26 @@ def icosahedron():
     """
 
     t = (1.0 + math.sqrt(5.0)) / 2.0
-    # align one point with z
-    rot = math.atan2(t, 1)
+
     vertices = []
-    vertices.append(normed(roty((-1, t, 0), rot)))
-    vertices.append(normed(roty((1, t, 0), rot)))
-    vertices.append(normed(roty((-1, -t, 0), rot)))
-    vertices.append(normed(roty((1, -t, 0), rot)))
+    vertices.append(normed((-1, t, 0)))
+    vertices.append(normed((1, t, 0)))
+    vertices.append(normed((-1, -t, 0)))
+    vertices.append(normed((1, -t, 0)))
 
-    vertices.append(normed(roty((0, -1, t), rot)))
-    vertices.append(normed(roty((0, 1, t), rot)))
-    vertices.append(normed(roty((0, -1, -t), rot)))
-    vertices.append(normed(roty((0, 1, -t), rot)))
+    vertices.append(normed((0, -1, t)))
+    vertices.append(normed((0, 1, t)))
+    vertices.append(normed((0, -1, -t)))
+    vertices.append(normed((0, 1, -t)))
 
-    vertices.append(normed(roty((t, 0, -1), rot)))
-    vertices.append(normed(roty((t, 0, 1), rot)))
-    vertices.append(normed(roty((-t, 0, -1), rot)))
-    vertices.append(normed(roty((-t, 0, 1), rot)))
+    vertices.append(normed((t, 0, -1)))
+    vertices.append(normed((t, 0, 1)))
+    vertices.append(normed((-t, 0, -1)))
+    vertices.append(normed((-t, 0, 1)))
+
+    # align to get second point on Z+
+    theta, phi = zip(*spherical(vertices))[1]
+    vertices = inverse_rotation(vertices, theta, phi)
 
     # create 20 triangles of the icosahedron
     faces = []
@@ -165,10 +189,10 @@ def icosahedron():
 
 
 def split_triangles(vertices, faces):
-    """ Divide each face of a triangular mesh into 4 triangles.
+    """ Iterate an icosphere by sub-dividing each triangle into 4.
 
     Args:
-        vertices (list of tuples): list of 3D coordinates of polyhedron vertices
+        vertices (list of tuples): list of 3D coordinates of icosphere vertices
         faces (list of tuple): list of vertex indices defining the faces
     Returns:
         a list of vertices and a list of faces
@@ -217,7 +241,7 @@ def split_triangles(vertices, faces):
 
 def sorted_faces(center, face_indices, faces):
     """ return face indices sorted to form a counter clockwise rotation
-     around center"""
+     around its centroid"""
     indices = [i for i in face_indices]
     sorted_indices = [indices.pop(0)]
     while len(indices) > 0:
@@ -229,11 +253,10 @@ def sorted_faces(center, face_indices, faces):
 
 
 def dual(vertices, faces):
-    """Generate the dual polyhedron associated to an icosphere
-    triangular mesh.
+    """Generate the dual polyhedron associated to an icosphere.
 
     Args:
-        vertices (list of tuples): list of 3D coordinates of polyhedron vertices
+        vertices (list of tuples): list of 3D coordinates of icosphere vertices
         faces (list of tuple): list of vertex indices defining the faces
     Returns:
         a list of vertices and a list of faces
@@ -246,7 +269,7 @@ def dual(vertices, faces):
     for icenter, center in enumerate(vertices):
         new_face = []
         # centers.append(center)
-        ifaces = [i for i,f in enumerate(faces) if icenter in f]
+        ifaces = [i for i, f in enumerate(faces) if icenter in f]
         for iface in sorted_faces(icenter, ifaces, faces):
             if iface in cache:
                 new_face.append(cache[iface])
@@ -260,8 +283,15 @@ def dual(vertices, faces):
     return dual_vertices, dual_faces
 
 
-def split_faces(vertices, faces):
-    """ Split the faces of a dual icosphere into triangles"""
+def star_split(vertices, faces):
+    """ star-split the faces of a polyhedron
+
+    Args:
+        vertices (list of tuples): list of 3D coordinates of icosphere vertices
+        faces (list of tuple): list of vertex indices defining the faces
+    Returns:
+        a list of vertices and a list of faces
+    """
 
     for i in range(len(faces)):
         face = faces.pop(0)
@@ -275,54 +305,74 @@ def split_faces(vertices, faces):
     return vertices, faces
 
 
-def icosphere(recursion=1, icotype=1):
-    """Generate the icosphere obtained after n recursions of triangular
-    face-split of a base icosphere.
+def icosphere(iter_triangle=0, iter_star=0):
+    """Generate an icosphere from a icosahedron by iterating n times the
+    triangle-split of its faces and m time the star-split of the faces of
+    its dual.
 
     Args:
-        recursion: the number of recursion to perform
-        icotype (int): controls the base to recurse on.
-            icotype 1 iters on an icosahedron
-            icotype 2 iters on a triangular split of a dodecahedron
-            icotype 3 iters on a triangular split of a truncated icosahedron
+        iter_triangle (int): the number of iteration of the triangle split
+        iter_star (int): the number of iteration of the star-split
 
     Returns:
         a list of vertices and a list of faces
     """
 
-    if recursion < 1:
-        return icosahedron()
+    vertices, faces = icosahedron()
+    for i in range(iter_star):
+        vertices, faces = star_split(*dual(vertices, faces))
+    for i in range(iter_triangle):
+        vertices, faces = split_triangles(vertices, faces)
 
-    if icotype == 1:
-        vertices, faces = icosahedron()
-        for i in range(recursion):
-            vertices, faces = split_triangles(vertices, faces)
-    elif icotype == 2:
-        dodecahedron = dual(*icosahedron())
-        vertices, faces = split_faces(*dodecahedron)
-        for i in range(recursion - 1):
-            vertices, faces = split_triangles(vertices, faces)
-    elif icotype == 3:
-        truncated_icosahedron = dual(*icosphere(1, 2))
-        vertices, faces = split_faces(*truncated_icosahedron)
-        for i in range(recursion - 1):
-            vertices, faces = split_triangles(vertices, faces)
-    else:
-        raise ValueError('unknown icotype: ' + str(icotype))
     return vertices, faces
 
 
-def turtle_hemisphere(recursion=1, icotype=2):
+def refine(level=0):
+    """Compute the number of triangle- and star- iterations needed to achieve an
+     icosphere with a given level of refinement among the polyhedron family
+     these two algorithm can produce.
+
+     Args:
+         level (int): the level of refinement
+     """
+    # Let imagine a matrix of icopsphere with row index the number of star split
+    #  and column index the number the number of triangle splits
+    # the refinement level (number of faces) of the i,j icosphere is increasing
+    # with the index of a 'triangular' traversal of this matrix
+    # (0,0 = 0, 1,0 = 1, 0,1 = 2, 2,0 = 3, 1,1 = 4, 0,2 = 5, ...
+
+    # k is the smallest integer that ensure refinement index to be in a (K + 1,
+    #  K + 1) icosphere matrix
+    # tips : at the (0,K) position, there has been 1 + 2 + 3 +... + K
+    # refinements along the triangular traversal, ie K (K + 1) / 2
+    # refinements
+    k = math.floor((math.sqrt(8 * level + 1) - 1) / 2.)
+    n = k + 1
+    r_index = n * (n + 1) / 2. - (level + 1)
+
+    iter_triangle = int(k - r_index)
+    iter_star = int(r_index)
+
+    return iter_triangle, iter_star
+
+
+def turtle_dome(refine_level=3):
     """Generate faces of a dual icosphere polyhedron mapping the Z+ hemisphere
 
     Args:
-        recursion: the number of recursion of the dual icosphere
-        icotype (int): the dual icosphere type
+        refine_level (int): the level of refinement of the dual icosphere. By
+        default 46 ^polygons are returned (refine_level=3).
+
+        For information, here are the number of faces obtained for the first ten
+        refinement level: 0: 6, 1: 16, 2: 26, 3: 46, 4: 66, 5: 91, 6: 136,
+        7: 196, 8: 251, 9: 341, 10: 406
 
     Returns:
-        a list of vertices and a list of faces"""
+        a list of vertices and a list of faces
+    """
 
-    vertices, faces = dual(*icosphere(recursion, icotype))
+    vertices, faces = dual(*icosphere(*refine(refine_level)))
+    # filter faces with centroids below horizontal plane
     centers = [centroid([vertices[p] for p in face]) for face in faces]
     median_height = numpy.median([c[2] for c in centers])
     edge = [vertices[v] for v in faces[0]]
@@ -333,54 +383,9 @@ def turtle_hemisphere(recursion=1, icotype=2):
     mapping = {}
     new_vertices = []
     for v, pt in enumerate(vertices):
-        if v in filtered :
+        if v in filtered:
             mapping[v] = len(new_vertices)
             new_vertices.append(pt)
     new_faces = [[mapping.get(v) for v in face] for face in new_faces]
 
     return new_vertices, new_faces
-
-# rem : the turtle serie
-# recursion,  type, faces
-# 0 1 6
-# 1 2 16
-# 1 1 26
-# 1 3 46
-# 2 2 66
-# 2 1 91
-# 2 3 196
-# 3 2 251
-# 3 1 341
-# 3 3 751
-
-
-def hemi_icosphere(recursion=1):
-    """ generate a Z+ hemi-icosphere"""
-    vertices, faces = icosphere(recursion)
-    centers = [centroid([vertices[p] for p in face]) for face in faces]
-    median_height = numpy.median([c[2] for c in centers])
-    new_faces = [f for c, f in zip(centers, faces) if c > median_height]
-    filtered = sum(new_faces, [])
-    mapping = {}
-    new_vertices = []
-    for i, v in enumerate(vertices):
-        if v in filtered :
-            mapping[i] = len(new_vertices)
-            new_vertices.append(v)
-    new_faces = [[mapping.get(v) for v in face] for face in new_faces]
-
-    return new_vertices, new_faces
-
-
-def turtle_direction(recursion=1):
-    """ generate the turtle directions at a given level of recursion"""
-
-
-    centers = [centroid([vertices[p] for p in face]) for face in faces]
-    theta, phi = spherical(centers)
-
-    vertices, faces = icosphere(recursion)
-    theta = [math.pi / 2 - math.acos(v[2]) for v in vertices]
-    phi = [math.atan2(v[1], v[0]) for v in vertices]
-    return [(t, p) for t, p in zip(theta, phi) if t > 0]
-
