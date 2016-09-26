@@ -188,14 +188,17 @@ def icosahedron():
     return vertices, faces
 
 
-def split_triangles(vertices, faces):
+def split_triangles(vertices, faces, tags=None):
     """ Iterate an icosphere by sub-dividing each triangle into 4.
 
     Args:
         vertices (list of tuples): list of 3D coordinates of icosphere vertices
         faces (list of tuple): list of vertex indices defining the faces
+        tags (list of int): list of integer identifying a face. if None (default)
+        no tags are returned
     Returns:
-        a list of vertices and a list of faces
+        a list of vertices and a list of faces and, if tags is not None, a list
+        of tags referencing the tag of the parent face
 
     This is a python implementation of the C code found here:
     http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
@@ -236,7 +239,14 @@ def split_triangles(vertices, faces):
         faces.append((v3, vc, vb))
         faces.append((va, vb, vc))
 
-    return vertices, faces
+        if tags is not None:
+            tag = tags.pop(0)
+            tags.extend([tag] * 4)
+
+    if tags is None:
+        return vertices, faces
+    else:
+        return vertices, faces, tags
 
 
 def sorted_faces(center, face_indices, faces):
@@ -283,14 +293,17 @@ def dual(vertices, faces):
     return dual_vertices, dual_faces
 
 
-def star_split(vertices, faces):
+def star_split(vertices, faces, tags=None):
     """ star-split the faces of a polyhedron
 
     Args:
-        vertices (list of tuples): list of 3D coordinates of icosphere vertices
+        vertices (list of tuples): list of 3D coordinates of polyhedron vertices
         faces (list of tuple): list of vertex indices defining the faces
+        tags (list of int): list of integer identifying a face. if None (default)
+        no tags are returned
     Returns:
-        a list of vertices and a list of faces
+        a list of vertices and a list of faces and, if tags is not None, a list
+        of tags referencing the tag of the parent face
     """
 
     for i in range(len(faces)):
@@ -301,8 +314,13 @@ def star_split(vertices, faces):
         for j in range(len(face) - 1):
             faces.append((face[j], face[j + 1], icenter))
         faces.append((face[-1], face[0], icenter))
-
-    return vertices, faces
+        if tags is not None:
+            tag = tags.pop(0)
+            tags.extend([tag] * len(face))
+    if tags is None:
+        return vertices, faces
+    else:
+        return vertices, faces, tags
 
 
 def icosphere(iter_triangle=0, iter_star=0):
@@ -389,3 +407,39 @@ def turtle_dome(refine_level=3):
     new_faces = [[mapping.get(v) for v in face] for face in new_faces]
 
     return new_vertices, new_faces
+
+
+def sample_faces(vertices, faces, iter=2, spheric=False):
+    """Generate a set of points that regularly sample the faces of a polyhedron
+    the number of sampling points is 6 * 4**iter or 5 * 4**iter
+
+    Args:
+        vertices (list of tuples): list of 3D coordinates of polyhedron vertices
+        faces (list of tuple): list of vertex indices defining the faces
+        iter: the number of triangular interation to apply on the satr-split
+        of the polyhedron. If None, face centers are returned
+        speric (bool): if True, zenital and azimuth are returnd
+        instead of points
+
+    Returns:
+        a {face_index: [points]} dict
+    """
+
+    if iter is None:
+        points = {i: [centroid([vertices[p] for p in face])] for i, face in
+                enumerate(faces)}
+    else:
+        tags = range(len(faces))
+        vertices, faces, tags = star_split(vertices, faces, tags)
+        for i in range(iter):
+            vertices, faces, tags = split_triangles(vertices, faces, tags)
+
+        points = {tag: [] for tag in set(tags)}
+        for i, face in enumerate(faces):
+            points[tags[i]].append(centroid([vertices[p] for p in face]))
+
+    if spheric:
+        points = {k:spherical(v) for k, v in points.iteritems()}
+
+    return points
+
