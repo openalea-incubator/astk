@@ -13,6 +13,8 @@
 #       Credits:
 #       Starting point for developing this module the C code found here:
 #   http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html.
+#       Renaud Fournier helps a lot in coding the ordering the different
+#       refinements of the icospheres
 #
 # ==============================================================================
 """
