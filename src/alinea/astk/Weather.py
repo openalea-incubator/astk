@@ -78,18 +78,11 @@ def linear_degree_days(data, start_date=None, base_temp=0., max_temp=35.):
         start_date = data.index[0]
     df[df < base_temp] = 0.
     df[df > max_temp] = 0.
-    dd = numpy.zeros(len(df))
+    dd = numpy.cumsum((df - base_temp) / 24.)
     if isinstance(start_date, str):
-        start_date = datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S')
-    ind_start = len(df.ix[:start_date + timedelta(0, 60)])
-    seq = pandas.date_range(start=df.index[0],
-                            end=start_date - timedelta(0, 60), freq='H')
-    seq = seq.order(ascending=False)
-    dd[ind_start:] = numpy.cumsum(
-        (df.ix[start_date + timedelta(0, 60):].values - base_temp) / 24.)
-    dd[:len(seq)] = -numpy.cumsum((df.ix[seq].values[::-1] - base_temp) / 24.)[
-                     ::-1]
-    return dd
+        start_date = pandas.to_datetime(start_date, utc=True)
+    return dd - dd[df.index.searchsorted(start_date)]
+
 
 
 def diffuse_fraction(data, localisation):
