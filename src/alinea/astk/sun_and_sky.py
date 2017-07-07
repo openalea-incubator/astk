@@ -6,184 +6,10 @@ C. Fournier, 2015
 import numpy
 import datetime
 import pandas
-
+from alinea.astk.meteorology.sun_position import sun_position
 
 # Sun models and equations
 
-def ecliptic_longitude(dayofyear):
-    """ Approximate the ecliptic longitude using formula of Grebet 1993
-      (Crop structure and light microclimate, INRA editions)
-
-    Args:
-        dayofyear: (int) the day of year
-
-    Returns:
-        (float) the ecliptic longitude (radians) of the day
-    """
-    """
-    """
-    omega = 0.017202 * (dayofyear - 3.244)
-    return omega + 0.03344 * numpy.sin(omega) * (
-        1 + 0.021 * numpy.cos(omega)) - 1.3526
-
-
-def declination(dayofyear, method="default"):
-    """ sun declination angle
-
-    Args:
-        dayofyear: (int) the day of year
-        method: (str) the method to be used (either 'spencer' or 'default')
-
-    Returns:
-        (float) sun declination (radians)
-
-    Details:
-        - 'spencer' method is taken from J. W. Spencer, Fourier series
-            representation of the sun, Search, vol. 2, p. 172, 1971
-        - 'default' method is for 'true' declination (provided that the
-        obliquity of the ecliptic and the ecliptic longitude are exact)
-         Michalsky, J. J. "The Astronomical Almanac's Algorithm for Approximate
-         Solar Position (1950-2050)". Solar Energy. Vol. 40, No. 3, 1988;
-         pp. 227-235, USA
-
-    """
-
-    if method == "spencer":  # usefull for checking time equation
-        x = 2 * numpy.pi * (dayofyear - 1) / 365.
-        dec = 0.006918 \
-              - 0.399912 * numpy.cos(x) + 0.070257 * numpy.sin(x) \
-              - 0.006758 * numpy.cos(2 * x) + 0.000907 * numpy.sin(2 * x) \
-              - 0.002697 * numpy.cos(3 * x) + 0.001480 * numpy.sin(3 * x)
-    elif method == 'SunAlign':
-        obliquity = -23.44 # constant approximation
-        cst = 360 / 365.24
-        sidec = numpy.sin(numpy.radians(obliquity)) * numpy.cos(numpy.radians( cst*(dayofyear+10)) + 2*0.0167*numpy.sin(cst*(dayofyear-2))  )
-        dec = numpy.arcsin(sidec)
-    else:
-        obliquity = 23.44  # constant approximation
-        sidec = numpy.sin(numpy.radians(obliquity)) * numpy.sin(
-            ecliptic_longitude(dayofyear))
-        dec = numpy.arcsin(sidec)
-    return dec
-
-
-def eot(dayofyear):
-    """equation of time, ie the discrepancy between true solar time and
-    local solar time
-    Approximation formula by Grebet (1993),
-    in Crop structure and light microclimate
-    
-    Seems buggy at least for south hemisphere
-
-    Args:
-        dayofyear: (int) the day of year
-
-    Returns:
-        (float) the eot value
-    """
-    """
-    """
-    omega = 0.017202 * (dayofyear - 3.244)
-    eclong = ecliptic_longitude(dayofyear)
-    tanphi = 0.91747 * numpy.sin(eclong) / numpy.cos(eclong)
-    phi = numpy.arctan(tanphi) - omega + 1.3526
-    phi = numpy.where((phi + 1) <= 0,
-                      numpy.mod(phi + 1 + 1000 * numpy.pi, numpy.pi) - 1, phi)
-    return phi * 229.2 / 60
-
-
-def solar_time(hUTC, dayofyear, longitude):
-    """ Local solar time(hour)
-
-    Args:
-        hUTC: (float) universal time (hour)
-        dayofyear: (int) the day of year
-        longitude: (float) a terrestrial longitude (degrees)
-
-    Returns:
-        (float) the solar time
-    """
-
-    return numpy.mod(hUTC + longitude / 15. - eot(dayofyear), 24)
-
-
-def hour_angle(hUTC, dayofyear, longitude):
-    """ Local solar hour angle (radians)   
-    """
-    return 2 * numpy.pi / 24. * (solar_time(hUTC, dayofyear, longitude) - 12)
-
-
-def day_length(latitude, dayofyear):
-    """ daylength (hours)"""
-    lat = numpy.radians(latitude)
-    decli = declination(dayofyear)
-    d = numpy.arccos(-numpy.tan(decli) * numpy.tan(lat))
-    d = numpy.where(d < 0, d + numpy.pi, d)
-    return 2 * d / numpy.pi * 12
-
-
-def sinh(hUTC, dayofyear, longitude, latitude):
-    """ Sine of sun elevation angle (= cosine of the zenith angle)
-    """
-    lat = numpy.radians(latitude)
-    decli = declination(dayofyear)
-    omega = hour_angle(hUTC, dayofyear, longitude)
-
-    return numpy.sin(latitude) * numpy.sin(decli) + numpy.cos(
-        latitude) * numpy.cos(decli) * numpy.cos(omega)
-
-
-def sun_elevation(hUTC, dayofyear, longitude, latitude):
-    """ sun elevation angle (degrees)
-    """
-    sinel = sinh(hUTC, dayofyear, longitude, latitude)
-    return numpy.degrees(numpy.arcsin(sinel))
-        
-        
-
-
-
-def sun_azimuth(hUTC, dayofyear, longitude, latitude, origin='North'):
-    """ sun azimuth angle (degrees)
-    
-        sun azimuth is positive clockwise, starting at origin (North or South)
-    """
-    lat = numpy.radians(latitude)
-    decli = declination(dayofyear)
-    omega = hour_angle(hUTC, dayofyear, longitude)
-
-    D = numpy.sin(lat) * numpy.cos(omega) - numpy.cos(lat) * numpy.sin(
-        decli) / numpy.cos(decli)
-    # azimuth counted from south, same sign as hour angle
-    az = numpy.where(omega < 0, -1, 1) * numpy.where(D == 0, numpy.pi / 2,
-                                                     numpy.abs(numpy.arctan(
-                                                         numpy.sin(omega) / D)))
-
-    if origin == 'North':
-        az = az + numpy.pi
-
-    return numpy.degrees(az)
-
-def ephem_sun_position(hUTC, dayofyear, year, longitude, latitude):
-    import ephem
-    observer = ephem.Observer()
-    observer.date = datetime.datetime.strptime('%d %d %d' % (year, dayofyear, hUTC), '%Y %j %H')
-    observer.lat = numpy.radians(latitude)
-    observer.lon = numpy.radians(longitude)
-    sun = ephem.Sun(observer)
-    sun.compute(observer)
-    return numpy.degrees(sun.alt), numpy.degrees(sun.az) 
-    
-def sun_position(hUTC, dayofyear, year, longitude, latitude):
-    """ compute sun position (sun elevation(degree) and sun azimuth( degree, Noth clockwise convention using ephem
-    """
-    try:
-        import ephem
-    except ImportError:
-        return(sun_elevation(hUTC, dayofyear, longitude, latitude), sun_azimuth(hUTC, dayofyear, longitude, latitude, origin='North'))
-    fun = numpy.frompyfunc(ephem_sun_position, 5, 2)
-    alt, az = fun(hUTC, dayofyear, year, longitude, latitude)
-    return alt.astype(float), az.astype(float)
     
 def sun_extraterrestrial_radiation(dayofyear, method='Spencer'):
     """ Extraterrestrial radiation (W.m2) at the top of the earth atmosphere
@@ -393,12 +219,18 @@ def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
 
 
 def sun_path(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
-             azimuth_origin='North', day_only=True):
+             day_only=True):
     """ Return position of the sun corresponding to a sequence of date
     """
     hUTC = range(24)
-    elevation, azimuth = sun_position(hUTC, dayofyear, year, longitude,
-                                      latitude)
+    d = map(
+        lambda x: datetime.datetime.strptime('%d %d %d' % (x[0], x[1], x[2]),
+                                             '%Y %j %H'),
+        zip([year] * 24, [dayofyear] * 24, hUTC))
+    dates = pandas.to_datetime(d, utc=True)
+    sun = sun_position(dates, latitude=latitude, longitude=longitude,
+                       filter_night=False)
+    elevation, azimuth = sun['elevation'].values, sun['azimuth'].values
 
     toa_irradiance = sun_irradiance(dayofyear, elevation)
     # ground_irradiance = sun_clear_sky_direct_normal_irradiance(
