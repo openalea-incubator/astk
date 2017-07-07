@@ -7,10 +7,11 @@ import numpy
 import datetime
 import pandas
 from alinea.astk.meteorology.sun_position import sun_position
+from alinea.astk.meteorology.sky_irradiance import clear_sky_irradiances
 
 # Sun models and equations
 
-    
+
 def sun_extraterrestrial_radiation(dayofyear, method='Spencer'):
     """ Extraterrestrial radiation (W.m2) at the top of the earth atmosphere
     """
@@ -31,35 +32,24 @@ def sun_extraterrestrial_radiation(dayofyear, method='Spencer'):
     return Io
 
 
-def sun_irradiance(dayofyear, sun_elevation):
-    """ sun irradiance (W.m2) at the top of the atmosphere through a plane perpendicular
-    
-        to sun direction at a given time and location
+def diffuse_fraction(Ghi, dayofyear, elevation,
+                     model='Spitters'):
+    """ Estimate the diffuse fraction of the global horizontal irradiance (GHI)
+        measured at ground level
+
+        Estimated after Spitters (1986)
     """
     Io = sun_extraterrestrial_radiation(dayofyear)
-    return Io * numpy.sin(numpy.radians(sun_elevation))
-
-
-def sun_clear_sky_direct_normal_irradiance(sun_elevation, dayofyear,
-                                           irradiance='horizontal'):
-    """ Direct normal irradiance (W.m2) of the sun
-        reaching the soil on a clear day
-        
-        Direct normal irradiance means through a plane
-        perpendicular to sun direction
-        Atmospheric attenuation is computed using the simple
-        geometric approximation of Meinel (1976)
-        
-        A. B. Meinel and M. P. Meinel, Applied solar energy.
-        Reading, MA: Addison-Wesley Publishing Co., 1976
-    """
-    Io = sun_extraterrestrial_radiation(dayofyear)
-    sinel = numpy.sin(sun_elevation)
-    AM = numpy.where(sinel == 0, 1. / numpy.sin(0.01), 1. / sinel)
-    if irradiance == 'normal':
-        return Io * sinel * numpy.power(0.7, numpy.power(AM, 0.678))
-    else:
-        return Io * numpy.power(0.7, numpy.power(AM, 0.678))
+    costheta = numpy.sin(elevation)
+    So = Io * costheta
+    RsRso = Ghi / So
+    R = 0.847 - 1.61 * costheta + 1.04 * costheta * costheta
+    K = (1.47 - R) / 1.66
+    RdRs = numpy.where(RsRso <= 0.22, 1,
+                       numpy.where(RsRso <= 0.35, 1 - 6.4 * (RsRso - 0.22) ** 2,
+                                   numpy.where(RsRso <= K, 1.47 - 1.66 * RsRso,
+                                               R)))
+    return RdRs
 
 
 def horizontal_irradiance(normal_irradiance, elevation):
@@ -152,9 +142,24 @@ def cie_relative_luminance(sky_elevation, sky_azimuth=None, sun_elevation=None,
         raise ValueError, 'Unknown sky type'
 
 
+def sky_discretisation(type='turtle46', nb_az=None, nb_el=None):
+    elevations46 = [9.23] * 10 + [10.81] * 5 + [26.57] * 5 + [31.08] * 10 + [
+                    47.41] * 5 + [52.62] * 5 + [69.16] * 5 + [90]
+    azimuths46 = [12.23, 59.77, 84.23, 131.77, 156.23, 203.77, 228.23, 275.77,
+                  300.23, 347.77, 36, 108, 180, 252, 324, 0, 72, 144, 216, 288,
+                  23.27, 48.73, 95.27, 120.73, 167.27, 192.73, 239.27, 264.73,
+                  311.27, 336.73, 0, 72, 144, 216, 288, 36, 108, 180, 252, 324,
+                  0, 72, 144, 216, 288, 180]
+    steradians46 = [0.1355] * 10 + [0.1476] * 5 + [0.1207] * 5 + [
+                   0.1375] * 10 + [0.1364] * 5 + [0.1442] * 5 + [0.1378] * 5 + [
+                       0.1196]
+
+    return elevations46, azimuths46, steradians46
+
+
 def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
                              sky_type='soc', irradiance='horizontal',
-                             sun_elevation=None, sun_azimuth=None, add_sun=False):
+                             sun_elevation=None, sun_azimuth=None):
     """Normalised diffuse light irradiances coming from a discretised sky
 
     Normalisation is for the sum of irradiance received on an horizontal surface.
@@ -176,24 +181,14 @@ def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
             on an horizontal surface
         sun_elevation: sun elevation (degrees). Only needed for clear_sky
         sun_azimuth: sun azimuth (degrees). Only needed for clear_sky
-        add_sun: whether an additional source pointing to the sun should be
-        returned. If True, normalistion is done for sky + sun
 
     Returns:
         the relative iradiance(s) associated to the sky directions
-        if add_sun is True, a 2-tuple with sky irradiances and sun irradiance
     """
 
     el = numpy.radians(sky_elevation)
     az = numpy.radians(sky_azimuth)
     sky_fraction = numpy.array(sky_fraction)
-    if add_sun:
-        if sun_elevation is None or sun_azimuth is None:
-            raise ValueError('Cannot add sun as sun direction is missing')
-        el = numpy.append(el, numpy.radians(sun_elevation))
-        az = numpy.append(az, numpy.radians(sun_azimuth))
-        sky_fraction = numpy.append(sky_fraction, numpy.mean(sky_fraction))
-
     sky_fraction /= sky_fraction.sum()
 
     if sun_elevation is not None:
@@ -212,10 +207,15 @@ def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
     if irradiance == 'normal':
         lum /= numpy.sin(el)
 
-    if add_sun:
-        return lum[:-1], lum[-1]
-    else:
-        return lum
+    return lum
+
+
+def _dates(dayofyear, year, hUTC=range(24)):
+    d = map(
+        lambda x: datetime.datetime.strptime('%d %d %d' % (x[0], x[1], x[2]),
+                                             '%Y %j %H'),
+        zip([year] * 24, [dayofyear] * 24, hUTC))
+    return pandas.to_datetime(d, utc=True)
 
 
 def sun_path(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
@@ -223,108 +223,60 @@ def sun_path(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
     """ Return position of the sun corresponding to a sequence of date
     """
     hUTC = range(24)
-    d = map(
-        lambda x: datetime.datetime.strptime('%d %d %d' % (x[0], x[1], x[2]),
-                                             '%Y %j %H'),
-        zip([year] * 24, [dayofyear] * 24, hUTC))
-    dates = pandas.to_datetime(d, utc=True)
+    dates = _dates(dayofyear, year, hUTC)
     sun = sun_position(dates, latitude=latitude, longitude=longitude,
                        filter_night=False)
     elevation, azimuth = sun['elevation'].values, sun['azimuth'].values
 
-    toa_irradiance = sun_irradiance(dayofyear, elevation)
-    # ground_irradiance = sun_clear_sky_direct_normal_irradiance(
-    #    elevation, dayofyear, 'horizontal')
     df = pandas.DataFrame(
         {'dayofyear': dayofyear, 'hUTC': hUTC, 'elevation': elevation,
-         'azimuth': azimuth, 'DNI': toa_irradiance})
+         'azimuth': azimuth})
     if day_only:
         return df.loc[df['elevation'] > 0, :]
     else:
         return df
 
 
-def diffuse_fraction(Ghi, dayofyear, elevation,
-                     model='Spitters'):
-    """ Estimate the diffuse fraction of the global horizontal irradiance (GHI)
-        measured at ground level
-        
-        Estimated after Spitters (1986)
-    """
-    Io = sun_extraterrestrial_radiation(dayofyear)
-    costheta = numpy.sin(elevation)
-    So = Io * costheta
-    RsRso = Ghi / So
-    R = 0.847 - 1.61 * costheta + 1.04 * costheta * costheta
-    K = (1.47 - R) / 1.66
-    RdRs = numpy.where(RsRso <= 0.22, 1,
-                       numpy.where(RsRso <= 0.35, 1 - 6.4 * (RsRso - 0.22) ** 2,
-                                   numpy.where(RsRso <= K, 1.47 - 1.66 * RsRso,
-                                               R)))
-    return RdRs
-
-
-def sky_discretisation(type='turtle46', nb_az=None, nb_el=None):
-    elevations46 = [9.23] * 10 + [10.81] * 5 + [26.57] * 5 + [31.08] * 10 + [
-                    47.41] * 5 + [52.62] * 5 + [69.16] * 5 + [90]
-    azimuths46 = [12.23, 59.77, 84.23, 131.77, 156.23, 203.77, 228.23, 275.77,
-                  300.23, 347.77, 36, 108, 180, 252, 324, 0, 72, 144, 216, 288,
-                  23.27, 48.73, 95.27, 120.73, 167.27, 192.73, 239.27, 264.73,
-                  311.27, 336.73, 0, 72, 144, 216, 288, 36, 108, 180, 252, 324,
-                  0, 72, 144, 216, 288, 180]
-    steradians46 = [0.1355] * 10 + [0.1476] * 5 + [0.1207] * 5 + [
-                   0.1375] * 10 + [0.1364] * 5 + [0.1442] * 5 + [0.1378] * 5 + [
-                       0.1196]
-
-    return elevations46, azimuths46, steradians46
-
-
 def light_sources(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
-             type='soc', dicretisation='turtle_46', add_sun=False):
-    """ normalised light sources for one day
-    If add_sun is True, hourly sun positions and iradiances are added
+             type='soc', dicretisation='turtle_46'):
+    """ normalised light sources representing the sky and the sun for one day
     """
-    elevation, azimuth, strd = sky_discretisation(type=dicretisation)
-    fraction = numpy.array(strd) / sum(strd)
-    sun_irr = []
+    sky_elevation, sky_azimuth, strd = sky_discretisation(type=dicretisation)
+    sky_fraction = numpy.array(strd) / sum(strd)
     sun = None
 
     if type == 'soc' or type == 'uoc':
-        irradiance = diffuse_light_irradiance(elevation, azimuth, fraction,
-                                              sky_type=type,
-                                              irradiance='horizontal')
+        sky_irradiance = diffuse_light_irradiance(sky_elevation, sky_azimuth,
+                                                  sky_fraction,
+                                                  sky_type=type,
+                                                  irradiance='horizontal')
     elif type == 'clear_sky':
-        sun = sun_path(dayofyear, year, latitude, longitude)
-        sun['weight'] = sun['DNI'] / sum(sun['DNI'])
-        irradiance = numpy.zeros_like(fraction)
+        dates = _dates(dayofyear, year)
+        c_sky = clear_sky_irradiances(dates, longitude=longitude,
+                                      latitude=latitude)
+        # temporal weigths : use dhi (diffuse horizontal irradiance) for sky
+        # and ghi -dhi for sun
+        sun_irradiance = (c_sky['ghi'] - c_sky['dhi']) / sum(
+            c_sky['ghi'] - c_sky['dhi'])
+        c_sky['wsky'] = c_sky['dhi'] / sum(c_sky['dhi'])
 
-        for i, row in sun.iterrows():
-            if not add_sun:
-                irr = diffuse_light_irradiance(elevation, azimuth, fraction,
-                                               sky_type='clear_sky',
-                                               irradiance='horizontal',
-                                               sun_elevation=row['elevation'],
-                                               sun_azimuth=row['azimuth'])
-                irradiance += (irr * row['weight'])
-            else:
-                irr, sirr = diffuse_light_irradiance(elevation, azimuth, fraction,
-                                               sky_type='clear_sky',
-                                               irradiance='horizontal',
-                                               sun_elevation=row['elevation'],
-                                               sun_azimuth=row['azimuth'],
-                                               add_sun=True)
-                irradiance += (irr * row['weight'])
-                sun_irr.append(sirr * row['weight'])
+        sun = c_sky['elevation'].values, c_sky['azimuth'].values, sun_irradiance.values
+        sky_irradiance = numpy.zeros_like(sky_fraction)
+
+        for i, row in c_sky.iterrows():
+            irr = diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
+                                           sky_type='clear_sky',
+                                           irradiance='horizontal',
+                                           sun_elevation=row['elevation'],
+                                           sun_azimuth=row['azimuth'])
+            sky_irradiance += (irr * row['wsky'])
     else:
         raise ValueError(
             'unknown type: ' + type + ' (should be one of uoc, soc, clear_sky')
 
-    if add_sun:
-        elevation = elevation + sun['elevation'].values.tolist()
-        azimuth = azimuth + sun['elevation'].values.tolist()
-        irradiance = irradiance.tolist() + sun_irr
+    sky = (sky_elevation, sky_azimuth, sky_irradiance)
 
-    return elevation, azimuth, irradiance
+    return sun, sky
 
 # def RgH (Rg,hTU,DOY,latitude) :
 # """ compute hourly value of Rg at hour hTU for a given day at a given latitude

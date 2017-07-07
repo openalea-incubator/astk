@@ -55,7 +55,7 @@ def sun_extraradiation(dates=_dates, solar_constant=1366.1, method='spencer', ti
     """ Extraterrestrial radiation (W.m2) at the top of the earth atmosphere
 
         Args:
-            times: a Pandas dateTime index
+            dates: a Pandas dateTime index
             If pvlib is installed all valid inputs of pvlib extraradiation
             solar_constant (floa)
             method : one methode prvided by pvlib or 'spencer' or 'asce' if not installed
@@ -105,11 +105,10 @@ def air_mass(zenith, altitude=0):
     return am
 
 
-def aw_clearness(dni, dhi, sun_zenith):
+def clearness(dni, dhi, sun_zenith):
     """Perez formula for clearness index
 
     Args:
-        ghi:
         dni:
         dhi:
         sun_zenith:
@@ -121,7 +120,7 @@ def aw_clearness(dni, dhi, sun_zenith):
     return ((dhi + dni) / dhi + 1.041 * z**3) / (1 + 1.041 * z**3)
 
 
-def aw_brightness(air_mass, dhi, dni_extra):
+def brightness(air_mass, dhi, dni_extra):
     """perez formula for brightness index
 
     Args:
@@ -184,8 +183,8 @@ def clear_sky_irradiances(dates=_dates, longitude=_longitude, latitude=_latitude
         clearsky['dni'] = df['dni_extra'] * numpy.power(0.7, numpy.power(df['am'], 0.678))
         clearsky['dhi'] = clearsky['ghi'] - horizontal_irradiance(clearsky['dni'], df['elevation'])
 
-    clearsky['brightness'] = aw_brightness(clearsky['am'], clearsky['dhi'], clearsky['dni_extra'])
-    clearsky['clearness'] = aw_clearness(clearsky['dni'], clearsky['dhi'], clearsky['zenith'])
+    clearsky['brightness'] = brightness(clearsky['am'], clearsky['dhi'], clearsky['dni_extra'])
+    clearsky['clearness'] = clearness(clearsky['dni'], clearsky['dhi'], clearsky['zenith'])
 
     return clearsky.loc[:,['azimuth', 'zenith', 'elevation', 'am', 'dni_extra', 'clearness', 'brightness', 'ghi', 'dni', 'dhi' ]]
 
@@ -270,8 +269,8 @@ def actual_sky_irradiances(dates, ghi, dhi=None, Tdew=None, longitude=_longitude
     el = numpy.radians(df['elevation'])
     df['dni'] = (df['ghi'] - df['dhi']) / numpy.sin(el)
 
-    df['brightness'] = aw_brightness(df['am'], df['dhi'], df['dni_extra'])
-    df['clearness'] = aw_clearness(df['dni'], df['dhi'], df['zenith'])
+    df['brightness'] = brightness(df['am'], df['dhi'], df['dni_extra'])
+    df['clearness'] = clearness(df['dni'], df['dhi'], df['zenith'])
 
     return df.loc[(df['elevation'] > 0) & (df['ghi'] > 0) , ['azimuth', 'zenith', 'elevation', 'am', 'dni_extra', 'clearness', 'brightness', 'ghi', 'dni', 'dhi' ]]
 
