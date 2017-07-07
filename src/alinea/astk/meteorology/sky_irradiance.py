@@ -106,7 +106,7 @@ def air_mass(zenith, altitude=0):
 
 
 def aw_clearness(dni, dhi, sun_zenith):
-    """
+    """Perez formula for clearness index
 
     Args:
         ghi:
@@ -122,7 +122,7 @@ def aw_clearness(dni, dhi, sun_zenith):
 
 
 def aw_brightness(air_mass, dhi, dni_extra):
-    """
+    """perez formula for brightness index
 
     Args:
         air_mass:
@@ -133,6 +133,19 @@ def aw_brightness(air_mass, dhi, dni_extra):
 
     """
     return air_mass * dhi / dni_extra
+
+
+def f_clear(clearness_index):
+    """The clear-sky / overcast sky mixing ratio proposed by Mardaljevic, p193,
+    eq. 5-10
+
+    ref :  J. Mardaljevic. Daylight Simulation: Validation, Sky Models and
+    Daylight Coefficients. PhD thesis, De Montfort University,
+    Leicester, UK, 2000.
+    """
+    return min(1, (clearness_index - 1) / (1.41 - 1))
+
+
 
 def clear_sky_irradiances(dates=_dates, longitude=_longitude, latitude=_latitude, altitude=_altitude, timezone=_timezone, method = 'ineichen'):
     """ Estimate components of  sky irradiance for clear sy conditions at a given location
