@@ -158,8 +158,9 @@ def sky_discretisation(type='turtle46', nb_az=None, nb_el=None):
 
 
 def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
-                             sky_type='soc', irradiance='horizontal',
-                             sun_elevation=None, sun_azimuth=None):
+                             sky_orientation=0, sky_type='soc',
+                             irradiance='horizontal', sun_elevation=None,
+                             sun_azimuth=None):
     """Normalised diffuse light irradiances coming from a discretised sky
 
     Normalisation is for the sum of irradiance received on an horizontal surface.
@@ -167,11 +168,13 @@ def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
 
     Args:
         sky_elevation: (float or list of float) elevation angle (degrees)
-        of directions sampling the sky hemisphere
-        sky_azimuth: (float or list of float) azimuth angle (degrees)
-        of directions sampling the sky hemisphere
+            of directions sampling the sky hemisphere
+        sky_azimuth: (float or list of float) azimuth angle (degrees, from X+,
+            positive clockwise) of directions sampling the sky hemisphere
         sky_fraction: (float or list of float) fraction of sky represented by
-        the directions sampling the sky hemisphere
+            the directions sampling the sky hemisphere
+        sky_orientation (float): the angle (deg, positive clockwise) from X+ to
+         North (default: 0)
         sky_type: (str) one of  'soc' (standard overcast sky),
                                 'uoc' (uniform luminance)
                                 'clear_sky' (standard clear sky low turbidity)
@@ -180,7 +183,8 @@ def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
             'horizontal' (default) return the irradiance measured
             on an horizontal surface
         sun_elevation: sun elevation (degrees). Only needed for clear_sky
-        sun_azimuth: sun azimuth (degrees). Only needed for clear_sky
+        sun_azimuth: sun azimuth (degrees, from North, positive clockwise).
+            Only needed for clear_sky
 
     Returns:
         the relative iradiance(s) associated to the sky directions
@@ -194,7 +198,7 @@ def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
     if sun_elevation is not None:
         sun_elevation = numpy.radians(sun_elevation)
     if sun_azimuth is not None:
-        sun_azimuth = numpy.radians(sun_azimuth)
+        sun_azimuth = numpy.radians(sun_azimuth + sky_orientation)
 
     lum = cie_relative_luminance(el, az, sun_elevation, sun_azimuth,
                                  type=sky_type)
@@ -238,8 +242,11 @@ def sun_path(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
 
 
 def light_sources(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
-             type='soc', dicretisation='turtle_46'):
+             type='soc', dicretisation='turtle_46', orientation=0):
     """ normalised light sources representing the sky and the sun for one day
+
+    orientation (float): the angle (deg, positive clockwise) from X+ to
+         North (default: 0)
     """
     sky_elevation, sky_azimuth, strd = sky_discretisation(type=dicretisation)
     sky_fraction = numpy.array(strd) / sum(strd)
@@ -265,6 +272,7 @@ def light_sources(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
 
         for i, row in c_sky.iterrows():
             irr = diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
+                                           sky_orientation=orientation,
                                            sky_type='clear_sky',
                                            irradiance='horizontal',
                                            sun_elevation=row['elevation'],
