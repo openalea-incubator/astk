@@ -2,6 +2,7 @@ from alinea.astk.sun_and_sky import sun_path, sky_discretisation, \
     diffuse_light_irradiance, light_sources
 import numpy
 
+
 def test_diffuse_light_irradiance():
     elevation, azimuth, strd = sky_discretisation()
 
@@ -20,6 +21,14 @@ def test_diffuse_light_irradiance():
                                  sun_azimuth=midday['azimuth'])
     assert len(d) == len(elevation)
     numpy.testing.assert_almost_equal(d.sum(), 1)
+    assert azimuth[numpy.argmax(d)] >= 180
+    # flip North to South
+    d = diffuse_light_irradiance(elevation, azimuth, strd, sky_orientation=180,
+                                 sky_type='clear_sky',
+                                 irradiance='horizontal',
+                                 sun_elevation=midday['elevation'],
+                                 sun_azimuth=midday['azimuth'])
+    assert azimuth[numpy.argmax(d)] <= 10
 
 
 def test_light_sources():
