@@ -247,6 +247,8 @@ def light_sources(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
 
     orientation (float): the angle (deg, positive clockwise) from X+ to
          North (default: 0)
+         
+    Return elevation (deg), azimuth (deg, positive clockwise from X+) and irradiance of sources
     """
     sky_elevation, sky_azimuth, strd = sky_discretisation(type=dicretisation)
     sky_fraction = numpy.array(strd) / sum(strd)
@@ -267,7 +269,7 @@ def light_sources(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
             c_sky['ghi'] - c_sky['dhi'])
         c_sky['wsky'] = c_sky['dhi'] / sum(c_sky['dhi'])
 
-        sun = c_sky['elevation'].values, c_sky['azimuth'].values, sun_irradiance.values
+        sun = c_sky['elevation'].values, c_sky['azimuth'].values + orientation, sun_irradiance.values
         sky_irradiance = numpy.zeros_like(sky_fraction)
 
         for i, row in c_sky.iterrows():
