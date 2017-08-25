@@ -7,7 +7,8 @@ import numpy
 import datetime
 import pandas
 from alinea.astk.meteorology.sun_position import sun_position
-from alinea.astk.meteorology.sky_irradiance import clear_sky_irradiances
+from alinea.astk.meteorology.sky_irradiance import clear_sky_irradiances, \
+    horizontal_irradiance
 
 # Sun models and equations
 
@@ -52,25 +53,11 @@ def diffuse_fraction(Ghi, dayofyear, elevation,
     return RdRs
 
 
-def horizontal_irradiance(normal_irradiance, elevation):
-    """ irradiance measured on an horizontal surface from a source
-    with known elevation (degrees) and known normal irradiance
-    """
-    return normal_irradiance * numpy.sin(numpy.radians(elevation))
-
-
-def normal_irradiance(horizontal_irradiance, elevation):
-    """ irradiance measured on an surface perpendicular
-    to a source with known elevation (degrees) and horizontal irradiance
-    """
-    return horizontal_irradiance / numpy.sin(numpy.radians(elevation))
-
-
 # sky models / equations
 
 
 def cie_luminance_gradation(sky_elevation, a, b):
-    """ function giving the dependance of the luminance of a sky element
+    """ function giving the dependence of the luminance of a sky element
     to its elevation angle
     
     CIE, 2002, Spatial distribution of daylight CIE standard general sky,
@@ -88,7 +75,7 @@ def cie_luminance_gradation(sky_elevation, a, b):
 
 def cie_scattering_indicatrix(sun_azimuth, sun_elevation, sky_azimuth,
                               sky_elevation, c, d, e):
-    """ function giving the dependance of the luminance of a sky element
+    """ function giving the dependence of the luminance
     to its azimuth distance to the sun
     
     CIE, 2002, Spatial distribution of daylight CIE standard general sky,
@@ -121,7 +108,7 @@ def cie_relative_luminance(sky_elevation, sky_azimuth=None, sun_elevation=None,
     at zenith
     
     angle in radians
-    type is one of 'soc' (standard overcast sky), 'uoc' (uniform luminance)
+    type is one of 'soc' (standard overcast sky), 'uoc' (uniform radiance)
     or 'clear_sky' (standard clear sky low turbidity)
     """
 
@@ -157,61 +144,54 @@ def sky_discretisation(type='turtle46', nb_az=None, nb_el=None):
     return elevations46, azimuths46, steradians46
 
 
-def diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
-                             sky_orientation=0, sky_type='soc',
-                             irradiance='horizontal', sun_elevation=None,
-                             sun_azimuth=None):
-    """Normalised diffuse light irradiances coming from a discretised sky
-
-    Normalisation is for the sum of irradiance received on an horizontal surface.
-    if irradiance == 'normal', the sum of irradiance will be greater than 1
+def sky_radiance_distribution(sky_elevation, sky_azimuth, sky_fraction,
+                              sky_type='soc', sun_elevation=None,
+                              sun_azimuth=None, avoid_sun=True):
+    """Normalised sky radiance distribution as a function of sky type for a
+    finite set of directions sampling the sky hemisphere.
 
     Args:
-        sky_elevation: (float or list of float) elevation angle (degrees)
-            of directions sampling the sky hemisphere
-        sky_azimuth: (float or list of float) azimuth angle (degrees, from X+,
+        sky_elevation: (float or list of float) elevation (degrees) of directions
+            sampling the sky hemisphere
+        sky_azimuth: (float or list of float) azimuth (degrees, from North,
             positive clockwise) of directions sampling the sky hemisphere
-        sky_fraction: (float or list of float) fraction of sky represented by
-            the directions sampling the sky hemisphere
-        sky_orientation (float): the angle (deg, positive clockwise) from X+ to
-         North (default: 0)
+        sky_fraction: (float or list of float) fraction of sky associated to
+            directions sampling the sky hemisphere
         sky_type: (str) one of  'soc' (standard overcast sky),
                                 'uoc' (uniform luminance)
                                 'clear_sky' (standard clear sky low turbidity)
-        irradiance: (str) convention for irradiance.
-            'normal' returns irradiance normal to the direction of incidence,
-            'horizontal' (default) return the irradiance measured
-            on an horizontal surface
         sun_elevation: sun elevation (degrees). Only needed for clear_sky
         sun_azimuth: sun azimuth (degrees, from North, positive clockwise).
             Only needed for clear_sky
+        avoid_sun (bool): avoid sampling radiance distribution toward directions
+        directly pointing to solar disc
 
     Returns:
-        the relative iradiance(s) associated to the sky directions
+        the relative radiance(s) associated to the sky directions
     """
 
     el = numpy.radians(sky_elevation)
     az = numpy.radians(sky_azimuth)
     sky_fraction = numpy.array(sky_fraction)
-    sky_fraction /= sky_fraction.sum()
 
     if sun_elevation is not None:
         sun_elevation = numpy.radians(sun_elevation)
     if sun_azimuth is not None:
-        sun_azimuth = numpy.radians(sun_azimuth + sky_orientation)
+        sun_azimuth = numpy.radians(sun_azimuth)
+
+    if avoid_sun and sky_type == 'clear_sky':
+        delta_el = abs(el - sun_elevation)
+        delta_az = abs(az - sun_azimuth)
+        sun_disc = numpy.radians(0.553)
+        az += numpy.where(delta_az < sun_disc and delta_el < sun_disc, sun_disc,
+                          0)
 
     lum = cie_relative_luminance(el, az, sun_elevation, sun_azimuth,
                                  type=sky_type)
-    # use horizontal convention for normalisation
-    # use sky fraction to model differences in solid angles integrals between
-    # sectors
-    lum = lum * numpy.sin(el) * sky_fraction
-    lum /= sum(lum)
+    rad_dist = lum * sky_fraction
+    rad_dist /= sum(rad_dist)
 
-    if irradiance == 'normal':
-        lum /= numpy.sin(el)
-
-    return lum
+    return rad_dist
 
 
 def _dates(dayofyear, year, hUTC=range(24)):
@@ -241,52 +221,119 @@ def sun_path(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
         return df
 
 
-def light_sources(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
-             type='soc', dicretisation='turtle_46', orientation=0):
-    """ normalised light sources representing the sky and the sun for one day
+def sky_sources(type='soc', h_irr=1, dates=None, daydate='2000-06-21',
+                timezone='Europe/Paris', latitude=43.61, longitude=3.87,
+                altitude=56):
+    """ Light sources representing the sky in 46 directions
 
-    orientation (float): the angle (deg, positive clockwise) from X+ to
-         North (default: 0)
-         
-    Return elevation (deg), azimuth (deg, positive clockwise from X+) and irradiance of sources
+    Args:
+        type:(str) one of  'soc' (standard overcast sky),
+                           'uoc' (uniform)
+                           'clear_sky' (standard clear sky)
+        h_irr: (float) total horizontal irradiance of sources for the period.
+            Using h_irr=1 (default) yields relative contribution of sources.
+            If None, clear sky diffuse horizontal irradiance predicted by
+            Perez/Ineichen model is used for clear_sky type, and 20% of clear
+            sky global horizontal irradiance is used for soc and uoc types
+        dates: A pandas datetime index (as generated by pandas.date_range). If
+            None, daydate is used.
+        daydate: (str) yyyy-mm-dd (not used if dates is not None).
+        timezone: (str) the time zone (not used if dates are already localised)
+        latitude: (float)
+        longitude: (float)
+        altitude: (float) in meter
+
+    Returns:
+        elevation (degrees), azimuth (degrees, from North positive clockwise)
+        and horizontal irradiance of sources
     """
-    sky_elevation, sky_azimuth, strd = sky_discretisation(type=dicretisation)
+
+    if dates is None:
+        dates = pandas.date_range(daydate, periods=24, freq='H')
+    if dates.tz is None:
+        dates = dates.tz_localize(timezone)
+
+    sky_elevation, sky_azimuth, strd = sky_discretisation()
     sky_fraction = numpy.array(strd) / sum(strd)
-    sun = None
 
     if type == 'soc' or type == 'uoc':
-        sky_irradiance = diffuse_light_irradiance(sky_elevation, sky_azimuth,
-                                                  sky_fraction,
-                                                  sky_type=type,
-                                                  irradiance='horizontal')
+        radiance = sky_radiance_distribution(sky_elevation, sky_azimuth,
+                                                   sky_fraction,
+                                                   sky_type=type)
+        sky_irradiance = horizontal_irradiance(radiance, sky_elevation)
+        if h_irr is None:
+            c_sky = clear_sky_irradiances(dates, longitude=longitude,
+                                          latitude=latitude, altitude=altitude)
+            h_irr = sum(c_sky['ghi']) * 0.2
+
     elif type == 'clear_sky':
-        dates = _dates(dayofyear, year)
         c_sky = clear_sky_irradiances(dates, longitude=longitude,
-                                      latitude=latitude)
-        # temporal weigths : use dhi (diffuse horizontal irradiance) for sky
-        # and ghi -dhi for sun
-        sun_irradiance = (c_sky['ghi'] - c_sky['dhi']) / sum(
-            c_sky['ghi'] - c_sky['dhi'])
+                                      latitude=latitude, altitude=altitude)
+        if h_irr is None:
+            h_irr = sum(c_sky['dhi'])
+
+        # temporal weigths : use dhi (diffuse horizontal irradiance)
         c_sky['wsky'] = c_sky['dhi'] / sum(c_sky['dhi'])
-
-        sun = c_sky['elevation'].values, c_sky['azimuth'].values + orientation, sun_irradiance.values
         sky_irradiance = numpy.zeros_like(sky_fraction)
-
         for i, row in c_sky.iterrows():
-            irr = diffuse_light_irradiance(sky_elevation, sky_azimuth, sky_fraction,
-                                           sky_orientation=orientation,
-                                           sky_type='clear_sky',
-                                           irradiance='horizontal',
-                                           sun_elevation=row['elevation'],
-                                           sun_azimuth=row['azimuth'])
-            sky_irradiance += (irr * row['wsky'])
+            rad = sky_radiance_distribution(sky_elevation, sky_azimuth,
+                                            sky_fraction,
+                                            sky_type='clear_sky',
+                                            sun_elevation=row['elevation'],
+                                            sun_azimuth=row['azimuth'],
+                                            avoid_sun=True)
+            sky_irradiance += (horizontal_irradiance(rad) * row['wsky'])
     else:
         raise ValueError(
             'unknown type: ' + type + ' (should be one of uoc, soc, clear_sky')
 
-    sky = (sky_elevation, sky_azimuth, sky_irradiance)
+    sky_irradiance /= sum(sky_irradiance)
+    sky_irradiance *= h_irr
+    return sky_elevation, sky_azimuth, sky_irradiance
 
-    return sun, sky
+
+def sun_sources(h_irr=1, dates=None, daydate='2000-06-21',
+                timezone='Europe/Paris', latitude=43.61, longitude=3.87,
+                altitude=56):
+    """ Light sources representing the sun under clear sky conditions
+
+    Args:
+        h_irr: (float) total horizontal irradiance of sources for the period.
+            Using h_irr=1 (default) yields relative contribution of sources.
+            If None, clear sky sun horizontal irradiance predicted by
+            Perez/Ineichen model is used.
+        dates: A pandas datetime index (as generated by pandas.date_range)
+            specifying times at which a source is needed.
+            If None, daydate is used and one source per hour is generated.
+        daydate: (str) yyyy-mm-dd (not used if dates is not None).
+        timezone: (str) the time zone (not used if dates are already localised)
+        latitude: (float)
+        longitude: (float)
+        altitude: (float) in meter
+
+    Returns:
+        elevation (degrees), azimuth (degrees, from North positive clockwise)
+        and horizontal irradiance of sources
+    """
+
+    if dates is None:
+        dates = pandas.date_range(daydate, periods=24, freq='H')
+    if dates.tz is None:
+        dates = dates.tz_localize(timezone)
+
+    c_sky = clear_sky_irradiances(dates, longitude=longitude,
+                          latitude=latitude, altitude=altitude)
+
+    sun_irradiance = (c_sky['ghi'] - c_sky['dhi']) / sum(
+        c_sky['ghi'] - c_sky['dhi'])
+
+    if h_irr is not None:
+        sun_irradiance /= sum(sun_irradiance)
+        sun_irradiance *= h_irr
+
+    return c_sky['elevation'].values, c_sky[
+        'azimuth'].values, sun_irradiance.values
+
 
 # def RgH (Rg,hTU,DOY,latitude) :
 # """ compute hourly value of Rg at hour hTU for a given day at a given latitude
