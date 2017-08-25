@@ -183,7 +183,7 @@ def sky_radiance_distribution(sky_elevation, sky_azimuth, sky_fraction,
         delta_el = abs(el - sun_elevation)
         delta_az = abs(az - sun_azimuth)
         sun_disc = numpy.radians(0.553)
-        az += numpy.where(delta_az < sun_disc and delta_el < sun_disc, sun_disc,
+        az += numpy.where((delta_az < sun_disc) & (delta_el < sun_disc), sun_disc,
                           0)
 
     lum = cie_relative_luminance(el, az, sun_elevation, sun_azimuth,
@@ -200,25 +200,6 @@ def _dates(dayofyear, year, hUTC=range(24)):
                                              '%Y %j %H'),
         zip([year] * 24, [dayofyear] * 24, hUTC))
     return pandas.to_datetime(d, utc=True)
-
-
-def sun_path(dayofyear=1, year=2000, latitude=43.61, longitude=3.87,
-             day_only=True):
-    """ Return position of the sun corresponding to a sequence of date
-    """
-    hUTC = range(24)
-    dates = _dates(dayofyear, year, hUTC)
-    sun = sun_position(dates, latitude=latitude, longitude=longitude,
-                       filter_night=False)
-    elevation, azimuth = sun['elevation'].values, sun['azimuth'].values
-
-    df = pandas.DataFrame(
-        {'dayofyear': dayofyear, 'hUTC': hUTC, 'elevation': elevation,
-         'azimuth': azimuth})
-    if day_only:
-        return df.loc[df['elevation'] > 0, :]
-    else:
-        return df
 
 
 def sky_sources(type='soc', h_irr=1, dates=None, daydate='2000-06-21',
@@ -244,8 +225,8 @@ def sky_sources(type='soc', h_irr=1, dates=None, daydate='2000-06-21',
         altitude: (float) in meter
 
     Returns:
-        elevation (degrees), azimuth (degrees, from North positive clockwise)
-        and horizontal irradiance of sources
+        elevation (degrees), azimuth (degrees, from North positive clockwise),
+        horizontal irradiance and sky_fraction of sources
     """
 
     if dates is None:
@@ -282,14 +263,15 @@ def sky_sources(type='soc', h_irr=1, dates=None, daydate='2000-06-21',
                                             sun_elevation=row['elevation'],
                                             sun_azimuth=row['azimuth'],
                                             avoid_sun=True)
-            sky_irradiance += (horizontal_irradiance(rad) * row['wsky'])
+            sky_irradiance += (
+            horizontal_irradiance(rad, sky_elevation) * row['wsky'])
     else:
         raise ValueError(
             'unknown type: ' + type + ' (should be one of uoc, soc, clear_sky')
 
     sky_irradiance /= sum(sky_irradiance)
     sky_irradiance *= h_irr
-    return sky_elevation, sky_azimuth, sky_irradiance
+    return sky_elevation, sky_azimuth, sky_irradiance, sky_fraction
 
 
 def sun_sources(h_irr=1, dates=None, daydate='2000-06-21',
@@ -324,8 +306,7 @@ def sun_sources(h_irr=1, dates=None, daydate='2000-06-21',
     c_sky = clear_sky_irradiances(dates, longitude=longitude,
                           latitude=latitude, altitude=altitude)
 
-    sun_irradiance = (c_sky['ghi'] - c_sky['dhi']) / sum(
-        c_sky['ghi'] - c_sky['dhi'])
+    sun_irradiance = c_sky['ghi'] - c_sky['dhi']
 
     if h_irr is not None:
         sun_irradiance /= sum(sun_irradiance)
