@@ -6,7 +6,6 @@ C. Fournier, 2015
 import numpy
 import datetime
 import pandas
-from alinea.astk.meteorology.sun_position import sun_position
 from alinea.astk.meteorology.sky_irradiance import clear_sky_irradiances, \
     horizontal_irradiance
 
