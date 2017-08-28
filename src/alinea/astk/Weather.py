@@ -84,19 +84,6 @@ def linear_degree_days(data, start_date=None, base_temp=0., max_temp=35.):
     return dd - dd[df.index.searchsorted(start_date)]
 
 
-
-def diffuse_fraction(data, localisation):
-    """ Estimate the diffuse to global fraction 
-    """
-    heureTU = data.index.hour + data.index.minute / 60.
-    DOY = data.index.dayofyear
-    Rg = data['global_radiation']
-    rdrs = sunsky.diffuse_fraction(Rg, heureTU, DOY,
-                                   longitude=localisation['longitude'],
-                                   latitude=localisation['latitude'])
-    return rdrs
-
-
 class Weather(object):
     """ Class compliying echap local_microclimate model protocol (meteo_reader).
         expected variables of the data_file are:
@@ -121,8 +108,7 @@ class Weather(object):
         self.models = {'global_radiation': PPFD_to_global,
                        'vapor_pressure': humidity_to_vapor_pressure,
                        'PPFD': global_to_PPFD,
-                       'degree_days': linear_degree_days,
-                       'diffuse_fraction': diffuse_fraction}
+                       'degree_days': linear_degree_days}
 
         self.timezone = pytz.timezone(timezone)
         if data_file is '':
@@ -217,7 +203,6 @@ class Weather(object):
         """
         return sun_position(seq, timezone='utc')
 
-
     def light_sources(self, seq, what='global_radiation'):
         """ return direct and diffuse ligh sources representing the sky and the sun
          for a given time period indicated by seq
@@ -231,8 +216,10 @@ class Weather(object):
         # TO DO set actual sky
         data = self.data.loc[seq,:]
         sky_irradiance = data[what].sum()
-        sky = sunsky.sky_sources(type='soc', h_irr = sky_irradiance, dates = seq)
-        sun = sunsky.sun_sources(h_irr=None, dates=seq, latitude=latitude, longitude=longitude)
+        sky = sunsky.sky_sources(type='soc', irradiance=sky_irradiance,
+                                 dates=seq)
+        sun = sunsky.sun_sources(irradiance=None, dates=seq, latitude=latitude,
+                                 longitude=longitude)
         return sun, sky
 
     def daylength(self, seq):

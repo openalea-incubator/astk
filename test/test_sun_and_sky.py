@@ -34,7 +34,7 @@ def test_sky_sources():
     assert len(az) == len(el) == len(irr) == 46
     numpy.testing.assert_almost_equal(numpy.sum(irr), 1)
 
-    el, az, irr, frac = sky_sources(type='clear_sky', h_irr=None)
+    el, az, irr, frac = sky_sources(type='clear_sky', irradiance=None)
     assert irr.max() > 60
 
 
@@ -43,5 +43,5 @@ def test_sun_source():
     assert len(az) == len(el) == len(irr)
     numpy.testing.assert_almost_equal(numpy.sum(irr), 1)
 
-    el, az, irr = sun_sources(h_irr=None)
+    el, az, irr = sun_sources(irradiance=None)
     assert irr.max() > 800
