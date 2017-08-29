@@ -25,16 +25,15 @@ def test_sky_radiance_distribution():
 
 
 def test_sky_sources():
-    el, az, irr, frac = sky_sources(type='soc')
-    assert len(az) == len(el) == len(irr) == len(frac) == 46
-    numpy.testing.assert_almost_equal(numpy.sum(irr), 1)
-    numpy.testing.assert_almost_equal(numpy.sum(frac), 1)
-
-    el, az, irr, frac = sky_sources(type='clear_sky')
+    el, az, irr = sky_sources(type='soc')
     assert len(az) == len(el) == len(irr) == 46
     numpy.testing.assert_almost_equal(numpy.sum(irr), 1)
 
-    el, az, irr, frac = sky_sources(type='clear_sky', irradiance=None)
+    el, az, irr = sky_sources(type='clear_sky')
+    assert len(az) == len(el) == len(irr) == 46
+    numpy.testing.assert_almost_equal(numpy.sum(irr), 1)
+
+    el, az, irr = sky_sources(type='clear_sky', irradiance=None)
     assert irr.max() > 60
 
 

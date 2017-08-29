@@ -139,8 +139,9 @@ def sky_discretisation(type='turtle46', nb_az=None, nb_el=None):
     steradians46 = [0.1355] * 10 + [0.1476] * 5 + [0.1207] * 5 + [
                    0.1375] * 10 + [0.1364] * 5 + [0.1442] * 5 + [0.1378] * 5 + [
                        0.1196]
+    sky_fraction = numpy.array(steradians46) / sum(steradians46)
 
-    return elevations46, azimuths46, steradians46
+    return elevations46, azimuths46, sky_fraction
 
 
 def sky_radiance_distribution(sky_elevation, sky_azimuth, sky_fraction,
@@ -225,7 +226,7 @@ def sky_sources(type='soc', irradiance=1, dates=None, daydate='2000-06-21',
 
     Returns:
         elevation (degrees), azimuth (degrees, from North positive clockwise),
-        horizontal irradiance and sky_fraction of sources
+        and horizontal irradiance of sources
     """
 
     if dates is None:
@@ -233,8 +234,7 @@ def sky_sources(type='soc', irradiance=1, dates=None, daydate='2000-06-21',
     if dates.tz is None:
         dates = dates.tz_localize(timezone)
 
-    sky_elevation, sky_azimuth, strd = sky_discretisation()
-    sky_fraction = numpy.array(strd) / sum(strd)
+    sky_elevation, sky_azimuth, sky_fraction = sky_discretisation()
 
     if type == 'soc' or type == 'uoc':
         radiance = sky_radiance_distribution(sky_elevation, sky_azimuth,
@@ -270,7 +270,7 @@ def sky_sources(type='soc', irradiance=1, dates=None, daydate='2000-06-21',
 
     sky_irradiance /= sum(sky_irradiance)
     sky_irradiance *= irradiance
-    return sky_elevation, sky_azimuth, sky_irradiance, sky_fraction
+    return sky_elevation, sky_azimuth, sky_irradiance
 
 
 def sun_sources(irradiance=1, dates=None, daydate='2000-06-21',
@@ -311,6 +311,8 @@ def sun_sources(irradiance=1, dates=None, daydate='2000-06-21',
         sun_irradiance /= sum(sun_irradiance)
         sun_irradiance *= irradiance
 
+    # Sr = (1 -cos(cone half angle)) * 2 * pi, frac = Sr / 2 / pi
+    # fsun = 1 - numpy.cos(numpy.radians(.53 / 2))
     return c_sky['elevation'].values, c_sky[
         'azimuth'].values, sun_irradiance.values
 
