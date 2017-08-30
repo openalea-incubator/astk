@@ -301,14 +301,15 @@ def ephem_sun_position(hUTC, dayofyear, year, latitude, longitude):
     return numpy.degrees(sun.alt), numpy.degrees(sun.az)
 
 
-def sun_position(dates=_dates, latitude=_latitude, longitude=_longitude,
+def sun_position(dates=None, daydate=_day, latitude=_latitude, longitude=_longitude,
                  altitude=_altitude, timezone=_timezone, method='pvlib',
                  filter_night=True):
     """ Sun position
 
     Args:
         dates: a pandas.DatetimeIndex specifying the dates at which sun position
-        is required
+        is required.If None, daydate is used and one position per hour is generated
+        daydate: (str) yyyy-mm-dd (not used if dates is not None).
         latitude: float
         longitude: float
         altitude: (float) altitude in m
@@ -323,6 +324,9 @@ def sun_position(dates=_dates, latitude=_latitude, longitude=_longitude,
         a pandas dataframe with sun position at requested dates indexed by
         localised dates. Sun azimtuth is given from North, positive clockwise.
     """
+
+    if dates is None:
+        dates = pandas.date_range(daydate, periods=24, freq='H')
 
     if dates.tz is None:
         times = dates.tz_localize(timezone)
