@@ -169,7 +169,7 @@ def clear_sky_irradiances(dates=_dates, longitude=_longitude, latitude=_latitude
         A. B. Meinel and M. P. Meinel, Applied solar energy.
         Reading, MA: Addison-Wesley Publishing Co., 1976
     """
-    df = sun_position(dates, latitude, longitude, altitude, timezone)
+    df = sun_position(dates=dates, latitude=latitude, longitude=longitude, altitude=altitude, timezone=timezone)
     df['am'] = air_mass(df['zenith'], altitude)
     df['dni_extra'] = sun_extraradiation(df.index)
     if method == 'ineichen' and pvlib_installed:
@@ -258,7 +258,7 @@ def daily_diffuse_fraction(ghi, times, latitude):
 def actual_sky_irradiances(dates, ghi, dhi=None, Tdew=None, longitude=_longitude, latitude=_latitude, altitude=_altitude, method='dirint'):
     """ derive a sky irradiance dataframe from actual weather data"""
 
-    df = sun_position(dates, latitude, longitude, altitude, filter_night=False)
+    df = sun_position(dates=dates, latitude=latitude, longitude=longitude, altitude=altitude, filter_night=False)
     df['am'] = air_mass(df['zenith'], altitude)
     df['dni_extra'] = sun_extraradiation(df.index)
     if dhi is None:
