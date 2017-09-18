@@ -202,7 +202,8 @@ def _dates(dayofyear, year, hUTC=range(24)):
     return pandas.to_datetime(d, utc=True)
 
 
-def sky_sources(type='soc', irradiance=1, dates=None, daydate='2000-06-21',
+def sky_sources(sky_elevation=None, sky_azimuth=None, sky_fraction=None,
+                type='soc', irradiance=1, dates=None, daydate='2000-06-21',
                 timezone='Europe/Paris', latitude=43.61, longitude=3.87,
                 altitude=56):
     """ Light sources representing the sky in 46 directions
@@ -234,7 +235,10 @@ def sky_sources(type='soc', irradiance=1, dates=None, daydate='2000-06-21',
     if dates.tz is None:
         dates = dates.tz_localize(timezone)
 
-    sky_elevation, sky_azimuth, sky_fraction = sky_discretisation()
+    if sky_elevation is None:
+        sky_elevation, sky_azimuth, sky_fraction = sky_discretisation()
+    if sky_fraction is None:
+        sky_fraction = [1./len(sky_elevation)] * len(sky_elevation)
 
     if type == 'soc' or type == 'uoc':
         radiance = sky_radiance_distribution(sky_elevation, sky_azimuth,
