@@ -1,27 +1,15 @@
-# -*- python -*-
-#
-#       Copyright 2016 INRIA - CIRAD - INRA
-#
-#       Distributed under the Cecill-C License.
-#       See accompanying file LICENSE.txt or copy at
-#           http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html
-#
-#       WebSite : https://github.com/openalea-incubator/astk/meteorology
-#
-#       File author(s): Christian Fournier <Christian.Fournier@supagro.inra.fr>
-#
-# ==============================================================================
-
-
-""" Sun position using pvlib lib
+""" Sun position using ephem lib
 """
+
 import pandas
+import numpy
+import datetime
 try:
-    from pvlib.solarposition import get_solarposition
+    import ephem
 except ImportError:
-    print('pvlib not found on your system, you may use sun_position_astk'
-          'instead OR install ephem and use sun_position_ephem OR install pvlib'
-          ' (recomended')
+    print('ephem not found on your system, you may use sun_position_astk'
+          'instead OR install pvlib and use sun_position OR install ephem')
+
 
 # default location and dates
 _day = '2000-06-21'
@@ -31,9 +19,19 @@ _latitude = 43.36
 _altitude = 56
 
 
-def sun_position(dates=None, daydate=_day, latitude=_latitude,
-                 longitude=_longitude, altitude=_altitude, timezone=_timezone,
-                 filter_night=True):
+def ephem_sun_position(hUTC, dayofyear, year, latitude, longitude):
+    observer = ephem.Observer()
+    observer.date = datetime.datetime.strptime(
+        '%d %d %d' % (year, dayofyear, hUTC), '%Y %j %H')
+    observer.lat = numpy.radians(latitude)
+    observer.lon = numpy.radians(longitude)
+    sun = ephem.Sun(observer)
+    sun.compute(observer)
+    return numpy.degrees(sun.alt), numpy.degrees(sun.az)
+
+
+def sun_position(dates=None, daydate=_day, latitude=_latitude, longitude=_longitude,
+                 altitude=_altitude, timezone=_timezone, filter_night=True):
     """ Sun position
 
     Args:
@@ -61,16 +59,18 @@ def sun_position(dates=None, daydate=_day, latitude=_latitude,
     else:
         times = dates
 
-    df = get_solarposition(times, latitude, longitude, altitude)
+    d = times.tz_convert('UTC')
+    hUTC = d.hour + d.minute / 60.
+    dayofyear = d.dayofyear
+    year = d.year
+    fun = numpy.frompyfunc(ephem_sun_position, 5, 2)
+    alt, az = fun(hUTC, dayofyear, year, latitude, longitude)
     sunpos = pandas.DataFrame(
-        {'elevation': df['apparent_elevation'], 'azimuth': df['azimuth'],
-         'zenith': df['apparent_zenith']}, index=df.index)
+        {'elevation': alt.astype(float), 'azimuth': az.astype(float)},
+        index=times)
+    sunpos['zenith'] = 90 - sunpos['elevation']
 
     if filter_night and sunpos is not None:
         sunpos = sunpos.loc[sunpos['elevation'] > 0, :]
 
     return sunpos
-
-
-
-
