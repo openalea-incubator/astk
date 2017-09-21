@@ -216,7 +216,7 @@ class Weather(object):
         # TO DO set actual sky
         data = self.data.loc[seq,:]
         sky_irradiance = data[what].sum()
-        sky = sunsky.sky_sources(type='soc', irradiance=sky_irradiance,
+        sky = sunsky.sky_sources(sky_type='soc', irradiance=sky_irradiance,
                                  dates=seq)
         sun = sunsky.sun_sources(irradiance=None, dates=seq, latitude=latitude,
                                  longitude=longitude)
