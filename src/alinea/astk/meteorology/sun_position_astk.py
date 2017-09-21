@@ -216,7 +216,7 @@ def eot(hUTC, dayofyear, year):
         dayofyear: (int) the day of year
 
     Returns:
-        (float) the eot disccrepancy (in hour)
+        (float) the eot discrepancy (in hour)
 
     Details:
          Michalsky, J. J. "The Astronomical Almanac's Algorithm for Approximate
@@ -295,3 +295,46 @@ def sun_position(dates=None, daydate=_day, latitude=_latitude,
         sunpos = sunpos.loc[sunpos['elevation'] > 0, :]
 
     return sunpos
+
+
+def sun_extraradiation(dates=None, daydate=_day, solar_constant=1366.1,
+                       method='spencer', timezone=_timezone):
+    """ Extraterrestrial radiation (W.m2) at the top of the earth atmosphere
+
+        Args:
+            dates: a pandas.DatetimeIndex specifying the dates at which output
+            is required.If None, daydate is used and one position per hour is generated
+            daydate: (str) yyyy-mm-dd (not used if dates is not None).
+            solar_constant: (float)
+            method: one method provided by pvlib
+            timezone: a string identifying the timezone to be associated to dates if
+             dates is not already localised.
+    """
+    if dates is None:
+        dates = pandas.date_range(daydate, periods=24, freq='H')
+
+    if dates.tz is None:
+        times = dates.tz_localize(timezone)
+    else:
+        times = dates
+
+    Io = None
+    dayofyear = times.tz_convert('UTC').dayofyear
+    B = 2 * numpy.pi * (dayofyear - 1) / 365.
+    if method == 'asce':
+        # R. G. Allen, Environmental, and E. Water Resources institute .
+        # Task Committee on Standardization of Reference,
+        # The ASCE standardized reference evapotranspiration equation.
+        # Reston, Va.: American Society of Civil Engineers, 2005.
+        Io = solar_constant * (1 + 0.033 * numpy.cos(B))
+    elif method == 'spencer':
+        # Approx Spencer 1971
+        # J. W. Spencer, Fourier series representation of the sun,
+        # Search, vol. 2, p. 172, 1971
+        Io = solar_constant * (
+        1.00011 + 0.034221 * numpy.cos(B) + 0.00128 * numpy.sin(
+            B) - 0.000719 * numpy.cos(2 * B) + 0.000077 * numpy.sin(2 * B))
+    else:
+        raise ValueError('unrecognised method: ' + method)
+
+    return Io

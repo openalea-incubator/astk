@@ -17,6 +17,6 @@ def test_alternative_sun_position():
     sune = sun_position_ephem()
     suna = sun_position_astk()
     # ephem is equivalent < 1%
-    # astk <5 %
     numpy.testing.assert_allclose(sune, sun, rtol=0.01)
+    # astk is equivalent <5 %
     numpy.testing.assert_allclose(suna, sun, rtol=0.05)

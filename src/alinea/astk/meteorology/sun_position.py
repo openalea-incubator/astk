@@ -18,10 +18,11 @@
 import pandas
 try:
     from pvlib.solarposition import get_solarposition
+    from pvlib.irradiance import extraradiation
 except ImportError:
     print('pvlib not found on your system, you may use sun_position_astk'
           'instead OR install ephem and use sun_position_ephem OR install pvlib'
-          ' (recomended')
+          ' (recommended)')
 
 # default location and dates
 _day = '2000-06-21'
@@ -72,5 +73,25 @@ def sun_position(dates=None, daydate=_day, latitude=_latitude,
     return sunpos
 
 
+def sun_extraradiation(dates=None, daydate=_day, solar_constant=1366.1,
+                       method='spencer', timezone=_timezone):
+    """ Extraterrestrial radiation (W.m2) at the top of the earth atmosphere
 
+        Args:
+            dates: a pandas.DatetimeIndex specifying the dates at which output
+            is required.If None, daydate is used and one position per hour is generated
+            daydate: (str) yyyy-mm-dd (not used if dates is not None).
+            solar_constant: (float)
+            method: one method provided by pvlib
+            timezone: a string identifying the timezone to be associated to dates if
+             dates is not already localised.
+    """
+    if dates is None:
+        dates = pandas.date_range(daydate, periods=24, freq='H')
 
+    if dates.tz is None:
+        times = dates.tz_localize(timezone)
+    else:
+        times = dates
+
+    return extraradiation(times, solar_constant=solar_constant, method=method)
