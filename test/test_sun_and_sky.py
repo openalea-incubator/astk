@@ -1,5 +1,5 @@
 from alinea.astk.sun_and_sky import sky_discretisation, \
-    sky_radiance_distribution, sky_sources, sun_sources
+    sky_radiance_distribution, sky_sources, sun_sources, sun_sky_sources
 import numpy
 
 
@@ -25,15 +25,15 @@ def test_sky_radiance_distribution():
 
 
 def test_sky_sources():
-    el, az, irr = sky_sources(type='soc')
+    el, az, irr = sky_sources(sky_type='soc')
     assert len(az) == len(el) == len(irr) == 46
     numpy.testing.assert_almost_equal(numpy.sum(irr), 1)
 
-    el, az, irr = sky_sources(type='clear_sky')
+    el, az, irr = sky_sources(sky_type='clear_sky')
     assert len(az) == len(el) == len(irr) == 46
     numpy.testing.assert_almost_equal(numpy.sum(irr), 1)
 
-    el, az, irr = sky_sources(type='clear_sky', irradiance=None)
+    el, az, irr = sky_sources(sky_type='clear_sky', irradiance=None)
     assert irr.max() > 60
 
 
@@ -44,3 +44,7 @@ def test_sun_source():
 
     el, az, irr = sun_sources(irradiance=None)
     assert irr.max() > 800
+
+
+def test_sun_sky_sources():
+    sun, sky = sun_sky_sources()
