@@ -284,3 +284,24 @@ def daily_diffuse_fraction(ghi, times, latitude):
                    numpy.where(RsRso <= 0.35, 1 - 2.3 * (RsRso - 0.07) ** 2,
                                numpy.where(RsRso <= 0.75, 1.33 - 1.46 * RsRso,
                                            0.23)))
+
+# def RgH (Rg,hTU,DOY,latitude) :
+# """ compute hourly value of Rg at hour hTU for a given day at a given latitude
+# Rg is in J.m-2.day-1
+# latidude in degrees
+# output is J.m-2.h-1
+# """
+
+# dec = DecliSun(DOY)
+# lat = radians(latitude)
+# pi = 3.14116
+# a = sin(lat) * sin(dec)
+# b = cos(lat) * cos(dec)
+# Psi = numpy.pi * Rg / 86400 / (a * acos(-a / b) + b * sqrt(1 - (a / b)^2))
+# A = -b * Psi
+# B = a * Psi
+# RgH = A * cos (2 * pi * hTU / 24) + B
+# Note that this formula works for h beteween hsunset eand hsunrise
+# hsunrise = 12 - 12/pi * acos(-a / b)
+# hsunset = 12 + 12/pi * acos (-a / b)
+# return RgH
