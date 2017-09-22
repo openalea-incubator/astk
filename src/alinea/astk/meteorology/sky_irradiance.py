@@ -224,12 +224,7 @@ def sky_irradiances(dates=None, daydate=_daydate, ghi=None, dhi=None,
                       longitude=longitude, altitude=altitude,
                       timezone=timezone)
 
-    if ghi is None:
-        irr = clear_sky_irradiances(dates=df.index, latitude=latitude,
-                                   longitude=longitude, altitude=altitude,
-                                   timezone=timezone)
-        df = pandas.concat([df, irr], axis=1)
-    elif dhi is None:
+    if ghi is None or dhi is None:
         irr = actual_sky_irradiances(dates=df.index, ghi=ghi,
                                      attenuation=attenuation, pressure=pressure,
                                      temp_dew=temp_dew, latitude=latitude,
