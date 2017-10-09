@@ -26,9 +26,11 @@ from alinea.astk.meteorology.sun_position import sun_position, \
 
 try:
     import pvlib
-except ImportError:
-    print('pvlib not found on your system, you may use sky_iradiance_astk'
-          'instead OR  install pvlib (recommended)')
+except ImportError as e:
+    raise ImportError(
+        '{0}\npvlib not found on your system, you may use sun_position_astk '
+        'instead OR install ephem and use sun_position_ephem OR install pvlib '
+        '(recommended)'.format(e))
 
 # default location and dates
 _daydate = '2000-06-21'

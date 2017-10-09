@@ -16,13 +16,16 @@
 """ Sun position using pvlib lib
 """
 import pandas
+
 try:
     from pvlib.solarposition import get_solarposition
     from pvlib.irradiance import extraradiation
-except ImportError:
-    print('pvlib not found on your system, you may use sun_position_astk'
-          'instead OR install ephem and use sun_position_ephem OR install pvlib'
-          ' (recommended)')
+except ImportError as e:
+    raise ImportError(
+        '{0}\npvlib not found on your system, you may use sun_position_astk '
+        'instead OR install ephem and use sun_position_ephem OR install pvlib '
+        '(recommended)'.format(e))
+
 
 # default location and dates
 _day = '2000-06-21'
