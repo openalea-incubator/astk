@@ -14,7 +14,7 @@ env:
    CONDA_VERSION=2
 
 install:
-  - git clone https://github.com/OpenAlea/travis-ci.git
+  - git clone https://github.com/openalea/travis-ci.git
   - cd travis-ci
   - source install.sh
 
