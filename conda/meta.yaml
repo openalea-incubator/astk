@@ -21,7 +21,6 @@ requirements:
     - numpy
     - pandas
     - openalea.plantgl
-    - pvlib
     - alinea.caribu
 
 test:
