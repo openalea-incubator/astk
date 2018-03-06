@@ -22,13 +22,12 @@ requirements:
     - pandas
     - openalea.plantgl
     - alinea.caribu
-
 test:
   imports:
-    - openalea.mtg
+    - alinea.astk
 
 about:
-  home: http://openalea.gforge.inria.fr/
+  home: http://github.com/openalea-incubator/astk
   license: CeCILL_C
-  summary: OpenAlea.MTG implements Multiscale Tree Graph datastructure and interfaces
+  summary: The Alinea.astk package provides utilities for simulation of FSPM models.
 
