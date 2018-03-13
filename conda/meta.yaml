@@ -21,7 +21,6 @@ requirements:
     - numpy
     - pandas
     - openalea.plantgl
-    - alinea.caribu
 test:
   imports:
     - alinea.astk
