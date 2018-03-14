@@ -1,0 +1,32 @@
+{% set version = "2.0.0" %}
+
+package:
+  name: alinea.astk
+  version: {{ version }}
+
+source:
+  path: ..
+
+build:
+  preserve_egg_dir: True
+  number: 0
+  script: python setup.py install
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - openalea.core
+    - numpy
+    - pandas
+    - openalea.plantgl
+test:
+  imports:
+    - alinea.astk
+
+about:
+  home: http://github.com/openalea-incubator/astk
+  license: CeCILL_C
+  summary: The Alinea.astk package provides utilities for simulation of FSPM models.
+
