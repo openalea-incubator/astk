@@ -1,0 +1,1 @@
+"""A collection of simple scene objects that can be maped to/from PlanGL scenes"""
