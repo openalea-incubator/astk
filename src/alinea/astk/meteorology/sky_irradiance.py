@@ -243,6 +243,19 @@ def sky_irradiances(dates=None, daydate=_daydate, ghi=None, dhi=None,
     dni_extra = sun_extraradiation(df.index)
     df['brightness'] = brightness(am, df['dhi'], dni_extra)
     df['clearness'] = clearness(df['dni'], df['dhi'], df['zenith'])
+
+    # twilight conditions (sun_el < 0, ghi > 0)
+    if len(df) < 1 and ghi is not None:
+        df = sun_position(dates=dates, daydate=daydate, latitude=latitude,
+                          longitude=longitude, altitude=altitude,
+                          timezone=timezone, filter_night=False)
+        df['ghi'] = ghi
+        df['dhi'] = ghi
+        df['dni'] = 0
+        df['clearness'] = None
+        df['brightness'] = None
+        df = df.loc[df.ghi > 0, :]
+
     return df.loc[:,
            ['azimuth', 'zenith', 'elevation', 'clearness', 'brightness', 'ghi',
             'dni', 'dhi']]
