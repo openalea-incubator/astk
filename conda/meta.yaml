@@ -21,6 +21,8 @@ requirements:
     - numpy
     - pandas
     - openalea.plantgl
+    - pvlib-python
+    - pytables
 test:
   imports:
     - alinea.astk
