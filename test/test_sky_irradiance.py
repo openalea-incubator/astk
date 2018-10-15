@@ -12,13 +12,13 @@ def test_clear_sky_irradiances():
     assert len(df) == 15
     df2 = clear_sky_irradiances_astk()
     assert len(df2) == 15
-    numpy.testing.assert_allclose(df.ghi, df2.ghi, rtol=0.2)
+    numpy.testing.assert_allclose(df.ghi, df2.ghi, atol=55)
 
 
 def test_actual_sky_irradiance():
     df = actual_sky_irradiances()
     assert len(df) == 15
-    assert df.dhi.sum() / df.ghi.sum() < 0.2
+    assert df.dhi.sum() / df.ghi.sum() < 0.25
     df2 = actual_sky_irradiances_astk()
     assert len(df2) == 15
     numpy.testing.assert_allclose(df.dhi, df2.dhi, atol=80)
@@ -33,7 +33,7 @@ def test_actual_sky_irradiance():
 def test_sky_irradiances():
     df = sky_irradiances()
     assert len(df) == 15
-    assert df.dhi.sum() / df.ghi.sum() < 0.2
+    assert df.dhi.sum() / df.ghi.sum() < 0.25
     df = sky_irradiances(attenuation=0.2)
     assert df.dhi.sum() / df.ghi.sum() > 0.99
     df2 = sky_irradiances_astk()
