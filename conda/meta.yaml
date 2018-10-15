@@ -21,9 +21,13 @@ requirements:
     - numpy
     - pandas
     - openalea.plantgl
+    - pvlib-python
+    - pytables
+    - nose
 test:
   imports:
     - alinea.astk
+  script: nosetests test
 
 about:
   home: http://github.com/openalea-incubator/astk
