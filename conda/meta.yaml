@@ -23,11 +23,16 @@ requirements:
     - openalea.plantgl
     - pvlib-python
     - pytables
-    - nose
+
 test:
+  requires:
+    - nose
   imports:
     - alinea.astk
-  script: nosetests test
+  source_files:
+    - test/test_*.py
+  commands:
+   - nosetests -v
 
 about:
   home: http://github.com/openalea-incubator/astk
