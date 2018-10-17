@@ -51,8 +51,8 @@ def test_sun_sky_sources():
     sun, sky = sun_sky_sources(model='blended')
     sun, sky = sun_sky_sources(model='sun_soc')
     sun, sky = sun_sky_sources(model='blended', normalisation=1)
-    assert sun[2].sum() + sky[2].sum() == 1
-    assert sun[2].sum() > 0.8
+    numpy.testing.assert_almost_equal(sun[2].sum() + sky[2].sum(), 1)
+    assert sun[2].sum() > 0.75
     sun, sky = sun_sky_sources(model='blended', normalisation=1, attenuation=0.2)
     assert sky[2].sum() > 0.99
 

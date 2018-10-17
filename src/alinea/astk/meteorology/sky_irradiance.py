@@ -62,9 +62,9 @@ def air_mass(zenith, altitude=0):
         zenith : an array-like object of zenital directions (degrees)
         altitude : (float)
     """
-    airmass = pvlib.atmosphere.relativeairmass(zenith)
+    airmass = pvlib.atmosphere.get_relative_airmass(zenith)
     pressure = pvlib.atmosphere.alt2pres(altitude)
-    am = pvlib.atmosphere.absoluteairmass(airmass, pressure)
+    am = pvlib.atmosphere.get_absolute_airmass(airmass, pressure)
     return am
 
 
