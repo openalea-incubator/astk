@@ -410,6 +410,37 @@ def turtle_dome(refine_level=3):
 
     return new_vertices, new_faces
 
+def turtle_sectors(nb_sectors=46):
+    """Generate faces of a dual icosphere polyhedron mapping the Z+ hemisphere
+
+    Args:
+        refine_level (int): the level of refinement of the dual icosphere. By
+        default 46 polygons are returned (refine_level=3).
+
+        For information, here are the number of faces obtained for the first ten
+        refinement level: 0: 6, 1: 16, 2: 26, 3: 46, 4: 66, 5: 91, 6: 136,
+        7: 196, 8: 251, 9: 341, 10: 406
+
+    Returns:
+        a list of vertices and a list of faces
+    """
+    sectors = [ 1, 6, 16, 26, 46, 66, 91, 136, 196, 251, 341, 406]
+    refines = [-1, 0,  1,  2,  3,  4,  5,   6,   7,   8,   9,  10]
+    s2r = dict(zip(sectors,refines))
+
+    if nb_sectors not in s2r:
+        print('Use a value of nb_sectors in the set ', sectors)
+
+    refine_level = s2r[nb_sectors]
+
+    vertices, faces = dual(*icosphere(*refine(refine_level)))
+
+    # Compute the centroid of each face
+    centers = [centroid([vertices[p] for p in face]) for face in faces]
+
+    elevations, azimuths = spherical(centers)
+
+    return elevations, azimuths
 
 def sample_faces(vertices, faces, iter=2, spheric=False):
     """Generate a set of points that regularly sample the faces of a polyhedron
