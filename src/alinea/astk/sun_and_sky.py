@@ -114,6 +114,9 @@ def sky_discretisation(type='turtle46', nb_az=None, nb_el=None):
     steradians46 = [0.1355] * 10 + [0.1476] * 5 + [0.1207] * 5 + [
                    0.1375] * 10 + [0.1364] * 5 + [0.1442] * 5 + [0.1378] * 5 + [
                        0.1196]
+    elevations16 = [90] + [26.57] * 5 + [52.62] * 5 + [10.81] * 5
+    azimuths16 = [180, 0, 72, 144, 216, 288, 36, 108, 180, 252, 324, 36, 108, 180, 252, 324]
+
     sky_fraction = numpy.array(steradians46) / sum(steradians46)
 
     return elevations46, azimuths46, sky_fraction
