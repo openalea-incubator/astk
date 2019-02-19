@@ -410,6 +410,7 @@ def turtle_dome(refine_level=3):
 
     return new_vertices, new_faces
 
+
 def turtle_sectors(nb_sectors=46):
     """Generate faces of a dual icosphere polyhedron mapping the Z+ hemisphere
 
@@ -433,7 +434,7 @@ def turtle_sectors(nb_sectors=46):
 
     refine_level = s2r[nb_sectors]
 
-    vertices, faces = dual(*icosphere(*refine(refine_level)))
+    vertices, faces = turtle_dome(refine_level)
 
     # Compute the centroid of each face
     centers = [centroid([vertices[p] for p in face]) for face in faces]
@@ -441,6 +442,7 @@ def turtle_sectors(nb_sectors=46):
     elevations, azimuths = spherical(centers)
 
     return elevations, azimuths
+
 
 def sample_faces(vertices, faces, iter=2, spheric=False):
     """Generate a set of points that regularly sample the faces of a polyhedron
