@@ -4,6 +4,24 @@ import numpy
 import pandas
 
 
+def test_sky_discretisation():
+    elevation, azimuth, frac = sky_discretisation()
+    assert len(elevation) == len(azimuth) == len(frac) == 46
+    numpy.testing.assert_almost_equal(numpy.sum(frac), 1)
+    elevation, azimuth, frac = sky_discretisation(1)
+    assert len(elevation) == len(azimuth) == len(frac) == 1
+    numpy.testing.assert_almost_equal(numpy.sum(frac), 1)
+    elevation, azimuth, frac = sky_discretisation(2)
+    assert len(elevation) == len(azimuth) == len(frac) == 6
+    numpy.testing.assert_almost_equal(numpy.sum(frac), 1)
+    elevation, azimuth, frac = sky_discretisation(6)
+    assert len(elevation) == len(azimuth) == len(frac) == 6
+    elevation, azimuth, frac = sky_discretisation(16)
+    assert len(elevation) == len(azimuth) == len(frac) == 16
+    numpy.testing.assert_almost_equal(numpy.sum(frac), 1)
+    elevation, azimuth, frac = sky_discretisation(100)
+    assert len(elevation) == len(azimuth) == len(frac) == 46
+
 def test_sky_radiance_distribution():
     elevation, azimuth, strd = sky_discretisation()
     fraction = numpy.array(strd) / sum(strd)
