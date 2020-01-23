@@ -344,11 +344,7 @@ def sky_blend(sky, f_sun=0.):
     def _f_clear(clearness_index):
         return min(1, (clearness_index - 1) / (1.41 - 1))
 
-<<<<<<< HEAD
     f_clear = numpy.array(list(map(_f_clear, sky['clearness'])))
-=======
-    f_clear = numpy.array(map(_f_clear, sky['clearness']))
->>>>>>> Add turtle_sectors in icosphere.py
     # temporal integration
     fclear = (f_clear * sky['ghi']).sum() / sky['ghi'].sum()
     f_clear_sky = fclear * (1 - f_sun)
