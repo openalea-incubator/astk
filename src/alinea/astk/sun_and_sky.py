@@ -90,7 +90,7 @@ def cie_relative_luminance(sky_elevation, sky_azimuth=None, sun_elevation=None,
 
     if type == 'clear_sky' and (
                 sun_elevation is None or sun_azimuth is None or sky_azimuth is None):
-        raise ValueError, 'Clear sky requires sun position'
+        raise ValueError('Clear sky requires sun position')
 
     if type == 'soc':
         return cie_luminance_gradation(sky_elevation, 4, -0.7)
@@ -102,7 +102,7 @@ def cie_relative_luminance(sky_elevation, sky_azimuth=None, sun_elevation=None,
             sun_azimuth, sun_elevation, sky_azimuth, sky_elevation, 10, -3,
             0.45)
     else:
-        raise ValueError, 'Unknown sky type'
+        raise ValueError('Unknown sky type')
 
 
 def sky_discretisation(turtle_sectors=46, nb_az=None, nb_el=None):
