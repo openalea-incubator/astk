@@ -46,7 +46,7 @@ class TimeControl:
         return TimeControl(delay=self.delay, steps=self.steps, model=self.model, weather=self.weather, start_date=self.start_date) 
 
     def next(self):
-        return self._timing.next()
+        return next(self._timing)
                   
             
 class TimeControler:
@@ -64,7 +64,7 @@ class TimeControler:
         return self
     
     def next(self):
-        d = dict((k,v.next()) for k,v in self._timedict.items())
+        d = dict((k,next(v)) for k,v in self._timedict.items())
         if len(d) == 0:
             raise StopIteration
         self.numiter += 1
@@ -103,11 +103,11 @@ class IterWithDelays(object):
         return IterWithDelays(self.values, self.delays)
         
     def next(self):
-        self.ev = self._evalseq.next()
+        self.ev = next(self._evalseq)
         if self.ev : 
             try: #prevent value exhaustion to stop iterating
-                self.val = self._iterable.next()
-                self.dt = self._iterdelays.next()
+                self.val = next(self._iterable)
+                self.dt = next(self._iterdelays)
             except StopIteration:
                 pass
         return EvalValue(self.ev, self.val, self.dt)
@@ -290,10 +290,10 @@ class IterWithDelaysNode(IterNode):
             if(hasattr(self, "nextval")):
                 self.outputs[0] = self.nextval
             else:
-                self.outputs[0] = self.iterable.next()
+                self.outputs[0] = next(self.iterable)
                 
-            self.nextval = self.iterable.next()
-            delay = self.iterdelay.next()
+            self.nextval = next(self.iterable)
+            delay = next(self.iterdelay)
             self.outputs[1] = delay
             self.outputs[2] = numpy.random.random() #used to trigger lazy nodes every delay
             return delay
