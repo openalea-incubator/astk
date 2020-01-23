@@ -7,7 +7,7 @@ from six.moves import map
 from six.moves import zip
 from functools import reduce
 
-class TimeControlSet:
+class TimeControlSet(object):
 
     def __init__(self, **kwd):
         """  Create a TimeControlSet , that is a simple class container for named object"""
@@ -23,7 +23,7 @@ def simple_delay_timing(delay = 1, steps =1):
     return (TimeControlSet(dt=delay) if not i % delay  else TimeControlSet(dt=0) for i in range(steps))
             
             
-class TimeControl:
+class TimeControl(object):
 
     def __init__(self, delay=None, steps=None, model=None, weather=None, start_date=None):
         """ create a generator-like timecontrol object """
@@ -50,7 +50,7 @@ class TimeControl:
         return next(self._timing)
                   
             
-class TimeControler:
+class TimeControler(object):
 
     def __init__(self, **kwd):
         """ create a controler for parallel run of time controls
@@ -81,7 +81,7 @@ def evaluation_sequence(delays):
     seq = [[True if i == 0 else False for i in range(int(d))] for d in delays]
     return reduce(lambda x,y: x + y, seq)
 
-class EvalValue:
+class EvalValue(object):
     
     def __init__(self, eval, value, dt):
         self.eval = eval
@@ -205,7 +205,7 @@ def rain_filter_node(time_sequence, weather):
     filter = rain_filter(time_sequence, weather)
     return time_sequence, filter, weather.data
    
-class DegreeDayModel:
+class DegreeDayModel(object):
     """ Classical degreeday model equation
     """
     
