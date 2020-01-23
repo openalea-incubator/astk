@@ -12,6 +12,7 @@ install:
   - cd appveyor-ci
   - call install.bat
   - conda config --append channels conda-forge
+  - conda config --append channels anaconda
 
 before_build:
   - call before_build.bat
