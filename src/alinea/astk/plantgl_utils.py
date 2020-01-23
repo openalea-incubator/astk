@@ -23,7 +23,7 @@ def get_area_and_normal(scene_geometry):
     tesselator = pgl.Tesselator()
     areas={}
     normals={}
-    for vid,shapes in scene_geometry.iteritems():
+    for vid,shapes in scene_geometry.items():
         S = []
         norm = []
         if not _is_iterable(shapes):
@@ -53,7 +53,7 @@ def get_height(scene_geometry):
     """
     heights = {}
     tesselator = pgl.Tesselator()
-    for vid,shapes in scene_geometry.iteritems():
+    for vid,shapes in scene_geometry.items():
         S = []
         H = []
         if not _is_iterable(shapes):

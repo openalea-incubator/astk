@@ -475,7 +475,7 @@ def sample_faces(vertices, faces, iter=2, spheric=False):
             points[tags[i]].append(centroid([vertices[p] for p in face]))
 
     if spheric:
-        points = {k:spherical(v) for k, v in points.iteritems()}
+        points = {k:spherical(v) for k, v in points.items()}
 
     return points
 

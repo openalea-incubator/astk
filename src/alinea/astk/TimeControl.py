@@ -57,12 +57,12 @@ class TimeControler:
         self.numiter = 0
         
     def __iter__(self):
-        self._timedict = dict((k,iter(v)) for k,v in self._timedict.iteritems())
+        self._timedict = dict((k,iter(v)) for k,v in self._timedict.items())
         self.numiter = 0
         return self
     
     def next(self):
-        d = dict((k,v.next()) for k,v in self._timedict.iteritems())
+        d = dict((k,v.next()) for k,v in self._timedict.items())
         if len(d) == 0:
             raise StopIteration
         self.numiter += 1
