@@ -27,6 +27,7 @@ import math
 import numpy
 import warnings
 from six.moves import zip
+from six.moves import range
 
 display_enable = True
 try:
@@ -466,7 +467,7 @@ def sample_faces(vertices, faces, iter=2, spheric=False):
         points = {i: [centroid([vertices[p] for p in face])] for i, face in
                 enumerate(faces)}
     else:
-        tags = range(len(faces))
+        tags = list(range(len(faces)))
         vertices, faces, tags = star_split(vertices, faces, tags)
         for i in range(iter):
             vertices, faces, tags = split_triangles(vertices, faces, tags)
