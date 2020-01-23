@@ -5,6 +5,7 @@ from __future__ import division
 import numpy
 from six.moves import map
 from six.moves import zip
+from functools import reduce
 
 class TimeControlSet:
 
