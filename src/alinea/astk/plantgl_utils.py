@@ -1,5 +1,6 @@
 from __future__ import division
 from openalea.plantgl import all as pgl
+from six.moves import range
 
 def _is_iterable(x):
     try:
@@ -31,7 +32,7 @@ def get_area_and_normal(scene_geometry):
         for shape in shapes:
             shape.apply(tesselator)
             mesh = tesselator.triangulation
-            itri = range(mesh.indexListSize())
+            itri = list(range(mesh.indexListSize()))
             pts = mesh.pointList
             S +=[_surf(mesh.indexAt(i),pts) for i in itri]
             norm += [_normal(mesh.indexAt(i),pts) for i in itri]
@@ -61,7 +62,7 @@ def get_height(scene_geometry):
         for shape in shapes:
             shape.apply(tesselator)
             mesh = tesselator.triangulation
-            itri = range(mesh.indexListSize())
+            itri = list(range(mesh.indexListSize()))
             H += [mesh.faceCenter(i)[2] for i in itri]
         heights.update({vid:H})
     return heights
