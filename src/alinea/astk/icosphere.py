@@ -26,6 +26,7 @@ from __future__ import division
 import math
 import numpy
 import warnings
+from six.moves import zip
 
 display_enable = True
 try:
@@ -81,7 +82,7 @@ def norm(vector):
 
 def spherical(points):
     """ zenital and azimutal coordinate of a list of points"""
-    x, y, z = zip(*points)
+    x, y, z = list(zip(*points))
     return numpy.arccos(z), numpy.arctan2(y, x)
 
 
@@ -122,7 +123,7 @@ def middle_point(p1, p2):
 
 
 def centroid(points):
-    x, y, z = zip(*points)
+    x, y, z = list(zip(*points))
     return numpy.mean(x), numpy.mean(y), numpy.mean(z)
 
 
