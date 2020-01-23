@@ -4,6 +4,7 @@ Provides utilities for scheduling models in simulation
 from __future__ import division
 import numpy
 from six.moves import map
+from six.moves import zip
 
 class TimeControlSet:
 
@@ -138,7 +139,7 @@ def time_control(time_sequence, eval_filter, data=None):
         controls = [((end - start).total_seconds() // 3600, _truncdata(data, start, end, last)) for start,end in zip(starts,ends)]
     else:
         controls = [((end - start).total_seconds() // 3600, None) for start,end in zip(starts,ends)]
-    delays, values = zip(*controls)
+    delays, values = list(zip(*controls))
     return values, delays
  
   
