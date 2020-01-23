@@ -23,6 +23,7 @@ from alinea.astk.meteorology.sky_irradiance import (
     clear_sky_irradiances,
     horizontal_irradiance)
 from alinea.astk.meteorology.sun_position import sun_position
+from six.moves import map
 
 # default location and dates
 _daydate = '2000-06-21'
@@ -343,7 +344,7 @@ def sky_blend(sky, f_sun=0.):
     def _f_clear(clearness_index):
         return min(1, (clearness_index - 1) / (1.41 - 1))
 
-    f_clear = numpy.array(map(_f_clear, sky['clearness']))
+    f_clear = numpy.array(list(map(_f_clear, sky['clearness'])))
     # temporal integration
     fclear = (f_clear * sky['ghi']).sum() / sky['ghi'].sum()
     f_clear_sky = fclear * (1 - f_sun)

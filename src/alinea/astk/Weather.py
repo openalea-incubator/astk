@@ -117,8 +117,8 @@ class Weather(object):
         else:
             self.data = reader(data_file)
             date = self.data['date']
-            date = map(lambda x: self.timezone.localize(x), date)
-            utc = map(lambda x: x.astimezone(pytz.utc), date)
+            date = [self.timezone.localize(x) for x in date]
+            utc = [x.astimezone(pytz.utc) for x in date]
             self.data.index = utc
             self.data.index.name = 'date_utc'
 
