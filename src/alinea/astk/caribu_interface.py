@@ -44,7 +44,7 @@ def run_caribu(sources, scene_geometry, output_by_triangle = False):
         A dict of intercepted variable (energy) per triangle
     """
     c_scene = CaribuScene()
-    shapes=[geom2shape(k,v) for k,v in scene_geometry.iteritems()]
+    shapes=[geom2shape(k,v) for k,v in scene_geometry.items()]
     idmap = c_scene.add_Shapes(shapes)    
     c_scene.addSources(sources)
     output = c_scene.runCaribu(infinity=False)
