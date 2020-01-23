@@ -1,6 +1,7 @@
 """
 Provides utilities for scheduling models in simulation
 """
+from __future__ import division
 import numpy
 
 class TimeControlSet:
@@ -133,9 +134,9 @@ def time_control(time_sequence, eval_filter, data=None):
     ends = starts[1:].tolist() + [time_sequence[-1]]
     last = time_sequence[-1]
     if data is not None:
-        controls = [((end - start).total_seconds() / 3600, _truncdata(data, start, end, last)) for start,end in zip(starts,ends)]
+        controls = [((end - start).total_seconds() // 3600, _truncdata(data, start, end, last)) for start,end in zip(starts,ends)]
     else:
-        controls = [((end - start).total_seconds() / 3600, None) for start,end in zip(starts,ends)]
+        controls = [((end - start).total_seconds() // 3600, None) for start,end in zip(starts,ends)]
     delays, values = zip(*controls)
     return values, delays
  
