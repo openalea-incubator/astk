@@ -295,12 +295,12 @@ class IterWithDelaysNode(IterNode):
             self.outputs[2] = numpy.random.random() #used to trigger lazy nodes every delay
             return delay
 
-        except TypeError, e:
+        except TypeError as e:
             self.outputs[0] = self.inputs[0]
             self.outputs[1] = self.inputs[1]
             return False
 
-        except StopIteration, e:
+        except StopIteration as e:
             if self.wait > 1:
                 self.wait -= 1
                 return True
