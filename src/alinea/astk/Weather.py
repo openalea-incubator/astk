@@ -5,6 +5,7 @@ Created on Wed Apr 24 14:29:15 2013
 @author: lepse
 """
 
+from __future__ import division
 import pandas
 import pytz
 from datetime import datetime, timedelta

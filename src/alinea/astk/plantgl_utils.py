@@ -1,3 +1,4 @@
+from __future__ import division
 from openalea.plantgl import all as pgl
 
 def _is_iterable(x):
