@@ -6,6 +6,7 @@ Created on Wed Apr 24 14:29:15 2013
 """
 
 from __future__ import division
+from __future__ import print_function
 import pandas
 import pytz
 from datetime import datetime, timedelta
@@ -236,7 +237,7 @@ def weather_node(weather_path):
 def weather_check_node(weather, vars, models):
     ok = weather.check(vars, models)
     if not numpy.all(ok):
-        print "weather_check: warning, missing  variables!!!"
+        print("weather_check: warning, missing  variables!!!")
     return weather
 
 
