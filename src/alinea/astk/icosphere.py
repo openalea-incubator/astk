@@ -22,6 +22,7 @@ Generation of regular spherical polyhedrons: icospheres and their
 hexagonal/pentagonal duals.
 """
 
+from __future__ import division
 import math
 import numpy
 import warnings

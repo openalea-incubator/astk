@@ -1,6 +1,7 @@
 """ Sun position using ephem lib
 """
 
+from __future__ import division
 import pandas
 import numpy
 import datetime

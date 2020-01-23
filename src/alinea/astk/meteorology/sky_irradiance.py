@@ -19,6 +19,8 @@ condition or estimate them from meteorological data
 This module is mainly a collection of syntactic sugar to pvlib clearsky and
 irradiances packages.
 """
+
+from __future__ import division
 import numpy
 import pandas
 from alinea.astk.meteorology.sun_position import sun_position, \

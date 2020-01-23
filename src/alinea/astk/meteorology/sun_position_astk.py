@@ -1,6 +1,7 @@
 """ Astronomical equation for determining sun position
 """
 
+from __future__ import division
 import pandas
 import numpy
 

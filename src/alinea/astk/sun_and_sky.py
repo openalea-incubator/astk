@@ -15,6 +15,7 @@
 irradiance
 """
 
+from __future__ import division
 import numpy
 import pandas
 from alinea.astk.meteorology.sky_irradiance import (
