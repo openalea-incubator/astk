@@ -255,10 +255,13 @@ def date_range_node(start, end, periods, freq, tz, normalize,
 def sample_weather(periods=24):
     """ provides a sample weather instance for testing other modules
     """
-    from openalea.deploy.shared_data import shared_data
-    import alinea.septo3d
+    #from openalea.deploy.shared_data import shared_data
+    #import alinea.septo3d
+    import astk_data
+    from path import Path
 
-    meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
+    meteo_path = Path(astk_data.__path__[0])/'meteo00-01.txt'
+    #meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
     t_deb = "2000-10-01 01:00:00"
     seq = pandas.date_range(start="2000-10-02", periods=periods, freq='H')
     weather = Weather(data_file=meteo_path)
