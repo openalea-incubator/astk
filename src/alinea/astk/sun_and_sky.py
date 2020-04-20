@@ -294,6 +294,7 @@ def sun_fraction(sky):
     Returns:
         integrated sun fraction
     """
+    if sky['dni'].sum() == 0 : return 0
     return (sky['ghi'] - sky['dhi']).sum() / sky['ghi'].sum()
 
 
@@ -373,7 +374,7 @@ def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
                       daydate=daydate, latitude=latitude, longitude=longitude,
                       altitude=altitude, timezone=timezone)
 
-    if model == 'blended':
+    if model == 'blended' and f_sun != 0:
         f_clear_sky, f_soc = sky_blend(sky_irr, f_sun)
         irradiance = f_soc * normalisation
         sky_el, sky_az, soc = sky_sources(sky_type='soc', irradiance=irradiance)
@@ -386,6 +387,9 @@ def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
         sky = sky_el, sky_az, soc + csky
     elif model == 'sun_soc':
         irradiance = (1 - f_sun) * normalisation
+        sky = sky_sources(sky_type='soc', irradiance=irradiance)
+    elif f_sun == 0:
+        irradiance = (1 - f_sun) * ghi
         sky = sky_sources(sky_type='soc', irradiance=irradiance)
     else:
         raise ValueError(
