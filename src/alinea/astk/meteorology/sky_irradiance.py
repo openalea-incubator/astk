@@ -225,36 +225,40 @@ def sky_irradiances(dates=None, daydate=_daydate, ghi=None, dhi=None,
     df = sun_position(dates=dates, daydate=daydate, latitude=latitude,
                       longitude=longitude, altitude=altitude,
                       timezone=timezone)
-
-    if ghi is None or dhi is None:
-        irr = actual_sky_irradiances(dates=df.index, ghi=ghi,
-                                     attenuation=attenuation, pressure=pressure,
-                                     temp_dew=temp_dew, latitude=latitude,
-                                     longitude=longitude, altitude=altitude,
-                                     timezone=timezone)
-        df = pandas.concat([df, irr], axis=1)
-    else:
-        df['ghi'] = ghi
-        df['dhi'] = dhi
-        df['dni'] = normal_irradiance(numpy.array(ghi) - numpy.array(dhi),
-                                      df.elevation)
-
-    am = air_mass(df['zenith'], altitude)
-    dni_extra = sun_extraradiation(df.index)
-    df['brightness'] = brightness(am, df['dhi'], dni_extra)
-    df['clearness'] = clearness(df['dni'], df['dhi'], df['zenith'])
-
-    # twilight conditions (sun_el < 0, ghi > 0)
-    if len(df) < 1 and ghi is not None:
-        df = sun_position(dates=dates, daydate=daydate, latitude=latitude,
-                          longitude=longitude, altitude=altitude,
-                          timezone=timezone, filter_night=False)
-        df['ghi'] = ghi
-        df['dhi'] = ghi
-        df['dni'] = 0
-        df['clearness'] = None
-        df['brightness'] = None
-        df = df.loc[df.ghi > 0, :]
+    if len(df) < 1:  # night
+        if ghi is not None:  # twilight conditions (sun_el < 0, ghi > 0)
+            df = sun_position(dates=dates, daydate=daydate, latitude=latitude,
+                              longitude=longitude, altitude=altitude,
+                              timezone=timezone, filter_night=False)
+            df['ghi'] = ghi
+            df['dhi'] = ghi
+            df['dni'] = 0
+            df['clearness'] = None
+            df['brightness'] = None
+            df = df.loc[df.ghi > 0, :]
+        else:
+            df['ghi'] = 0
+            df['dhi'] = 0
+            df['dni'] = 0
+            df['clearness'] = None
+            df['brightness'] = None
+    else:   # day
+        if ghi is None or dhi is None:
+            irr = actual_sky_irradiances(dates=df.index, ghi=ghi,
+                                         attenuation=attenuation, pressure=pressure,
+                                         temp_dew=temp_dew, latitude=latitude,
+                                         longitude=longitude, altitude=altitude,
+                                         timezone=timezone)
+            df = pandas.concat([df, irr], axis=1)
+        else:
+            df['ghi'] = ghi
+            df['dhi'] = dhi
+            df['dni'] = normal_irradiance(numpy.array(ghi) - numpy.array(dhi),
+                                          df.elevation)
+        am = air_mass(df['zenith'], altitude)
+        dni_extra = sun_extraradiation(df.index)
+        df['brightness'] = brightness(am, df['dhi'], dni_extra)
+        df['clearness'] = clearness(df['dni'], df['dhi'], df['zenith'])
 
     return df.loc[:,
            ['azimuth', 'zenith', 'elevation', 'clearness', 'brightness', 'ghi',
