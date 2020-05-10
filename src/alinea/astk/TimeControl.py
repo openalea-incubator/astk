@@ -272,8 +272,12 @@ def filter_or(filters):
  
 def filter_and(filters):
     return reduce(lambda x,y: numpy.array(x) & numpy.array(y), filters)
- 
-from openalea.core.system.systemnodes import IterNode    
+
+try: 
+    from openalea.core.system.systemnodes import IterNode    
+except ImportError:
+    IterNode = object
+    pass
     
 class IterWithDelaysNode(IterNode):
     """ Iteration Node """
