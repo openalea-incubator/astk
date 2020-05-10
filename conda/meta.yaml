@@ -17,6 +17,7 @@ requirements:
     - python
     - setuptools
   run:
+    - python
     #- openalea.core
     - numpy
     - pandas
