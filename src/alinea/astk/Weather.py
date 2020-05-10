@@ -5,6 +5,8 @@ Created on Wed Apr 24 14:29:15 2013
 @author: lepse
 """
 
+from __future__ import division
+from __future__ import print_function
 import pandas
 import pytz
 from datetime import datetime, timedelta
@@ -116,8 +118,8 @@ class Weather(object):
         else:
             self.data = reader(data_file)
             date = self.data['date']
-            date = map(lambda x: self.timezone.localize(x), date)
-            utc = map(lambda x: x.astimezone(pytz.utc), date)
+            date = [self.timezone.localize(x) for x in date]
+            utc = [x.astimezone(pytz.utc) for x in date]
             self.data.index = utc
             self.data.index.name = 'date_utc'
 
@@ -235,7 +237,7 @@ def weather_node(weather_path):
 def weather_check_node(weather, vars, models):
     ok = weather.check(vars, models)
     if not numpy.all(ok):
-        print "weather_check: warning, missing  variables!!!"
+        print("weather_check: warning, missing  variables!!!")
     return weather
 
 
@@ -255,10 +257,13 @@ def date_range_node(start, end, periods, freq, tz, normalize,
 def sample_weather(periods=24):
     """ provides a sample weather instance for testing other modules
     """
-    from openalea.deploy.shared_data import shared_data
-    import alinea.septo3d
+    #from openalea.deploy.shared_data import shared_data
+    #import alinea.septo3d
+    import astk_data
+    from path import Path
 
-    meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
+    meteo_path = Path(astk_data.__path__[0])/'meteo00-01.txt'
+    #meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
     t_deb = "2000-10-01 01:00:00"
     seq = pandas.date_range(start="2000-10-02", periods=periods, freq='H')
     weather = Weather(data_file=meteo_path)

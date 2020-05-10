@@ -15,11 +15,15 @@
 irradiance
 """
 
+from __future__ import division
 import numpy
 import pandas
-from alinea.astk.meteorology.sky_irradiance import sky_irradiances, \
-    clear_sky_irradiances, horizontal_irradiance
+from alinea.astk.meteorology.sky_irradiance import (
+    sky_irradiances,
+    clear_sky_irradiances,
+    horizontal_irradiance)
 from alinea.astk.meteorology.sun_position import sun_position
+from six.moves import map
 
 # default location and dates
 _daydate = '2000-06-21'
@@ -33,10 +37,10 @@ _altitude = 56
 def cie_luminance_gradation(sky_elevation, a, b):
     """ function giving the dependence of the luminance of a sky element
     to its elevation angle
-    
+
     CIE, 2002, Spatial distribution of daylight CIE standard general sky,
     CIE standard, CIE Central Bureau, Vienna
-    
+
     elevation : elevation angle of the sky element (rad)
     a, b : coefficient for the type of sky
     """
@@ -51,10 +55,10 @@ def cie_scattering_indicatrix(sun_azimuth, sun_elevation, sky_azimuth,
                               sky_elevation, c, d, e):
     """ function giving the dependence of the luminance
     to its azimuth distance to the sun
-    
+
     CIE, 2002, Spatial distribution of daylight CIE standard general sky,
     CIE standard, CIE Central Bureau, Vienna
-    
+
     elevation : elevation angle of the sky element (rad)
     d, e : coefficient for the type of sky
     """
@@ -80,7 +84,7 @@ def cie_relative_luminance(sky_elevation, sky_azimuth=None, sun_elevation=None,
                            sun_azimuth=None, type='soc'):
     """ cie relative luminance of a sky element relative to the luminance
     at zenith
-    
+
     angle in radians
     type is one of 'soc' (standard overcast sky), 'uoc' (uniform radiance)
     or 'clear_sky' (standard clear sky low turbidity)
@@ -88,7 +92,7 @@ def cie_relative_luminance(sky_elevation, sky_azimuth=None, sun_elevation=None,
 
     if type == 'clear_sky' and (
                 sun_elevation is None or sun_azimuth is None or sky_azimuth is None):
-        raise ValueError, 'Clear sky requires sun position'
+        raise ValueError('Clear sky requires sun position')
 
     if type == 'soc':
         return cie_luminance_gradation(sky_elevation, 4, -0.7)
@@ -100,7 +104,7 @@ def cie_relative_luminance(sky_elevation, sky_azimuth=None, sun_elevation=None,
             sun_azimuth, sun_elevation, sky_azimuth, sky_elevation, 10, -3,
             0.45)
     else:
-        raise ValueError, 'Unknown sky type'
+        raise ValueError('Unknown sky type')
 
 
 def sky_discretisation(turtle_sectors=46, nb_az=None, nb_el=None):
@@ -339,7 +343,8 @@ def sky_blend(sky, f_sun=0.):
     """
     def _f_clear(clearness_index):
         return min(1, (clearness_index - 1) / (1.41 - 1))
-    f_clear = numpy.array(map(_f_clear, sky['clearness']))
+
+    f_clear = numpy.array(list(map(_f_clear, sky['clearness'])))
     # temporal integration
     fclear = (f_clear * sky['ghi']).sum() / sky['ghi'].sum()
     f_clear_sky = fclear * (1 - f_sun)

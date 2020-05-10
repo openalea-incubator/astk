@@ -19,7 +19,10 @@ import pandas
 
 try:
     from pvlib.solarposition import get_solarposition
-    from pvlib.irradiance import get_extra_radiation
+    try:
+        from pvlib.irradiance import get_extra_radiation
+    except ImportError:
+        from pvlib.irradiance import extraradiation as get_extra_radiation
 except ImportError as e:
     raise ImportError(
         '{0}\npvlib not found on your system, you may use sun_position_astk '

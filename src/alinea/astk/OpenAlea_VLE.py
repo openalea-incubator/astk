@@ -13,6 +13,7 @@
 # !!! AdelCaribu installe sous pkgs-1.1/pydynamics/pythonsrc
 # PyDynamics et convert installes sous pkgs-1.1/pydynamics_wrapper/wrapping
 
+from __future__ import print_function
 import PyDynamics
 import convert
 
@@ -42,11 +43,11 @@ class OpenAlea(PyDynamics.Dynamics):
 
         if "delay" in self.conditions.keys():
             self.p_delay = self.conditions["delay"]
-            print "Le 'delay' est de : ", self.p_delay
+            print("Le 'delay' est de : ", self.p_delay)
         else:
             self.p_delay = 1.0
 
-        print ""
+        print("")
 
     def init(self, time):
         pass
