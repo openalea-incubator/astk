@@ -290,7 +290,7 @@ def sun_position(dates=None, daydate=_day, latitude=_latitude,
     el = sun_elevation(hUTC, dayofyear, year, latitude, longitude)
     az = sun_azimuth(hUTC, dayofyear, year, latitude, longitude)
     sunpos = pandas.DataFrame(
-        {'elevation': el, 'zenith': 90 - el, 'azimuth': az}, index=times)
+        {'elevation': el, 'azimuth': az, 'zenith': 90 - el}, index=times)
 
     if filter_night and sunpos is not None:
         sunpos = sunpos.loc[sunpos['elevation'] > 0, :]
