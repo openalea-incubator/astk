@@ -23,6 +23,7 @@ install:
   - cd travis-ci
   - source install.sh
   - conda config --prepend channels conda-forge
+  - conda config --prepend channels fredboudon
 
 before_script:
   - source before_script.sh

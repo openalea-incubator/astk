@@ -17,6 +17,7 @@ install:
   - cd appveyor-ci
   - call install.bat
   - conda config --prepend channels conda-forge
+  - conda config --prepend channels fredboudon
 
 before_build:
   - call before_build.bat
