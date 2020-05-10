@@ -5,14 +5,18 @@ platform:
 environment:
   matrix:
     - CONDA_RECIPE: conda
-      CONDA_VERSION: 2
+      CONDA_VERSION: 3
+      CONDA_PY: 37
+    - CONDA_RECIPE: conda
+      CONDA_VERSION: 3
+      CONDA_PY: 38
+      CONDA_NPY: 116
 
 install:
   - git clone https://github.com/openalea/appveyor-ci.git
   - cd appveyor-ci
   - call install.bat
-  - conda config --append channels conda-forge
-  - conda config --append channels anaconda
+  - conda config --prepend channels conda-forge
 
 before_build:
   - call before_build.bat
