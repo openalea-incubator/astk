@@ -22,9 +22,12 @@ Generation of regular spherical polyhedrons: icospheres and their
 hexagonal/pentagonal duals.
 """
 
+from __future__ import division
 import math
 import numpy
 import warnings
+from six.moves import zip
+from six.moves import range
 
 display_enable = True
 try:
@@ -80,7 +83,7 @@ def norm(vector):
 
 def spherical(points):
     """ zenital and azimutal coordinate of a list of points"""
-    x, y, z = zip(*points)
+    x, y, z = list(zip(*points))
     return numpy.arccos(z), numpy.arctan2(y, x)
 
 
@@ -121,7 +124,7 @@ def middle_point(p1, p2):
 
 
 def centroid(points):
-    x, y, z = zip(*points)
+    x, y, z = list(zip(*points))
     return numpy.mean(x), numpy.mean(y), numpy.mean(z)
 
 
@@ -464,7 +467,7 @@ def sample_faces(vertices, faces, iter=2, spheric=False):
         points = {i: [centroid([vertices[p] for p in face])] for i, face in
                 enumerate(faces)}
     else:
-        tags = range(len(faces))
+        tags = list(range(len(faces)))
         vertices, faces, tags = star_split(vertices, faces, tags)
         for i in range(iter):
             vertices, faces, tags = split_triangles(vertices, faces, tags)
@@ -474,7 +477,7 @@ def sample_faces(vertices, faces, iter=2, spheric=False):
             points[tags[i]].append(centroid([vertices[p] for p in face]))
 
     if spheric:
-        points = {k:spherical(v) for k, v in points.iteritems()}
+        points = {k:spherical(v) for k, v in points.items()}
 
     return points
 

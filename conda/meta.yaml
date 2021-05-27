@@ -1,4 +1,4 @@
-{% set version = "2.1.1" %}
+{% set version = "2.2.0" %}
 
 package:
   name: alinea.astk
@@ -17,7 +17,8 @@ requirements:
     - python
     - setuptools
   run:
-    - openalea.core
+    - python
+    #- openalea.core
     - numpy
     - pandas
     - openalea.plantgl

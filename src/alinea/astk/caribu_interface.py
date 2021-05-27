@@ -2,6 +2,7 @@ from openalea.plantgl import all as pgl
 from alinea.caribu.CaribuScene import CaribuScene
 import alinea.caribu.sky_tools.turtle as turtle
 from math import radians, degrees, sin , cos
+from six.moves import zip
 
 
 
@@ -44,7 +45,7 @@ def run_caribu(sources, scene_geometry, output_by_triangle = False):
         A dict of intercepted variable (energy) per triangle
     """
     c_scene = CaribuScene()
-    shapes=[geom2shape(k,v) for k,v in scene_geometry.iteritems()]
+    shapes=[geom2shape(k,v) for k,v in scene_geometry.items()]
     idmap = c_scene.add_Shapes(shapes)    
     c_scene.addSources(sources)
     output = c_scene.runCaribu(infinity=False)
@@ -83,6 +84,6 @@ def turtle_interception(sectors, scene_geometry, energy, output_by_triangle = Fa
     """
     energy_scaled = float(energy) * convUnit**2
     energie, emission, direction, elevation, azimuth = turtle.turtle(sectors=sectors, energy=energy_scaled) 
-    sources = zip(energie,direction)
+    sources = list(zip(energie,direction))
     return run_caribu(sources, scene_geometry, output_by_triangle=output_by_triangle)
 

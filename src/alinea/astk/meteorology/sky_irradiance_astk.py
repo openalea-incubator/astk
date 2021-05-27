@@ -19,6 +19,8 @@ This module is essentially a 'pure python' alternative to pvlib-dependant
 sky_irradiance module
 """
 
+
+from __future__ import division
 import numpy
 import pandas
 from alinea.astk.meteorology.sun_position_astk import sun_position, \

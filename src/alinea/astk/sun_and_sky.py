@@ -15,6 +15,7 @@
 irradiance
 """
 
+from __future__ import division
 import numpy
 import pandas
 from alinea.astk.meteorology.sky_irradiance import (
@@ -22,6 +23,7 @@ from alinea.astk.meteorology.sky_irradiance import (
     clear_sky_irradiances,
     horizontal_irradiance)
 from alinea.astk.meteorology.sun_position import sun_position
+from six.moves import map
 
 # default location and dates
 _daydate = '2000-06-21'
@@ -90,7 +92,7 @@ def cie_relative_luminance(sky_elevation, sky_azimuth=None, sun_elevation=None,
 
     if type == 'clear_sky' and (
                 sun_elevation is None or sun_azimuth is None or sky_azimuth is None):
-        raise ValueError, 'Clear sky requires sun position'
+        raise ValueError('Clear sky requires sun position')
 
     if type == 'soc':
         return cie_luminance_gradation(sky_elevation, 4, -0.7)
@@ -102,7 +104,7 @@ def cie_relative_luminance(sky_elevation, sky_azimuth=None, sun_elevation=None,
             sun_azimuth, sun_elevation, sky_azimuth, sky_elevation, 10, -3,
             0.45)
     else:
-        raise ValueError, 'Unknown sky type'
+        raise ValueError('Unknown sky type')
 
 
 def sky_discretisation(turtle_sectors=46, nb_az=None, nb_el=None):
@@ -322,6 +324,7 @@ def sun_fraction(sky):
     Returns:
         integrated sun fraction
     """
+    if sky['dni'].sum() == 0 : return 0
     return (sky['ghi'] - sky['dhi']).sum() / sky['ghi'].sum()
 
 
@@ -341,7 +344,7 @@ def sky_blend(sky, f_sun=0.):
     def _f_clear(clearness_index):
         return min(1, (clearness_index - 1) / (1.41 - 1))
 
-    f_clear = numpy.array(map(_f_clear, sky['clearness']))
+    f_clear = numpy.array(list(map(_f_clear, sky['clearness'])))
     # temporal integration
     fclear = (f_clear * sky['ghi']).sum() / sky['ghi'].sum()
     f_clear_sky = fclear * (1 - f_sun)
@@ -415,6 +418,9 @@ def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
         sky = sky_el, sky_az, soc + csky
     elif model == 'sun_soc' or f_sun == 0:
         irradiance = (1 - f_sun) * normalisation
+        sky = sky_sources(sky_type='soc', irradiance=irradiance)
+    elif f_sun == 0:
+        irradiance = (1 - f_sun) * ghi
         sky = sky_sources(sky_type='soc', irradiance=irradiance)
     else:
         raise ValueError(
