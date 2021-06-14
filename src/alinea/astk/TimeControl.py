@@ -46,7 +46,7 @@ class TimeControl(object):
     def __iter__(self):
         return TimeControl(delay=self.delay, steps=self.steps, model=self.model, weather=self.weather, start_date=self.start_date) 
 
-    def next(self):
+    def __next__(self):
         return next(self._timing)
                   
             
