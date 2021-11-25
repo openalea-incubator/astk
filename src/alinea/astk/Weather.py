@@ -17,7 +17,7 @@ from alinea.astk.meteorology.sun_position import sun_position
 import alinea.astk.sun_and_sky as sunsky
 
 
-def septo3d_reader(data_file):
+def septo3d_reader(data_file, sep):
     """ reader for septo3D meteo files """
 
     def parse(yr, doy, hr):
@@ -31,7 +31,7 @@ def septo3d_reader(data_file):
 
     data = pandas.read_csv(data_file,
                            parse_dates={'date': ['An', 'Jour', 'hhmm']},
-                           date_parser=parse, sep='\t')
+                           date_parser=parse, sep=sep)
     # ,
     # usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
 
@@ -101,7 +101,7 @@ class Weather(object):
         - timezone indicates the standard timezone name (see pytz infos) to be used for interpreting the date (default 'UTC')
     """
 
-    def __init__(self, data_file='', reader=septo3d_reader, wind_screen=2,
+    def __init__(self, data_file='', reader=septo3d_reader,sep='\t', wind_screen=2,
                  temperature_screen=2,
                  localisation={'city': 'Montpellier', 'latitude': 43.61,
                                'longitude': 3.87},
@@ -116,7 +116,7 @@ class Weather(object):
         if data_file is '':
             self.data = None
         else:
-            self.data = reader(data_file)
+            self.data = reader(data_file,sep)
             date = self.data['date']
             date = [self.timezone.localize(x) for x in date]
             utc = [x.astimezone(pytz.utc) for x in date]

@@ -46,7 +46,7 @@ class TimeControl(object):
     def __iter__(self):
         return TimeControl(delay=self.delay, steps=self.steps, model=self.model, weather=self.weather, start_date=self.start_date) 
 
-    def next(self):
+    def __next__(self):
         return next(self._timing)
                   
             
@@ -64,12 +64,14 @@ class TimeControler(object):
         self.numiter = 0
         return self
     
-    def next(self):
+    def __next__(self):
         d = dict((k,next(v)) for k,v in self._timedict.items())
         if len(d) == 0:
             raise StopIteration
         self.numiter += 1
         return d
+    
+
         
 
 # new approach
@@ -103,7 +105,7 @@ class IterWithDelays(object):
     def __iter__(self):
         return IterWithDelays(self.values, self.delays)
         
-    def next(self):
+    def __next__(self):
         self.ev = next(self._evalseq)
         if self.ev : 
             try: #prevent value exhaustion to stop iterating
@@ -116,8 +118,8 @@ class IterWithDelays(object):
 
 def _truncdata(data, before, after, last):
     d = data.truncate(before = before, after = after)
-    if after.to_datetime() < last.to_datetime():
-        d = d.ix[:-1,]
+    if after.to_datetime64() < last.to_datetime64():
+        d = d.iloc[:-1,]
     return d
         
 def time_control(time_sequence, eval_filter, data=None):
