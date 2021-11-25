@@ -174,7 +174,7 @@ def date_filter(time_sequence, time_data):
    - time_data : a datetimle indexed panda dataframe
     """
     
-    filter = [True if d.to_datetime() in time_data.index.to_datetime() else False for d in time_sequence]
+    filter = [True if d.to_datetime64() in time_data.index.to_datetime64() else False for d in time_sequence]
     return filter
     
 def date_filter_node(time_sequence, time_data):
