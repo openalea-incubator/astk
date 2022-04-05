@@ -113,7 +113,7 @@ class Weather(object):
                        'degree_days': linear_degree_days}
 
         self.timezone = pytz.timezone(timezone)
-        if data_file is '':
+        if data_file == '':
             self.data = None
         else:
             self.data = reader(data_file,sep)
