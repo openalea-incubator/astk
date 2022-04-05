@@ -15,7 +15,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest , macos-latest , windows-latest]
-        python-minor-version: [7, 8, 9]
+        python-minor-version: [8, 9] # numpy >1.16 for pvlib-python
 
     steps:
     - uses: actions/checkout@v3
