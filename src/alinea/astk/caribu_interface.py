@@ -6,11 +6,12 @@ from six.moves import zip
 
 
 
-def vecteur_direction(elevation,azimuth):
+def vector_direction(elevation,azimuth):
     theta = radians(90 - elevation)
     phi = radians(azimuth)
     return sin(theta) * cos(phi),sin(theta) * sin(phi),  -cos(theta)
 
+vecteur_direction = vector_direction
 
 def emission_inv(elevation, energy):
     """ return energy of emmision for a source of a given direction and of a given energy received on a horizontal surface """

@@ -1,12 +1,13 @@
 import numpy
 
-from alinea.astk.meteorology.sun_position import sun_position, \
-    sun_extraradiation
-from alinea.astk.meteorology.sun_position_astk import \
-    sun_position as sun_position_astk, \
-    sun_extraradiation as sun_extraradiation_astk
-from alinea.astk.meteorology.sun_position_ephem import \
-    sun_position as sun_position_ephem
+from alinea.astk.meteorology.sun_position import (
+    sun_position, 
+    sun_extraradiation)
+from alinea.astk.meteorology.sun_position_astk import (
+    sun_position as sun_position_astk, 
+    sun_extraradiation as sun_extraradiation_astk)
+from alinea.astk.meteorology.sun_position_ephem import (
+    sun_position as sun_position_ephem)
 
 
 def test_sun_position():
