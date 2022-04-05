@@ -1,10 +1,12 @@
 import numpy
-from alinea.astk.meteorology.sky_irradiance import clear_sky_irradiances, \
-    actual_sky_irradiances, sky_irradiances
-from alinea.astk.meteorology.sky_irradiance_astk import \
-    clear_sky_irradiances as clear_sky_irradiances_astk, \
-    actual_sky_irradiances as actual_sky_irradiances_astk, \
-    sky_irradiances as sky_irradiances_astk
+from alinea.astk.meteorology.sky_irradiance import (
+    clear_sky_irradiances, 
+    actual_sky_irradiances, 
+    sky_irradiances)
+from alinea.astk.meteorology.sky_irradiance_astk import (
+    clear_sky_irradiances as clear_sky_irradiances_astk, 
+    actual_sky_irradiances as actual_sky_irradiances_astk, 
+    sky_irradiances as sky_irradiances_astk)
 
 
 def test_clear_sky_irradiances():

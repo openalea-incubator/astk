@@ -1,8 +1,8 @@
-{% set version = "2.2.0" %}
+{% set data = load_setup_py_data() %}
 
 package:
   name: alinea.astk
-  version: {{ version }}
+  version: {{ data.get('version') }}
 
 source:
   path: ..
@@ -14,28 +14,29 @@ build:
 
 requirements:
   build:
-    - python
+    - python {{PY_VER}}
     - setuptools
   run:
-    - python
-    #- openalea.core
+    - python {{PY_VER}}
     - numpy
     - pandas
     - openalea.plantgl
     - pvlib-python
-    - pytables
-    # hotfix for current packaging error of pytables (see conda-forge/pytables-feedstock#31)
-    - snappy [win]
+    - ephem
+    - six
+    - alinea.caribu
+    - path
 
 test:
   requires:
-    - nose
+    - pytest
   imports:
     - alinea.astk
   source_files:
     - test/test_*.py
   commands:
-   - nosetests -v
+   - cd test
+   - pytest -v
 
 about:
   home: http://github.com/openalea-incubator/astk
