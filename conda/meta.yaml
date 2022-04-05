@@ -18,14 +18,9 @@ requirements:
     - setuptools
   run:
     - python {{PY_VER}}
-    - numpy
-    - pandas
-    - openalea.plantgl
     - pvlib-python
-    - ephem
     - six
     - alinea.caribu
-    - path
 
 test:
   requires:
