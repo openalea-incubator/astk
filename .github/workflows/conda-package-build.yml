@@ -15,7 +15,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [macos-latest]
-        python-minor-version: [9] # Unactivate Python 3.7
+        python-minor-version: [7,9] # Unactivate Python 3.7
     steps:
     - uses: actions/checkout@v3
     - name: Build and Publish
