@@ -58,7 +58,7 @@ setup_kwds = dict(
     long_description=readme + '\n\n' + history,
     author="Christian Fournier, Guillaume Garin, Romain Chapuis, ",
     author_email="christian.fournier __at__ supagro.inra.fr, guillaume.garin __at__ itk.fr, romain.chapuis __at__ supagro.inra.fr, ",
-    url='https://github.com/Christian Fournier/astk',
+    url='https://github.com/openalea-incubator/astk',
     license='cecill-c',
     zip_safe=False,
 
