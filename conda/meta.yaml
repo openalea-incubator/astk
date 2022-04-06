@@ -24,14 +24,14 @@ requirements:
 
 test:
   requires:
-    - pytest
+    - nose
   imports:
     - alinea.astk
   source_files:
     - test/test_*.py
   commands:
    - cd test
-   - pytest -v
+   - nosetests -v
 
 about:
   home: http://github.com/openalea-incubator/astk
