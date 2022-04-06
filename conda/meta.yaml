@@ -13,25 +13,27 @@ build:
   script: python setup.py install --single-version-externally-managed --record=record.txt
 
 requirements:
-  build:
+  host:
     - python {{PY_VER}}
     - setuptools
   run:
     - python {{PY_VER}}
+    - {{ pin_compatible('numpy', max_pin='x.x') }}
+    - openalea.plantgl
+    - alinea.caribu
     - pvlib-python
     - six
-    - alinea.caribu
 
 test:
   requires:
-    - nose
+    - pytest
   imports:
     - alinea.astk
   source_files:
     - test/test_*.py
   commands:
    - cd test
-   - nosetests -v
+   - pytest -v
 
 about:
   home: http://github.com/openalea-incubator/astk
