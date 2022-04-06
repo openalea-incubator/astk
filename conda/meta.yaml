@@ -16,6 +16,8 @@ requirements:
   host:
     - python {{PY_VER}}
     - setuptools
+    - numpy=1.20|>=1.21.5
+
   run:
     - python {{PY_VER}}
     - {{ pin_compatible('numpy', max_pin='x.x') }}
