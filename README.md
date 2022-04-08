@@ -1,6 +1,10 @@
+<p>
+  <h1>
+    <a href= "https://raw.githubusercontent.com/openalea/openalea.rtfd.io/master/doc/_static/openalea_web.svg"><img src="/doc/source/_static/logo_strawberry.png" valign="center" height=50 width="50"/> </a> 
+    alinea.astk
+  </h1>
+<p>
 
-![openalea](https://raw.githubusercontent.com/openalea/openalea.rtfd.io/master/doc/_static/openalea_web.svg)<img src="/doc/source/_static/logo_strawberry.png" width="100"><a>
-# alinea.astk
 
 ## Informations
 **Authors:** 
