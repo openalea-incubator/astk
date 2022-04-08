@@ -1,14 +1,6 @@
-<p>
-  <h1>
-    <a href= "https://raw.githubusercontent.com/openalea/openalea.rtfd.io/master/doc/_static/openalea_web.svg"><img src="/doc/source/_static/logo_strawberry.png" valign="center" height=50 width="50"/> </a> 
-    alinea.astk
-  </h1>
-<p>
+# <img src="https://raw.githubusercontent.com/openalea/openalea.rtfd.io/master/doc/_static/openalea_web.svg" width="70"/> alinea.astk
 
-
-## Informations
-**Authors:** 
-    - Christian Fournier: (@christian34, christian.fournier@inrae.fr)
+**Authors:** Christian Fournier [@christian34](https://github.com/christian34), christian.fournier@inrae.fr
 
 **Institutes:** INRAE
 
