@@ -2,10 +2,13 @@ name: Building and publish package using anaconda
 
 on:
   push:
-    branches: [ master ]
+    tags:
+      - 'v*'
+    branches: 
+      - '*'
   pull_request:
     branches: [ master ]
-
+  workflow_dispatch: # allows you to trigger manually
 
 jobs:
   build-and-publish:
@@ -14,14 +17,24 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        os: [macos-latest, linux-latest, windows-latest]
-        python-minor-version: [8] # Unactivate Python 3.7
+        os: [macos-latest]
+        python-minor-version: [8] 
     steps:
     - uses: actions/checkout@v3
+    - name: Determine publish
+      uses: haya14busa/action-cond@v1
+      id: publish
+      with:
+        cond: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        if_true: 'true'
+        if_false: 'false'
     - name: Build and Publish
-      uses: openalea/action-build-publish-anaconda@0.1.1
+      uses: openalea/action-build-publish-anaconda@v0.1.2
       with:
         conda: conda
+        mamba: false
         python: ${{ matrix.python-minor-version }}
-        channels: openalea3, conda-forge
+        channels: openalea3, conda-forge 
         token: ${{ secrets.ANACONDA_TOKEN }}
+        publish: ${{ steps.publish.outputs.value }}
+        label: main
