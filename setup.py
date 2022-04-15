@@ -77,7 +77,7 @@ setup_kwds = dict(
 # change setup_kwds below before the next pkglts tag
 
 setup_kwds['entry_points']['wralea'] = ['astk = alinea.astk_wralea']
-setup_kwds['namespace_packages']=['alinea']
+#setup_kwds['namespace_packages']=['alinea']
 
 # do not change things below
 # {# pkglts, pysetup.call
