@@ -8,7 +8,7 @@ from os import walk
 from os.path import abspath, normpath
 from os.path import join as pj
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_namespace_packages
 
 
 short_descr = "The Alinea.astk package provides utilities for simulation of FSPM models builds under alinea standards"
@@ -62,7 +62,7 @@ setup_kwds = dict(
     license='cecill-c',
     zip_safe=False,
 
-    packages=find_packages('src'),
+    packages=find_namespace_packages(where='src', include=['alinea', 'alinea.*', 'astk_data']),
     package_dir={'': 'src'},
     
     include_package_data=True,
@@ -71,7 +71,6 @@ setup_kwds = dict(
     #tests_require=parse_requirements("dvlpt_requirements.txt"),
     entry_points={},
     keywords='',
-    test_suite='nose.collector',
 )
 # #}
 # change setup_kwds below before the next pkglts tag
