@@ -8,21 +8,20 @@ source:
   path: ..
 
 build:
+  noarch: python
   preserve_egg_dir: True
-  number: 0
-  script: python setup.py install --single-version-externally-managed --record=record.txt
+  number: 1
+  script: python setup.py install #--single-version-externally-managed --record=record.txt
 
 requirements:
-  host:
-    - python {{PY_VER}}
+  build:
+    - python
     - setuptools
-    - numpy=1.20|>=1.21.5
 
   run:
-    - python {{PY_VER}}
-    - {{ pin_compatible('numpy', max_pin='x.x') }}
+    - python >=3.6
     - openalea.plantgl
-    - pvlib-python<0.9.0
+    - pvlib-python
     - six
 
 test:

@@ -26,8 +26,6 @@ from __future__ import division
 import math
 import numpy
 import warnings
-from six.moves import zip
-from six.moves import range
 
 display_enable = True
 try:
@@ -156,7 +154,7 @@ def icosahedron():
     vertices.append(normed((-t, 0, 1)))
 
     # align to get second point on Z+
-    theta, phi = zip(*spherical(vertices))[1]
+    theta, phi = list(zip(*spherical(vertices)))[1]
     vertices = inverse_rotation(vertices, theta, phi)
 
     # create 20 triangles of the icosahedron
