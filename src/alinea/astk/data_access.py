@@ -7,7 +7,7 @@ from os import listdir
 from os.path import dirname, exists, isdir
 from os.path import join as pj
 from io import open
-
+import pandas
 
 pkg_root_dir = dirname(dirname(__file__))
 pkg_data_dir = pj(pkg_root_dir, "astk_data")
@@ -68,3 +68,22 @@ def get_path(file_name):
      - (str): path of the file
     """
     return pj(pkg_data_dir, file_name)
+    
+def read_meteo_mpt(when='winter'):
+    if when == 'winter':
+        path = get_path('incoming_radiation_ZA13.csv')
+    else:
+        path = get_path('incoming_radiation_ZB13.csv')
+    df = pandas.read_csv(path)
+    df.index = pandas.to_datetime(df.iloc[:,0], utc=True)
+    df.index = df.index.tz_convert('Europe/Paris')
+    return df.loc[:,['ghi']]
+
+
+
+def montpellier_spring_2013():
+    return read_meteo_mpt('spring')
+
+
+def montpellier_winter_2013():
+    return read_meteo_mpt('winter')

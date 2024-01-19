@@ -356,7 +356,7 @@ def sky_blend(sky, f_sun=0.):
 def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
                     dates=None, daydate=_daydate, pressure=101325,
                     temp_dew=None, longitude=_longitude, latitude=_latitude,
-                    altitude=_altitude, timezone=_timezone, normalisation=None):
+                    altitude=_altitude, timezone=_timezone):
     """ Light sources representing the sun and the sky for actual irradiances
 
     Args:
@@ -381,9 +381,11 @@ def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
          so that sum of sun + sky irradiance equals this value.
 
     Returns:
-        elevation (degrees), azimuth (degrees, from North positive clockwise),
-        and horizontal irradiance of sources representing the sun and same
-        quantities for sources representing the sky
+        sky_irradiance, sun, sky
+        sky_irradiance is a pandas data frame of sky irradiances
+        sun is a (elevation (degrees), azimuth (degrees, from North positive clockwise),
+        and relative horizontal irradiance (fraction of ghi)) tuple of sources representing the sun
+         sky is a elevation, azimuth, relative irradiance tuple for sources representing the sky
 
     Details:
         J. Mardaljevic. Daylight Simulation: Validation, Sky Models and
@@ -396,37 +398,30 @@ def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
                               temp_dew=temp_dew, longitude=longitude,
                               latitude=latitude, altitude=altitude,
                               timezone=timezone)
-    if normalisation is None:
-        normalisation = sky_irr['ghi'].sum()
 
     f_sun = sun_fraction(sky_irr)
-    irradiance = f_sun * normalisation
-    sun = sun_sources(irradiance=irradiance, dates=dates,
+    sun = sun_sources(irradiance=f_sun, dates=dates,
                       daydate=daydate, latitude=latitude, longitude=longitude,
                       altitude=altitude, timezone=timezone)
 
     if model == 'blended' and f_sun > 0:
         f_clear_sky, f_soc = sky_blend(sky_irr, f_sun)
-        irradiance = f_soc * normalisation
-        sky_el, sky_az, soc = sky_sources(sky_type='soc', irradiance=irradiance)
-        irradiance = f_clear_sky * normalisation
+        sky_el, sky_az, soc = sky_sources(sky_type='soc', irradiance=f_soc)
         _, _, csky = sky_sources(sky_type='clear_sky',
-                                 irradiance=irradiance, dates=dates,
+                                 irradiance=f_clear_sky, dates=dates,
                                  daydate=daydate, latitude=latitude,
                                  longitude=longitude, altitude=altitude,
                                  timezone=timezone)
         sky = sky_el, sky_az, soc + csky
     elif model == 'sun_soc' or f_sun == 0:
-        irradiance = (1 - f_sun) * normalisation
-        sky = sky_sources(sky_type='soc', irradiance=irradiance)
+        sky = sky_sources(sky_type='soc', irradiance= 1 - f_sun)
     elif f_sun == 0:
-        irradiance = (1 - f_sun) * ghi
-        sky = sky_sources(sky_type='soc', irradiance=irradiance)
+        sky = sky_sources(sky_type='soc', irradiance=1)
     else:
         raise ValueError(
             'unknown model: ' + model +
             ' (should be one of: soc_sun, blended)')
-    return sun, sky
+    return sky_irr, sun, sky
 
 
 
