@@ -20,27 +20,16 @@ import alinea.astk.sun_and_sky as sunsky
 def septo3d_reader(data_file, sep):
     """ reader for septo3D meteo files """
 
-    def parse(yr, doy, hr):
-        """ Convert the 'An', 'Jour' and 'hhmm' variables of the
-        meteo dataframe in a datetime object (%Y-%m-%d %H:%M:%S format)
-        """
-        an, jour, heure = [int(x) for x in [yr, doy, int(hr) / 100]]
-        dt = datetime(an - 1, 12, 31)
-        delta = timedelta(days=jour, hours=heure)
-        return dt + delta
-
-    data = pandas.read_csv(data_file,
-                           parse_dates={'date': ['An', 'Jour', 'hhmm']},
-                           date_parser=parse, sep=sep)
+    data = pandas.read_csv(data_file, sep=sep)
     # ,
     # usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
 
+    data['date'] = pandas.to_datetime(data['An'] * 1000 + data['Jour'], format='%Y%j')+pandas.to_timedelta(data.hhmm/100, unit='H')
     data.index = data.date
     data = data.rename(columns={'PAR': 'PPFD', 'Tair': 'temperature_air',
                                 'HR': 'relative_humidity', 'Vent': 'wind_speed',
                                 'Pluie': 'rain'})
     return data
-
 
 def PPFD_to_global(data):
     """ Convert the PAR (ppfd in micromol.m-2.sec-1)
@@ -86,7 +75,7 @@ def linear_degree_days(data, start_date=None, base_temp=0., max_temp=35.):
     return dd - dd[df.index.searchsorted(start_date)]
 
 
-class Weather(object):
+class Weather:
     """ Class compliying echap local_microclimate model protocol (meteo_reader).
         expected variables of the data_file are:
             - 'An'
