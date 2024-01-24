@@ -57,12 +57,12 @@ setup_kwds = dict(
     description=short_descr,
     long_description=readme + '\n\n' + history,
     author="Christian Fournier, Guillaume Garin, Romain Chapuis, ",
-    author_email="christian.fournier __at__ supagro.inra.fr, guillaume.garin __at__ itk.fr, romain.chapuis __at__ supagro.inra.fr, ",
+    author_email="christian.fournier __at__ inrae.fr ",
     url='https://github.com/openalea-incubator/astk',
     license='cecill-c',
     zip_safe=False,
 
-    packages=find_namespace_packages(where='src', include=['alinea', 'alinea.*', 'astk_data']),
+    packages=find_namespace_packages(where='src', include=['alinea.*', 'astk_data']),
     package_dir={'': 'src'},
     
     include_package_data=True,
