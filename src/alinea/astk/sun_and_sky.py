@@ -21,7 +21,8 @@ import pandas
 from alinea.astk.meteorology.sky_irradiance import (
     sky_irradiances,
     clear_sky_irradiances,
-    horizontal_irradiance)
+    horizontal_irradiance,
+    all_weather_sky_clearness)
 from alinea.astk.meteorology.sun_position import sun_position
 from six.moves import map
 
@@ -341,10 +342,11 @@ def sky_blend(sky, f_sun=0.):
         function
         f_sun: (float) sun mixing fraction for the sun (default 0)
     """
-    def _f_clear(clearness_index):
-        return min(1, (clearness_index - 1) / (1.41 - 1))
+    def _f_clear(epsilon):
+        return min(1, (epsilon - 1) / (1.41 - 1))
 
-    f_clear = numpy.array(list(map(_f_clear, sky['clearness'])))
+    sky_clearness = all_weather_sky_clearness(sky.dni, sky.dhi, sky.sun_zenith)
+    f_clear = numpy.array(list(map(_f_clear, sky_clearness)))
     # temporal integration
     fclear = (f_clear * sky['ghi']).sum() / sky['ghi'].sum()
     f_clear_sky = fclear * (1 - f_sun)

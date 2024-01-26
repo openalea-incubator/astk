@@ -12,8 +12,8 @@
 #
 # ==============================================================================
 
-""" Equation for determining global horizontal irradiance (GHI),
-direct normal irradiance (DNI) and diffuse horizontal irradiance under clearsky
+""" Equation for determining global horizontal irradiance (GHI), PPFD,
+direct normal irradiance (DNI) and diffuse horizontal irradiance (DHI) under clearsky
 condition or estimate them from meteorological data
 
 This module is mainly a collection of syntactic sugar to pvlib clearsky and
@@ -23,16 +23,20 @@ irradiances packages.
 from __future__ import division
 import numpy
 import pandas
-from alinea.astk.meteorology.sun_position import sun_position, \
-    sun_extraradiation
+import warnings
 
 try:
     import pvlib
-except ImportError as e:
-    raise ImportError(
-        '{0}\npvlib not found on your system, you may use sun_position_astk '
-        'instead OR install ephem and use sun_position_ephem OR install pvlib '
-        '(recommended)'.format(e))
+except ImportError:
+    warnings.warn('pvlib not installed: using pure python, but less accurate, functions')
+
+if pvlib:
+    from alinea.astk.meteorology.sun_position import sun_position, \
+        sun_extraradiation
+    from alinea.astk.meteorology.sun_position_astk import sinel_integral
+else:
+    from alinea.astk.meteorology.sun_position_astk import sun_position, \
+        sun_extraradiation, sinel_integral
 
 # default location and dates
 _daydate = '2000-06-21'
@@ -56,17 +60,21 @@ def normal_irradiance(horizontal_irradiance, elevation):
     return horizontal_irradiance / numpy.sin(numpy.radians(elevation))
 
 
-def air_mass(zenith, altitude=0):
+def air_mass(zenith, altitude=0, with_pvlib=True):
     """Estimate the pressure-corrected air mass
     (optical path length relative to zenital path at a location)
 
     Args:
         zenith : an array-like object of zenital directions (degrees)
         altitude : (float)
+        with_pvlib : Should we use pvlib library to estimate air mass ?
     """
-    airmass = pvlib.atmosphere.get_relative_airmass(zenith)
-    pressure = pvlib.atmosphere.alt2pres(altitude)
-    am = pvlib.atmosphere.get_absolute_airmass(airmass, pressure)
+    if pvlib and with_pvlib:
+        airmass = pvlib.atmosphere.get_relative_airmass(zenith)
+        pressure = pvlib.atmosphere.alt2pres(altitude)
+        am = pvlib.atmosphere.get_absolute_airmass(airmass, pressure)
+    else:
+        am = 1.0 / numpy.cos(numpy.radians(zenith))
     return am
 
 
@@ -89,7 +97,7 @@ def all_weather_sky_clearness(dni, dhi, sun_zenith):
     return ((dhi + dni) / dhi + 1.041 * z**3) / (1 + 1.041 * z**3)
 
 
-def all_weather_sky_brightness(dates, dhi, sun_zenith, altitude=0):
+def all_weather_sky_brightness(dates, dhi, sun_zenith, altitude=0, with_pvlib=True):
     """Sky brightness as defined in all_weather sky model (Perez et al. 1993)
 
     Args:
@@ -97,6 +105,7 @@ def all_weather_sky_brightness(dates, dhi, sun_zenith, altitude=0):
         dhi: diffuse horizontal irradiance
         sun_zenith: zenith angle of the sun (deg)
         altitude: altitude of the location
+        with_pvlib : Should we use pvlib library to estimate air mass ?
 
     Returns:
         sky brightness
@@ -104,7 +113,7 @@ def all_weather_sky_brightness(dates, dhi, sun_zenith, altitude=0):
         R. Perez, R. Seals, J. Michalsky, "All-weather model for sky luminance distribution—Preliminary configuration and
         validation", Solar Energy, Volume 50, Issue 3, 1993, Pages 235-245.
     """
-    am = air_mass(sun_zenith, altitude)
+    am = air_mass(sun_zenith, altitude, with_pvlib=with_pvlib)
     dni_extra = sun_extraradiation(dates)
     return am * dhi / dni_extra
 
@@ -125,6 +134,18 @@ def clearness_index(dates, ghi):
     """
     dni_extra = sun_extraradiation(dates)
     return ghi / dni_extra
+
+
+def spitters_daily_diffuse_fraction(ghi, daydate=_daydate):
+    """ estimate the diffuse fraction using daily averages of global horizontal irradiance"""
+
+    So = sun_extraradiation(daydate=daydate).mean()
+    RsRso = ghi / So
+
+    return numpy.where(RsRso <= 0.07, 1,
+                   numpy.where(RsRso <= 0.35, 1 - 2.3 * (RsRso - 0.07) ** 2,
+                               numpy.where(RsRso <= 0.75, 1.33 - 1.46 * RsRso,
+                                           0.23)))
 
 
 def micromol_per_joule(dates, ghi, sun_elevation, temp_dew=None):
@@ -150,7 +171,7 @@ def micromol_per_joule(dates, ghi, sun_elevation, temp_dew=None):
 
 def clear_sky_irradiances(dates=None, daydate=_daydate, longitude=_longitude,
                           latitude=_latitude, altitude=_altitude,
-                          timezone=_timezone):
+                          timezone=_timezone, with_pvlib=True):
     """ Estimate component of sky irradiance for clear sky conditions
 
     Args:
@@ -161,15 +182,22 @@ def clear_sky_irradiances(dates=None, daydate=_daydate, longitude=_longitude,
         latitude: (float) in degrees
         altitude: (float) in meter
         timezone:(str) the time zone (not used if dates are already localised)
+        with_pvlib : Should we use pvlib library to estimate clearsky ?
 
     Returns:
         a pandas dataframe with global horizontal irradiance, direct normal
         irradiance and diffuse horizontal irradiance.
 
     Details:
-        P. Ineichen and R. Perez, "A New airmass independent formulation for
-        the Linke turbidity coefficient", Solar Energy, vol 73, pp. 151-157,
-        2002
+        if with_pvlib is True, the Ineichen (2002) model is used, otherwise GHI is computed after Haurwitz (1945) and DNI
+        after Meinel (1976).
+
+        P. Ineichen and R. Perez, "A New airmass independent formulation for the Linke turbidity coefficient",
+         Solar Energy, vol 73, pp. 151-157, 2002
+        B. Haurwitz, "Insolation in Relation to Cloudiness and Cloud Density", Journal of Meteorology, vol. 2,
+         pp. 154-166, 1945.
+        A. B. Meinel and M. P. Meinel, Applied solar energy. Reading, MA: Addison-Wesley Publishing Co., 1976
+
     """
 
     location = dict(latitude=latitude,
@@ -177,15 +205,23 @@ def clear_sky_irradiances(dates=None, daydate=_daydate, longitude=_longitude,
                     altitude=altitude,
                     timezone=timezone)
     df = sun_position(dates=dates, daydate=daydate, **location)
-
-    tl = pvlib.clearsky.lookup_linke_turbidity(df.index, latitude,
-                                               longitude)
-    am = air_mass(df['zenith'], altitude)
+    am = air_mass(df['zenith'], altitude, with_pvlib=with_pvlib)
     dni_extra = sun_extraradiation(df.index)
-    clearsky = pvlib.clearsky.ineichen(df['zenith'], am, tl,
-                                       dni_extra=dni_extra,
-                                       altitude=altitude)
-    clearsky = pandas.concat([df, clearsky], axis=1)
+
+    if pvlib and with_pvlib:
+        tl = pvlib.clearsky.lookup_linke_turbidity(df.index, latitude,
+                                                   longitude)
+
+        clearsky = pvlib.clearsky.ineichen(df['zenith'], am, tl,
+                                           dni_extra=dni_extra,
+                                           altitude=altitude)
+        clearsky = pandas.concat([df, clearsky], axis=1)
+    else:
+        clearsky = df
+        z = numpy.radians(df['zenith'])
+        clearsky['ghi'] = 1098 * numpy.cos(z) * numpy.exp(-0.057 / numpy.cos(z))
+        clearsky['dni'] = dni_extra * numpy.power(0.7, numpy.power(am, 0.678))
+        clearsky['dhi'] = clearsky['ghi'] - horizontal_irradiance(clearsky['dni'], df['elevation'])
 
     return clearsky.loc[:, ['ghi', 'dni', 'dhi']]
 
@@ -194,7 +230,7 @@ def actual_sky_irradiances(dates=None, daydate=_daydate, ghi=None,
                            attenuation=None,
                            pressure=101325, temp_dew=None, longitude=_longitude,
                            latitude=_latitude, altitude=_altitude,
-                           timezone=_timezone):
+                           timezone=_timezone, with_pvlib=True):
     """ Estimate component of sky irradiances from measured actual global
     horizontal irradiance or attenuated clearsky conditions.
 
@@ -212,15 +248,20 @@ def actual_sky_irradiances(dates=None, daydate=_daydate, ghi=None,
         latitude: (float) in degrees
         altitude: (float) in meter
         timezone:(str) the time zone (not used if dates are already localised)
+        with_pvlib : Should we use pvlib library to estimate sky irradiances ?
 
     Returns:
         a pandas dataframe with global horizontal irradiance, direct normal
         irradiance and diffuse horizontal irradiance.
 
     Details:
-        Perez, R., P. Ineichen, E. Maxwell, R. Seals and A. Zelenka, (1992).
-        Dynamic Global-to-Direct Irradiance Conversion Models.
-        ASHRAE Transactions-Research Series, pp. 354-369
+        if with_pvlib is True, the 'dirint' model of Perez (1992) is used, otherwise the model of Spitters (1986) is used
+
+        Perez, R., P. Ineichen, E. Maxwell, R. Seals and A. Zelenka, (1992). "Dynamic Global-to-Direct Irradiance
+         Conversion Models", ASHRAE Transactions-Research Series, pp. 354-369
+        Spitters CJT, Toussaint HAJM, Goudriaan J (1986) "Separating the diffuse and direct component of global
+         radiation and its implications for modeling canopy photosynthesis.Part I.Components of incoming radiation",
+         Agricultural and Forest Meteorology 38: 217-229.
     """
 
     location = dict(latitude=latitude,
@@ -230,7 +271,7 @@ def actual_sky_irradiances(dates=None, daydate=_daydate, ghi=None,
     df = sun_position(dates=dates, daydate=daydate, **location)
 
     if ghi is None:
-        cs = clear_sky_irradiances(dates=df.index, **location)
+        cs = clear_sky_irradiances(dates=df.index, **location, with_pvlib=with_pvlib)
         ghi = cs['ghi']
 
     df['ghi'] = ghi
@@ -238,18 +279,34 @@ def actual_sky_irradiances(dates=None, daydate=_daydate, ghi=None,
     if attenuation is not None:
         df.ghi *= attenuation
 
-    df['dni'] = pvlib.irradiance.dirint(df.ghi, 90 - df.elevation, df.index,
-                                        pressure=pressure, temp_dew=temp_dew)
-    df['dhi'] = df.ghi - horizontal_irradiance(df.dni, df.elevation)
+    if pvlib and with_pvlib:
+        df['dni'] = pvlib.irradiance.dirint(df.ghi, 90 - df.elevation, df.index,
+                                            pressure=pressure, temp_dew=temp_dew)
+        df['dhi'] = df.ghi - horizontal_irradiance(df.dni, df.elevation)
+    else:
+        Io = sun_extraradiation(df.index)
+        costheta = numpy.sin(numpy.radians(df.elevation))
+        So = Io * costheta
+        RsRso = df.ghi / So
+        R = 0.847 - 1.61 * costheta + 1.04 * costheta * costheta
+        K = (1.47 - R) / 1.66
+        RdRs = numpy.where(RsRso <= 0.22, 1,
+                           numpy.where(RsRso <= 0.35,
+                                       1 - 6.4 * (RsRso - 0.22) ** 2,
+                                       numpy.where(RsRso <= K,
+                                                   1.47 - 1.66 * RsRso,
+                                                   R)))
+        df['dhi'] = df.ghi * RdRs
+        df['dni'] = normal_irradiance(df['ghi'] - df['dhi'], df['elevation'])
 
     return df.loc[:, ('ghi', 'dhi', 'dni')]
 
 
-def sky_irradiances(dates=None, daydate=_daydate, ghi=None, dhi=None,
+def sky_irradiances(dates=None, daydate=_daydate, ghi=None, dhi=None, ppfd=None,
                            attenuation=None,
                            pressure=101325, temp_dew=None, longitude=_longitude,
                            latitude=_latitude, altitude=_altitude,
-                           timezone=_timezone):
+                           timezone=_timezone, with_pvlib=True):
     """ Estimate variables related to sky irradiance.
 
     Args:
@@ -262,12 +319,15 @@ def sky_irradiances(dates=None, daydate=_daydate, ghi=None, dhi=None,
         attenuation: (float) a attenuation factor for ghi (actual_ghi =
          attenuation * ghi). If None (default), no attenuation is applied. If
          dhi is not None, this parameter is not taken into account.
+        ppfd: (array-like) photosynthetically active photon flux density (micromol.m-2.s-1) component of ghi. If None
+         (default), ppfd will be estimated as a function of meteoroligcal conditions and ghi
         pressure: the site pressure (Pa) (for dirint model)
         temp_dew: the dew point temperature (dirint model)
         longitude: (float) in degrees
         latitude: (float) in degrees
         altitude: (float) in meter
         timezone:(str) the time zone (not used if dates are already localised)
+        with_pvlib : Should we use pvlib library to estimate sky irradiances ?
 
     Returns:
         a pandas dataframe with azimuth, zenital and elevation angle of the sun, global horizontal irradiance, direct
@@ -279,7 +339,6 @@ def sky_irradiances(dates=None, daydate=_daydate, ghi=None, dhi=None,
                     altitude=altitude,
                     timezone=timezone)
     df = sun_position(dates=dates, daydate=daydate, **location)
-    df = df.rename(columns={'azimuth': 'sun_azimuth', 'elevation': 'sun_elevation', 'zenith': 'sun_zenith'})
     if len(df) < 1:  # night
         if ghi is not None:  # twilight conditions (sun_el < 0, ghi > 0)
             df = sun_position(dates=dates, daydate=daydate, filter_night=False, **location)
@@ -295,15 +354,23 @@ def sky_irradiances(dates=None, daydate=_daydate, ghi=None, dhi=None,
         if ghi is None or dhi is None:
             irr = actual_sky_irradiances(dates=df.index, ghi=ghi,
                                          attenuation=attenuation, pressure=pressure,
-                                         temp_dew=temp_dew, **location)
+                                         temp_dew=temp_dew, with_pvlib=with_pvlib, **location)
             df = pandas.concat([df, irr], axis=1)
         else:
             df['ghi'] = ghi
             df['dhi'] = dhi
             df['dni'] = normal_irradiance(numpy.array(ghi) - numpy.array(dhi),
                                           df.elevation)
+    if ppfd is None:
+        ppfd = df.ghi * micromol_per_joule(df.index, df.ghi, df.elevation, temp_dew=temp_dew)
+    df['ppfd'] = ppfd
+
+    df = df.rename(columns={'azimuth': 'sun_azimuth', 'elevation': 'sun_elevation', 'zenith': 'sun_zenith'})
+
     return df.loc[:,
-           ['sun_azimuth', 'sun_zenith', 'sun_elevation', 'ghi', 'dni', 'dhi']]
+           ['sun_azimuth', 'sun_zenith', 'sun_elevation', 'ghi', 'dni', 'dhi', 'ppfd']]
+
+
 
 
 def mean_shortwave_irradiance(sky_irradiance, relative_global_irradiances, areas):

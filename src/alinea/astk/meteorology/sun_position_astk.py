@@ -338,4 +338,4 @@ def sun_extraradiation(dates=None, daydate=_day, solar_constant=1366.1,
     else:
         raise ValueError('unrecognised method: ' + method)
 
-    return Io
+    return pandas.Series(data=Io, index=times)
