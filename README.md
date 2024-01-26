@@ -19,11 +19,8 @@ alinea.astk package provides utilities for FSPM model. It include particularly e
 - meteorology : functions to calculate sun irradiance according to sun position
     - sky_irradiance: Equation for determining global horizontal irradiance (GHI), direct normal irradiance (DNI) and diffuse horizontal irradiance under clearsky
 condition or estimate them from meteorological data using pvlib library.
-    - sky_irradiance_astk: Equation for determining global horizontal irradiance (GHI),
-direct normal irradiance (DNI) and diffuse horizontal irradiance of sky.
     - sun_position: Sun position using pvlib library.
     - sun_position_astk : Astronomical equation for determining sun position.
-    - sun_position_ephem : Sun position using ephem library.
 - OpenAlea_VLE: A generic module embeding an OpenAlea model for use in VLE Platform.
 - TimeControl: Provides utilities for scheduling models in simulation.
 - Weather: Provides utilities for weather protocol and conversion of some weather variable.
