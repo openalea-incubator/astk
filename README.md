@@ -21,7 +21,6 @@ alinea.astk package provides utilities for FSPM model. It include particularly e
 condition or estimate them from meteorological data using pvlib library.
     - sun_position: Sun position using pvlib library.
     - sun_position_astk : Astronomical equation for determining sun position.
-- OpenAlea_VLE: A generic module embeding an OpenAlea model for use in VLE Platform.
 - TimeControl: Provides utilities for scheduling models in simulation.
 - Weather: Provides utilities for weather protocol and conversion of some weather variable.
 - data_access: Set of function to work with resources that are located inside this package data.
@@ -39,7 +38,6 @@ condition or estimate them from meteorological data using pvlib library.
 - numpy
 - pandas
 - openalea.plangl
-- snappy (for windows)
 
 ### Users
 
