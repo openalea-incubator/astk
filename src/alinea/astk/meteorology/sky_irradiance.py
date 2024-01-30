@@ -47,14 +47,14 @@ _altitude = 56
 
 
 def horizontal_irradiance(normal_irradiance, elevation):
-    """ irradiance measured on an horizontal surface from a source
+    """ irradiance measured on a horizontal surface from a source
     with known elevation (degrees) and known normal irradiance
     """
     return normal_irradiance * numpy.sin(numpy.radians(elevation))
 
 
 def normal_irradiance(horizontal_irradiance, elevation):
-    """ irradiance measured on an surface perpendicular
+    """ irradiance measured on a surface perpendicular
     to a source with known elevation (degrees) and horizontal irradiance
     """
     return horizontal_irradiance / numpy.sin(numpy.radians(elevation))
