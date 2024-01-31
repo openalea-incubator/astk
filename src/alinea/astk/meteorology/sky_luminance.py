@@ -178,7 +178,7 @@ def sky_luminance(sky_type='soc', sky_irradiance=None, da=1):
                     epsilon = all_weather_sky_clearness(row.dni, row.dhi,row.sun_zenith)
                     lum += (row.ghi / _hi * _lum * f_clear_sky(epsilon))
                 else:
-                    raise ValueError('undefined direct lighning strategy for sky type: ' + sky_type)
+                    raise ValueError('undefined direct lightning strategy for sky type: ' + sky_type)
             lum /= lum.sum()
             hi = horizontal_irradiance(lum, 90 - z_c).sum()
     return azimuth, zenith, lum, hi
