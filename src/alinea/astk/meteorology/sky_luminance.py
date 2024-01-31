@@ -38,23 +38,25 @@ def cie_luminance_gradation(z, a=4, b=-0.7):
 
 
 def _ksi(sky_zenith, sky_azimuth, sun_zenith=0, sun_azimuth=0):
-    """acute angle between a sky element and the sun """
+    """acute angle between an array of sky elements and the sun """
 
-    def _xyz(theta, phi):
+    def _xyz(zenith, azimuth):
+        theta = numpy.radians(zenith)
+        phi = numpy.radians(azimuth)
         return (numpy.sin(theta) * numpy.cos(phi),
                 numpy.sin(theta) * numpy.sin(phi),
                 numpy.cos(theta))
 
     def _angle3(v1, v2):
         """acute angle between 2 3d vectors"""
-        x = numpy.dot(v1, v2) / (numpy.linalg.norm(v1) * numpy.linalg.norm(v2))
+        x = numpy.dot(v1, v2) / (numpy.linalg.norm(v1, axis=2) * numpy.linalg.norm(v2))
         angle = numpy.arccos(numpy.clip(x, -1, 1))
         return numpy.degrees(angle)
 
-    z_sun, az_sun, z_sky, az_sky = map(numpy.radians, (sun_zenith, sun_azimuth, sky_zenith, sky_azimuth))
-    v_sun = _xyz(z_sun, az_sun)
-    v_sky = _xyz(z_sky, az_sky)
-    return numpy.apply_along_axis(lambda x: _angle3(x,v_sun),0,numpy.stack(v_sky))
+    v_sky = numpy.stack(_xyz(sky_zenith, sky_azimuth), axis=2)
+    v_sun = _xyz(sun_zenith, sun_azimuth)
+
+    return _angle3(v_sky, v_sun)
 
 
 def cie_scattering_indicatrix(ksi, ksi_sun=0, c=10, d=-3, e=-0.45):
@@ -126,7 +128,7 @@ def sky_grid(daz=1,dz=1):
     return azimuth, zenith , az_c, z_c
 
 
-def sky_luminance(sky_type='soc', sky_irradiance=None):
+def sky_luminance(sky_type='soc', sky_irradiance=None, da=1):
     """Sky luminance map for different conditions and sky types
 
     Args:
@@ -135,7 +137,7 @@ def sky_luminance(sky_type='soc', sky_irradiance=None):
         astk.sky_irradiance.sky_irradiances. Needed for all sky_types except 'uoc' and 'soc'
     """
 
-    azimuth, zenith, az_c, z_c = sky_grid()
+    azimuth, zenith, az_c, z_c = sky_grid(daz=da, dz=da)
     lum = None
     if sky_type in ('soc', 'uoc'):
         lum = cie_relative_luminance(z_c, az_c, type=sky_type)
@@ -143,13 +145,17 @@ def sky_luminance(sky_type='soc', sky_irradiance=None):
         assert sky_irradiance is not None
         lums = []
         for row in sky_irradiance.itertuples():
-            lums.append(cie_relative_luminance(z_c, az_c,
+            lum = cie_relative_luminance(z_c, az_c,
                                                sun_zenith=row.sun_zenith,
                                                sun_azimuth=row.sun_azimuth,
-                                               type=sky_type))
+                                               type=sky_type)
+            lum /= lum.sum()
+            hi = horizontal_irradiance(lum, 90 - z_c).sum()
+            lums.append(row.ghi / hi * lum)
         lum = reduce(lambda a, b: a + b, lums)
     lum /= lum.sum()
-    return azimuth, zenith, lum
+    hi = horizontal_irradiance(lum, 90 - z_c).sum()
+    return azimuth, zenith, lum, hi
 
 
 def show_sky(sky, cmap='jet', shading='flat'):
@@ -158,9 +164,9 @@ def show_sky(sky, cmap='jet', shading='flat'):
     Args:
         sky: a azimuth, zenith, luminance tuple
     """
-    az, z, lum = sky
+    az, z, lum, _ = sky
     theta = numpy.radians(az)
-    r = numpy.sin(numpy.radians(z)) * 90
+    r = z
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
     ax.pcolormesh(theta, r, lum, edgecolors='face', cmap=cmap, shading=shading)
     plt.show()
