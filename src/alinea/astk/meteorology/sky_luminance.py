@@ -18,7 +18,7 @@ from __future__ import division
 import numpy
 from matplotlib import pyplot as plt
 
-from alinea.astk.meteorology.sky_irradiance import horizontal_irradiance, all_weather_sky_clearness, f_clear_sky
+from alinea.astk.meteorology.sky_irradiance import horizontal_irradiance, all_weather_sky_clearness, f_clear_sky, all_weather_sky_brightness
 
 
 def cie_luminance_gradation(z, a=4, b=-0.7):
@@ -116,6 +116,97 @@ def cie_relative_luminance(sky_zenith, sky_azimuth=None, sun_zenith=None,
     return gradation * indicatrix
 
 
+def all_weather_abcde(sun_zenith, clearness, brightness):
+    """Parameters of the all weather sky model (Perez et al. 1993)
+
+    Args:
+        sun_zenith: zenith angle of the sun (deg)
+        clearness: sky clearness as defined in Perez et al. (1993
+        brightness: sky brightness as defined in Perez et al. (1993)
+
+    Returns:
+        a tuple of 5 parameters to be used by CIE sky luminance functions
+
+    Details:
+        R. Perez, R. Seals, J. Michalsky, "All-weather model for sky luminance distribution—Preliminary configuration and
+        validation", Solar Energy, Volume 50, Issue 3, 1993, Pages 235-245,
+    """
+
+    def _awfit(p1, p2, p3, p4, zen, br):
+        p1 = numpy.array(p1)
+        p2 = numpy.array(p2)
+        p3 = numpy.array(p3)
+        p4 = numpy.array(p4)
+        return p1 + p2 * zen + br * (p3 + p4 * zen)
+
+    bins = [1, 1.065, 1.23, 1.5, 1.95, 2.8, 4.5, 6.2]
+    a1 = (1.3525, -1.2219, -1.1000, -0.5484, -0.6000, -1.0156, -1.0000, -1.0500)
+    a2 = (-0.2576, -0.7730, -0.2215, -0.6654, -0.3566, -0.3670, 0.0211, 0.0289)
+    a3 = (-0.2690, 1.4148, 0.8952, -0.2672, -2.5000, 1.0078, 0.5025, 0.4260)
+    a4 = (-1.4366, 1.1016, 0.0156, 0.7117, 2.3250, 1.4051, -0.5119, 0.3590)
+    b1 = (-0.7670, -0.2054, 0.2782, 0.7234, 0.2937, 0.2875, -0.3000, -0.3250)
+    b2 = (0.0007, 0.0367, -0.1812, -0.6219, 0.0496, -0.5328, 0.1922, 0.1156)
+    b3 = (1.2734, -3.9128, -4.5000, -5.6812, -5.6812, -3.8500, 0.7023, 0.7781)
+    b4 = (-0.1233, 0.9156, 1.1766, 2.6297, 1.8415, 3.3750, -1.6317, 0.0025)
+    c1 = (2.8000, 6.9750, 24.7219, 33.3389, 21.0000, 14.0000, 19.0000, 31.0625)
+    c2 = (
+        0.6004, 0.1774, -13.0812, -18.3000, -4.7656, -0.9999, -5.0000, -14.5000)
+    c3 = (
+        1.2375, 6.4477, -37.7000, -62.2500, -21.5906, -7.1406, 1.2438, -46.1148)
+    c4 = (1.0000, -0.1239, 34.8438, 52.0781, 7.2492, 7.5469, -1.9094, 55.3750)
+    d1 = (1.8734, -1.5798, -5.0000, -3.5000, -3.5000, -3.4000, -4.0000, -7.2312)
+    d2 = (0.6297, -0.5081, 1.5218, 0.0016, -0.1554, -0.1078, 0.0250, 0.4050)
+    d3 = (0.9738, -1.7812, 3.9229, 1.1477, 1.4062, -1.0750, 0.3844, 13.3500)
+    d4 = (0.2809, 0.1080, -2.6204, 0.1062, 0.3988, 1.5702, 0.2656, 0.6234)
+    e1 = (0.0356, 0.2624, -0.0156, 0.4659, 0.0032, -0.0672, 1.0468, 1.5000)
+    e2 = (-0.1246, 0.0672, 0.1597, -0.3296, 0.0766, 0.4016, -0.3788, -0.6426)
+    e3 = (-0.5718, -0.2190, 0.4199, -0.0876, -0.0656, 0.3017, -2.4517, 1.8564)
+    e4 = (0.9938, -0.4285, -0.5562, -0.0329, -0.1294, -0.4844, 1.4656, 0.5636)
+
+    index = max(0, numpy.searchsorted(bins, clearness) - 1)
+    z = numpy.radians(sun_zenith)
+    a = _awfit(a1, a2, a3, a4, z, brightness)[index]
+    b = _awfit(b1, b2, b3, b4, z, brightness)[index]
+    c = _awfit(c1, c2, c3, c4, z, brightness)[index]
+    d = _awfit(d1, d2, d3, d4, z, brightness)[index]
+    e = _awfit(e1, e2, e3, e4, z, brightness)[index]
+
+    if clearness <= 1.065:
+        c = numpy.exp(numpy.power(brightness * (c1[0] + c2[0] * z), c3[0])) - \
+            c4[0]
+        d = -numpy.exp(brightness * (d1[0] + d2[0] * z)) + d3[0] + d4[
+                                                                       0] * brightness
+
+    return a, b, c, d, e
+
+
+def all_weather_relative_luminance(sky_zenith, sky_azimuth, sun_zenith, sun_azimuth, clearness, brightness):
+    """All weather relative luminance of a sky element relative to the luminance
+    at zenith
+
+    Args:
+        sky_zenith : zenith angle of the sky element (deg)
+        sky_azimuth: azimuth angle of the sky element (deg)
+        sun_zenith : zenith angle of the sun (deg)
+        sun_azimuth: azimuth angle of the sun (deg)
+        clearness: sky clearness as defined in Perez et al. (1993
+        brightness: sky brightness as defined in Perez et al. (1993)
+
+        Details:
+            R. Perez, R. Seals, J. Michalsky, "All-weather model for sky luminance distribution—Preliminary configuration and
+            validation", Solar Energy, Volume 50, Issue 3, 1993, Pages 235-245,
+
+    """
+
+    a, b, c, d, e = all_weather_abcde(sun_zenith, clearness, brightness)
+    gradation = cie_luminance_gradation(numpy.array(sky_zenith), a=a, b=b)
+    ksi_sun = sun_zenith
+    ksi = _ksi(sky_zenith, sky_azimuth, sun_zenith, sun_azimuth)
+    indicatrix = cie_scattering_indicatrix(ksi, ksi_sun=ksi_sun, c=c, d=d, e=e)
+
+    return gradation * indicatrix
+
+
 def sky_grid(daz=1,dz=1):
     """Azimuth and zenital grid coordinates"""
     def _c(x):
@@ -132,55 +223,73 @@ def sky_luminance(sky_type='soc', sky_irradiance=None, da=1):
     """Sky luminance map for different conditions and sky types
 
     Args:
-        sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'sun_soc', 'blended')
+        sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'sun_soc', 'blended', 'all_weather')
         sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
         astk.sky_irradiance.sky_irradiances. Needed for all sky_types except 'uoc' and 'soc'
     """
 
     azimuth, zenith, az_c, z_c = sky_grid(daz=da, dz=da)
-    lum = numpy.zeros_like(azimuth)
+    lum = numpy.zeros_like(az_c)
     hi = 0
+    irrad = sky_irradiance.copy()
+    irrad['dates'] = irrad.index
+
     # set diffuse part, if any
-    if sky_type != 'clear_sky':
+    if sky_type not in ('clear_sky', 'all_weather'):
         t = 'soc'
         if sky_type == 'uoc':
             t = 'uoc'
         lum = cie_relative_luminance(z_c, az_c, type=t)
         lum /= lum.sum()
         hi = horizontal_irradiance(lum, 90 - z_c).sum()
+
     # add sun-related part, if any
-    if sky_type in ('clear_sky', 'sun_soc', 'blended'):
-        assert sky_irradiance is not None
+    if sky_type in ('clear_sky', 'sun_soc', 'blended', 'all_weather'):
+        assert irrad is not None
         if sky_type == 'sun_soc':
             # scale diffuse part to sum of diffuse irradiance
-            lum *= (sky_irradiance.dhi.sum() / hi)
-            for row in sky_irradiance.itertuples():
+            lum *= (irrad.dhi.sum() / hi)
+            for row in irrad.itertuples():
                 i, j = int(row.sun_zenith // da), int(row.sun_azimuth // da)
                 lum[i, j] += row.dni
             lum /= lum.sum()
             hi = horizontal_irradiance(lum, 90 - z_c).sum()
         else:
             if sky_type == 'blended':
-                epsilon = all_weather_sky_clearness(sky_irradiance.dni, sky_irradiance.dhi, sky_irradiance.sun_zenith)
+                epsilon = all_weather_sky_clearness(irrad.dni, irrad.dhi, irrad.sun_zenith)
                 f_soc = 1 - f_clear_sky(epsilon)
                 # scale diffuse part
-                lum *= (sky_irradiance.ghi / hi * f_soc).sum()
-            for row in sky_irradiance.itertuples():
-                _lum = cie_relative_luminance(z_c, az_c,
+                lum *= (irrad.ghi / hi * f_soc).sum()
+            for row in irrad.itertuples():
+                if sky_type == 'all_weather':
+                    brightness = all_weather_sky_brightness(row.dates, row.dhi, row.sun_zenith)
+                    clearness = all_weather_sky_clearness(row.dni, row.dhi, row.sun_zenith)
+                    _lum = all_weather_relative_luminance(z_c, az_c,
+                                                          sun_zenith=row.sun_zenith,
+                                                          sun_azimuth=row.sun_azimuth,
+                                                          brightness=brightness,
+                                                          clearness=clearness)
+                    _lum /= _lum.sum()
+                    _hi = horizontal_irradiance(_lum, 90 - z_c).sum()
+                    lum += (row.ghi / _hi * _lum)
+                else:
+                    _lum = cie_relative_luminance(z_c, az_c,
                                                    sun_zenith=row.sun_zenith,
                                                    sun_azimuth=row.sun_azimuth,
                                                    type='clear_sky')
-                _lum /= _lum.sum()
-                _hi = horizontal_irradiance(_lum, 90 - z_c).sum()
-                if sky_type == 'clear_sky':
-                    lum += (row.ghi / _hi * _lum)
-                elif sky_type == 'blended':
-                    epsilon = all_weather_sky_clearness(row.dni, row.dhi,row.sun_zenith)
-                    lum += (row.ghi / _hi * _lum * f_clear_sky(epsilon))
-                else:
-                    raise ValueError('undefined direct lightning strategy for sky type: ' + sky_type)
+                    _lum /= _lum.sum()
+                    _hi = horizontal_irradiance(_lum, 90 - z_c).sum()
+                    if sky_type == 'clear_sky':
+                        lum += (row.ghi / _hi * _lum)
+                    elif sky_type == 'blended':
+                        epsilon = all_weather_sky_clearness(row.dni, row.dhi,row.sun_zenith)
+                        lum += (row.ghi / _hi * _lum * f_clear_sky(epsilon))
+                    else:
+                        raise ValueError('undefined direct lightning strategy for sky type: ' + sky_type)
+
             lum /= lum.sum()
             hi = horizontal_irradiance(lum, 90 - z_c).sum()
+
     return azimuth, zenith, lum, hi
 
 
