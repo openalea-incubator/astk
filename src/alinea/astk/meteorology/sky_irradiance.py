@@ -118,6 +118,20 @@ def all_weather_sky_brightness(dates, dhi, sun_zenith, altitude=0, with_pvlib=Tr
     return am * dhi / dni_extra
 
 
+def f_clear_sky(epsilon):
+    """ Clear-sky / overcast mixing fractions for blended sky irradiance model
+
+    ref :  J. Mardaljevic. Daylight Simulation: Validation, Sky Models and
+    Daylight Coefficients. PhD thesis, De Montfort University,
+    Leicester, UK, 2000.
+    p193,eq. 5-10
+
+    Args:
+        epsilon: all weather sky clearness
+    """
+    return numpy.minimum(1, (epsilon - 1) / (1.41 - 1))
+
+
 def clearness_index(dates, ghi):
     """Clearness index (Liu and Jordan 1960)
 
@@ -394,5 +408,6 @@ def ppfd_h(sky_irradiance, relative_direct_irradiance_h, relative_diffuse_irradi
 
 def short_wave_h(sky_irradiance, relative_direct_irradiance_h, relative_diffuse_irradiance_h):
     pass
+
 
 

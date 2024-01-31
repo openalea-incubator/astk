@@ -17,9 +17,9 @@ from __future__ import division
 
 import numpy
 from matplotlib import pyplot as plt
-from functools import reduce
 
-from alinea.astk.meteorology.sky_irradiance import horizontal_irradiance
+from alinea.astk.meteorology.sky_irradiance import horizontal_irradiance, all_weather_sky_clearness, f_clear_sky
+
 
 def cie_luminance_gradation(z, a=4, b=-0.7):
     """ function giving the dependence of the luminance of a sky element
@@ -138,23 +138,49 @@ def sky_luminance(sky_type='soc', sky_irradiance=None, da=1):
     """
 
     azimuth, zenith, az_c, z_c = sky_grid(daz=da, dz=da)
-    lum = None
-    if sky_type in ('soc', 'uoc'):
-        lum = cie_relative_luminance(z_c, az_c, type=sky_type)
-    elif sky_type == 'clear_sky':
+    lum = numpy.zeros_like(azimuth)
+    hi = 0
+    # set diffuse part, if any
+    if sky_type != 'clear_sky':
+        t = 'soc'
+        if sky_type == 'uoc':
+            t = 'uoc'
+        lum = cie_relative_luminance(z_c, az_c, type=t)
+        lum /= lum.sum()
+        hi = horizontal_irradiance(lum, 90 - z_c).sum()
+    # add sun-related part, if any
+    if sky_type in ('clear_sky', 'sun_soc', 'blended'):
         assert sky_irradiance is not None
-        lums = []
-        for row in sky_irradiance.itertuples():
-            lum = cie_relative_luminance(z_c, az_c,
-                                               sun_zenith=row.sun_zenith,
-                                               sun_azimuth=row.sun_azimuth,
-                                               type=sky_type)
+        if sky_type == 'sun_soc':
+            # scale diffuse part to sum of diffuse irradiance
+            lum *= (sky_irradiance.dhi.sum() / hi)
+            for row in sky_irradiance.itertuples():
+                i, j = int(row.sun_zenith // da), int(row.sun_azimuth // da)
+                lum[i, j] += row.dni
             lum /= lum.sum()
             hi = horizontal_irradiance(lum, 90 - z_c).sum()
-            lums.append(row.ghi / hi * lum)
-        lum = reduce(lambda a, b: a + b, lums)
-    lum /= lum.sum()
-    hi = horizontal_irradiance(lum, 90 - z_c).sum()
+        else:
+            if sky_type == 'blended':
+                epsilon = all_weather_sky_clearness(sky_irradiance.dni, sky_irradiance.dhi, sky_irradiance.sun_zenith)
+                f_soc = 1 - f_clear_sky(epsilon)
+                # scale diffuse part
+                lum *= (sky_irradiance.ghi / hi * f_soc).sum()
+            for row in sky_irradiance.itertuples():
+                _lum = cie_relative_luminance(z_c, az_c,
+                                                   sun_zenith=row.sun_zenith,
+                                                   sun_azimuth=row.sun_azimuth,
+                                                   type='clear_sky')
+                _lum /= _lum.sum()
+                _hi = horizontal_irradiance(_lum, 90 - z_c).sum()
+                if sky_type == 'clear_sky':
+                    lum += (row.ghi / _hi * _lum)
+                elif sky_type == 'blended':
+                    epsilon = all_weather_sky_clearness(row.dni, row.dhi,row.sun_zenith)
+                    lum += (row.ghi / _hi * _lum * f_clear_sky(epsilon))
+                else:
+                    raise ValueError('undefined direct lighning strategy for sky type: ' + sky_type)
+            lum /= lum.sum()
+            hi = horizontal_irradiance(lum, 90 - z_c).sum()
     return azimuth, zenith, lum, hi
 
 
@@ -170,3 +196,6 @@ def show_sky(sky, cmap='jet', shading='flat'):
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
     ax.pcolormesh(theta, r, lum, edgecolors='face', cmap=cmap, shading=shading)
     plt.show()
+
+
+

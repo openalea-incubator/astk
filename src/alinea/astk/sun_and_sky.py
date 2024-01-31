@@ -21,11 +21,9 @@ import pandas
 from alinea.astk.meteorology.sky_irradiance import (
     sky_irradiances,
     clear_sky_irradiances,
-    horizontal_irradiance,
-    all_weather_sky_clearness)
+    horizontal_irradiance, f_clear_sky)
 from alinea.astk.meteorology.sky_luminance import cie_relative_luminance
 from alinea.astk.meteorology.sun_position import sun_position
-from six.moves import map
 
 # default location and dates
 _daydate = '2000-06-21'
@@ -259,32 +257,6 @@ def sun_fraction(sky):
     return (sky['ghi'] - sky['dhi']).sum() / sky['ghi'].sum()
 
 
-def sky_blend(sky, f_sun=0.):
-    """ Clear-sky / overcast mixing fractions for blended sky irradiance model
-
-    ref :  J. Mardaljevic. Daylight Simulation: Validation, Sky Models and
-    Daylight Coefficients. PhD thesis, De Montfort University,
-    Leicester, UK, 2000.
-    p193,eq. 5-10
-
-    Args:
-        sky: (pandas DataFrame): sky irradiances as computed by sky_irradiances
-        function
-        f_sun: (float) sun mixing fraction for the sun (default 0)
-    """
-    def _f_clear(epsilon):
-        return min(1, (epsilon - 1) / (1.41 - 1))
-
-    sky_clearness = all_weather_sky_clearness(sky.dni, sky.dhi, sky.sun_zenith)
-    f_clear = numpy.array(list(map(_f_clear, sky_clearness)))
-    # temporal integration
-    fclear = (f_clear * sky['ghi']).sum() / sky['ghi'].sum()
-    f_clear_sky = fclear * (1 - f_sun)
-    f_soc = (1 - fclear) * (1 - f_sun)
-
-    return f_clear_sky, f_soc
-
-
 def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
                     dates=None, daydate=_daydate, pressure=101325,
                     temp_dew=None, longitude=_longitude, latitude=_latitude,
@@ -337,7 +309,7 @@ def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
                       altitude=altitude, timezone=timezone)
 
     if model == 'blended' and f_sun > 0:
-        f_clear_sky, f_soc = sky_blend(sky_irr, f_sun)
+        f_clear_sky, f_soc = f_clear_sky(sky_irr, f_sun)
         sky_el, sky_az, soc = sky_sources(sky_type='soc', irradiance=f_soc)
         _, _, csky = sky_sources(sky_type='clear_sky',
                                  irradiance=f_clear_sky, dates=dates,
