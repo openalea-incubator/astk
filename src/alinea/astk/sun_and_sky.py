@@ -19,11 +19,11 @@ from __future__ import division
 import numpy
 import pandas
 from alinea.astk.meteorology.sky_irradiance import (
-    sky_irradiances,
+    sky_irradiance,
     clear_sky_irradiances,
     horizontal_irradiance)
+from alinea.astk.meteorology.sky_luminance import cie_relative_luminance
 from alinea.astk.meteorology.sun_position import sun_position
-from six.moves import map
 
 # default location and dates
 _daydate = '2000-06-21'
@@ -34,77 +34,6 @@ _altitude = 56
 
 
 # sky models / equations
-def cie_luminance_gradation(sky_elevation, a, b):
-    """ function giving the dependence of the luminance of a sky element
-    to its elevation angle
-
-    CIE, 2002, Spatial distribution of daylight CIE standard general sky,
-    CIE standard, CIE Central Bureau, Vienna
-
-    elevation : elevation angle of the sky element (rad)
-    a, b : coefficient for the type of sky
-    """
-    z = numpy.pi / 2 - numpy.array(sky_elevation)
-    phi_0 = 1 + a * numpy.exp(b)
-    phi_z = numpy.where(sky_elevation == 0, 1,
-                        1 + a * numpy.exp(b / numpy.cos(z)))
-    return phi_z / phi_0
-
-
-def cie_scattering_indicatrix(sun_azimuth, sun_elevation, sky_azimuth,
-                              sky_elevation, c, d, e):
-    """ function giving the dependence of the luminance
-    to its azimuth distance to the sun
-
-    CIE, 2002, Spatial distribution of daylight CIE standard general sky,
-    CIE standard, CIE Central Bureau, Vienna
-
-    elevation : elevation angle of the sky element (rad)
-    d, e : coefficient for the type of sky
-    """
-    z = numpy.pi / 2 - numpy.array(sky_elevation)
-    zs = numpy.pi / 2 - numpy.array(sun_elevation)
-    alpha = numpy.array(sky_azimuth)
-    alpha_s = numpy.array(sun_azimuth)
-    ksi = numpy.arccos(
-        numpy.cos(zs) * numpy.cos(z) + numpy.sin(zs) * numpy.sin(z) * numpy.cos(
-            numpy.abs(alpha - alpha_s)))
-
-    f_ksi = 1 + c * (
-    numpy.exp(d * ksi) - numpy.exp(d * numpy.pi / 2)) + e * numpy.power(
-        numpy.cos(ksi), 2)
-    f_zs = 1 + c * (
-    numpy.exp(d * zs) - numpy.exp(d * numpy.pi / 2)) + e * numpy.power(
-        numpy.cos(zs), 2)
-
-    return f_ksi / f_zs
-
-
-def cie_relative_luminance(sky_elevation, sky_azimuth=None, sun_elevation=None,
-                           sun_azimuth=None, type='soc'):
-    """ cie relative luminance of a sky element relative to the luminance
-    at zenith
-
-    angle in radians
-    type is one of 'soc' (standard overcast sky), 'uoc' (uniform radiance)
-    or 'clear_sky' (standard clear sky low turbidity)
-    """
-
-    if type == 'clear_sky' and (
-                sun_elevation is None or sun_azimuth is None or sky_azimuth is None):
-        raise ValueError('Clear sky requires sun position')
-
-    if type == 'soc':
-        return cie_luminance_gradation(sky_elevation, 4, -0.7)
-    elif type == 'uoc':
-        return cie_luminance_gradation(sky_elevation, 0, -1)
-    elif type == 'clear_sky':
-        return cie_luminance_gradation(sky_elevation, -1,
-                                       -0.32) * cie_scattering_indicatrix(
-            sun_azimuth, sun_elevation, sky_azimuth, sky_elevation, 10, -3,
-            0.45)
-    else:
-        raise ValueError('Unknown sky type')
 
 
 def sky_discretisation(turtle_sectors=46, nb_az=None, nb_el=None):
@@ -303,7 +232,7 @@ def sky_sources(sky_type='soc', irradiance=1, turtle_sectors=46, dates=None, day
                                             sun_azimuth=row['azimuth'],
                                             avoid_sun=True)
             source_irradiance += (
-            horizontal_irradiance(rad, source_elevation) * row['wsky'])
+                    horizontal_irradiance(rad, source_elevation) * row['wsky'])
     else:
         raise ValueError(
             'unknown type: ' + sky_type +
@@ -328,35 +257,10 @@ def sun_fraction(sky):
     return (sky['ghi'] - sky['dhi']).sum() / sky['ghi'].sum()
 
 
-def sky_blend(sky, f_sun=0.):
-    """ Clear-sky / overcast mixing fractions for blended sky irradiance model
-
-    ref :  J. Mardaljevic. Daylight Simulation: Validation, Sky Models and
-    Daylight Coefficients. PhD thesis, De Montfort University,
-    Leicester, UK, 2000.
-    p193,eq. 5-10
-
-    Args:
-        sky: (pandas DataFrame): sky irradiances as computed by sky_irradiances
-        function
-        f_sun: (float) sun mixing fraction for the sun (default 0)
-    """
-    def _f_clear(clearness_index):
-        return min(1, (clearness_index - 1) / (1.41 - 1))
-
-    f_clear = numpy.array(list(map(_f_clear, sky['clearness'])))
-    # temporal integration
-    fclear = (f_clear * sky['ghi']).sum() / sky['ghi'].sum()
-    f_clear_sky = fclear * (1 - f_sun)
-    f_soc = (1 - fclear) * (1 - f_sun)
-
-    return f_clear_sky, f_soc
-
-
 def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
                     dates=None, daydate=_daydate, pressure=101325,
                     temp_dew=None, longitude=_longitude, latitude=_latitude,
-                    altitude=_altitude, timezone=_timezone, normalisation=None):
+                    altitude=_altitude, timezone=_timezone):
     """ Light sources representing the sun and the sky for actual irradiances
 
     Args:
@@ -381,9 +285,11 @@ def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
          so that sum of sun + sky irradiance equals this value.
 
     Returns:
-        elevation (degrees), azimuth (degrees, from North positive clockwise),
-        and horizontal irradiance of sources representing the sun and same
-        quantities for sources representing the sky
+        sky_irradiance, sun, sky
+        sky_irradiance is a pandas data frame of sky irradiances
+        sun is a (elevation (degrees), azimuth (degrees, from North positive clockwise),
+        and relative horizontal irradiance (fraction of ghi)) tuple of sources representing the sun
+         sky is a elevation, azimuth, relative irradiance tuple for sources representing the sky
 
     Details:
         J. Mardaljevic. Daylight Simulation: Validation, Sky Models and
@@ -391,42 +297,35 @@ def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
         Leicester, UK, 2000.
     """
 
-    sky_irr = sky_irradiances(dates=dates, daydate=daydate, ghi=ghi, dhi=dhi,
-                              attenuation=attenuation, pressure=pressure,
-                              temp_dew=temp_dew, longitude=longitude,
-                              latitude=latitude, altitude=altitude,
-                              timezone=timezone)
-    if normalisation is None:
-        normalisation = sky_irr['ghi'].sum()
+    sky_irr = sky_irradiance(dates=dates, daydate=daydate, ghi=ghi, dhi=dhi,
+                             attenuation=attenuation, pressure=pressure,
+                             temp_dew=temp_dew, longitude=longitude,
+                             latitude=latitude, altitude=altitude,
+                             timezone=timezone)
 
     f_sun = sun_fraction(sky_irr)
-    irradiance = f_sun * normalisation
-    sun = sun_sources(irradiance=irradiance, dates=dates,
+    sun = sun_sources(irradiance=f_sun, dates=dates,
                       daydate=daydate, latitude=latitude, longitude=longitude,
                       altitude=altitude, timezone=timezone)
 
     if model == 'blended' and f_sun > 0:
-        f_clear_sky, f_soc = sky_blend(sky_irr, f_sun)
-        irradiance = f_soc * normalisation
-        sky_el, sky_az, soc = sky_sources(sky_type='soc', irradiance=irradiance)
-        irradiance = f_clear_sky * normalisation
+        f_clear_sky, f_soc = f_clear_sky(sky_irr, f_sun)
+        sky_el, sky_az, soc = sky_sources(sky_type='soc', irradiance=f_soc)
         _, _, csky = sky_sources(sky_type='clear_sky',
-                                 irradiance=irradiance, dates=dates,
+                                 irradiance=f_clear_sky, dates=dates,
                                  daydate=daydate, latitude=latitude,
                                  longitude=longitude, altitude=altitude,
                                  timezone=timezone)
         sky = sky_el, sky_az, soc + csky
     elif model == 'sun_soc' or f_sun == 0:
-        irradiance = (1 - f_sun) * normalisation
-        sky = sky_sources(sky_type='soc', irradiance=irradiance)
+        sky = sky_sources(sky_type='soc', irradiance= 1 - f_sun)
     elif f_sun == 0:
-        irradiance = (1 - f_sun) * ghi
-        sky = sky_sources(sky_type='soc', irradiance=irradiance)
+        sky = sky_sources(sky_type='soc', irradiance=1)
     else:
         raise ValueError(
             'unknown model: ' + model +
             ' (should be one of: soc_sun, blended)')
-    return sun, sky
+    return sky_irr, sun, sky
 
 
 
