@@ -316,11 +316,11 @@ def actual_sky_irradiances(dates=None, daydate=_daydate, ghi=None,
     return df.loc[:, ('ghi', 'dhi', 'dni')]
 
 
-def sky_irradiances(dates=None, daydate=_daydate, ghi=None, dhi=None, ppfd=None,
-                           attenuation=None,
-                           pressure=101325, temp_dew=None, longitude=_longitude,
-                           latitude=_latitude, altitude=_altitude,
-                           timezone=_timezone, with_pvlib=True):
+def sky_irradiance(dates=None, daydate=_daydate, ghi=None, dhi=None, ppfd=None,
+                   attenuation=None,
+                   pressure=101325, temp_dew=None, longitude=_longitude,
+                   latitude=_latitude, altitude=_altitude,
+                   timezone=_timezone, with_pvlib=True):
     """ Estimate variables related to sky irradiance.
 
     Args:

@@ -1,8 +1,8 @@
 import numpy
 from alinea.astk.meteorology.sky_irradiance import (
-    clear_sky_irradiances, 
-    actual_sky_irradiances, 
-    sky_irradiances)
+    clear_sky_irradiances,
+    actual_sky_irradiances,
+    sky_irradiance)
 
 
 
@@ -30,11 +30,11 @@ def test_actual_sky_irradiance():
 
 
 def test_sky_irradiances():
-    df = sky_irradiances()
+    df = sky_irradiance()
     assert len(df) == 15
     assert numpy.isclose((df.ghi/df.ppfd).mean(), 0.47, atol=0.01)
     assert df.dhi.sum() / df.ghi.sum() < 0.25
-    df = sky_irradiances(attenuation=0.2)
+    df = sky_irradiance(attenuation=0.2)
     assert df.dhi.sum() / df.ghi.sum() > 0.99
-    df2 = sky_irradiances(with_pvlib=False)
+    df2 = sky_irradiance(with_pvlib=False)
     assert len(df2) == 15

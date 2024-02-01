@@ -19,9 +19,9 @@ from __future__ import division
 import numpy
 import pandas
 from alinea.astk.meteorology.sky_irradiance import (
-    sky_irradiances,
+    sky_irradiance,
     clear_sky_irradiances,
-    horizontal_irradiance, f_clear_sky)
+    horizontal_irradiance)
 from alinea.astk.meteorology.sky_luminance import cie_relative_luminance
 from alinea.astk.meteorology.sun_position import sun_position
 
@@ -297,11 +297,11 @@ def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
         Leicester, UK, 2000.
     """
 
-    sky_irr = sky_irradiances(dates=dates, daydate=daydate, ghi=ghi, dhi=dhi,
-                              attenuation=attenuation, pressure=pressure,
-                              temp_dew=temp_dew, longitude=longitude,
-                              latitude=latitude, altitude=altitude,
-                              timezone=timezone)
+    sky_irr = sky_irradiance(dates=dates, daydate=daydate, ghi=ghi, dhi=dhi,
+                             attenuation=attenuation, pressure=pressure,
+                             temp_dew=temp_dew, longitude=longitude,
+                             latitude=latitude, altitude=altitude,
+                             timezone=timezone)
 
     f_sun = sun_fraction(sky_irr)
     sun = sun_sources(irradiance=f_sun, dates=dates,
