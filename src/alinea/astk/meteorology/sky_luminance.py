@@ -18,6 +18,11 @@ from alinea.astk.meteorology.sky_irradiance import (horizontal_irradiance, all_w
                                                     all_weather_sky_brightness)
 
 
+def sky_hi(grid, luminance):
+    _, _, _, sky_zenith = grid
+    return horizontal_irradiance(luminance, 90 - sky_zenith).sum()
+
+
 def cie_luminance_gradation(z, a=4, b=-0.7):
     """ function giving the dependence of the luminance of a sky element
     to its zenith angle
@@ -162,24 +167,25 @@ def all_weather_abcde(sun_zenith, clearness, brightness):
 def ksi_grid(grid, sun_zenith=0, sun_azimuth=0):
     """acute angle between an array of sky elements and the sun """
 
-    def _xyz(zenith, azimuth):
+    def _cartesian(zenith, azimuth):
         theta = numpy.radians(zenith)
         phi = numpy.radians(azimuth)
         return (numpy.sin(theta) * numpy.cos(phi),
                 numpy.sin(theta) * numpy.sin(phi),
+
                 numpy.cos(theta))
 
-    def _angle3(v1, v2):
+    def _acute(v1, v2):
         """acute angle between 2 3d vectors"""
         x = numpy.dot(v1, v2) / (numpy.linalg.norm(v1, axis=2) * numpy.linalg.norm(v2))
         angle = numpy.arccos(numpy.clip(x, -1, 1))
         return numpy.degrees(angle)
 
     _, _, sky_azimuth, sky_zenith = grid
-    v_sky = numpy.stack(_xyz(sky_zenith, sky_azimuth), axis=2)
-    v_sun = _xyz(sun_zenith, sun_azimuth)
+    v_sky = numpy.stack(_cartesian(sky_zenith, sky_azimuth), axis=2)
+    v_sun = _cartesian(sun_zenith, sun_azimuth)
 
-    return _angle3(v_sky, v_sun)
+    return _acute(v_sky, v_sun)
 
 
 def all_weather_relative_luminance(grid, sun_zenith, sun_azimuth, clearness, brightness):
@@ -209,7 +215,7 @@ def all_weather_relative_luminance(grid, sun_zenith, sun_azimuth, clearness, bri
 
 
 def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
-    """Sky luminance map for different conditions and sky types
+    """Normalised sky luminance map for different conditions, periods and sky types
 
     Args:
         sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'sun_soc', 'blended', 'all_weather')
@@ -219,68 +225,69 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
 
     azimuth, zenith, az_c, z_c = grid
     lum = numpy.zeros_like(az_c)
-    hi = 0
-    irrad = sky_irradiance.copy()
-    irrad['dates'] = irrad.index
+    if sky_irradiance is not None:
+        irrad = sky_irradiance.copy()
+        irrad['dates'] = irrad.index
 
-    # set diffuse part, if any
-    if sky_type not in ('clear_sky', 'all_weather'):
-        t = 'soc'
-        if sky_type == 'uoc':
-            t = 'uoc'
-        lum = cie_relative_luminance(grid=grid, type=t)
+    if sky_type in ('soc', 'uoc'):
+        lum = cie_relative_luminance(grid=grid, type=sky_type)
         lum /= lum.sum()
-        hi = horizontal_irradiance(lum, 90 - z_c).sum()
+        return lum
+    elif sky_type == 'clear_sky':
+        for row in irrad.itertuples():
+            _lum = cie_relative_luminance(grid=grid,
+                                          sun_zenith=row.sun_zenith,
+                                          sun_azimuth=row.sun_azimuth,
+                                          type='clear_sky')
+            _lum /= _lum.sum()
+            _hi = sky_hi(grid, _lum)
+            lum += (row.ghi / _hi * _lum)
+        lum /= lum.sum()
+        return lum
+    elif sky_type == 'all_weather':
+        for row in irrad.itertuples():
+            brightness = all_weather_sky_brightness(row.dates, row.dhi, row.sun_zenith)
+            clearness = all_weather_sky_clearness(row.dni, row.dhi, row.sun_zenith)
+            _lum = all_weather_relative_luminance(grid,
+                                                  sun_zenith=row.sun_zenith,
+                                                  sun_azimuth=row.sun_azimuth,
+                                                  brightness=brightness,
+                                                  clearness=clearness)
+            _lum /= _lum.sum()
+            _hi = sky_hi(grid, _lum)
+            lum += (row.ghi / _hi * _lum)
+        lum /= lum.sum()
+        return lum
+    elif sky_type == 'sun_soc':
+        lum = cie_relative_luminance(grid=grid, type='soc')
+        # scale to total luminance of sky
+        lum /= lum.sum()
+        hi = sky_hi(grid, lum)
+        lum *= (irrad.dhi.sum() / hi)
+        for row in irrad.itertuples():
+            daz, dz = map(lambda x: numpy.diff(x)[0], (azimuth, zenith))
+            i, j = int(row.sun_zenith // dz), int(row.sun_azimuth // daz)
+            lum[i, j] += row.dni
+        lum /= lum.sum()
+        return lum
+    elif sky_type == 'blended':
+        soc = cie_relative_luminance(grid=grid, type='soc')
+        for row in irrad.itertuples():
+            cs = cie_relative_luminance(grid=grid,
+                                          sun_zenith=row.sun_zenith,
+                                          sun_azimuth=row.sun_azimuth,
+                                          type='clear_sky')
+            epsilon = all_weather_sky_clearness(row.dni, row.dhi, row.sun_zenith)
+            f_clear = f_clear_sky(epsilon)
+            _lum = f_clear * cs + (1 - f_clear) * soc
+            _lum /= _lum.sum()
+            _hi = sky_hi(grid, _lum)
+            lum += (row.ghi / _hi * _lum)
+        lum /= lum.sum()
+        return lum
+    else:
+        raise ValueError('undefined sky type: ' + sky_type)
 
-    # add sun-related part, if any
-    if sky_type in ('clear_sky', 'sun_soc', 'blended', 'all_weather'):
-        assert irrad is not None
-        if sky_type == 'sun_soc':
-            # scale diffuse part to sum of diffuse irradiance
-            lum *= (irrad.dhi.sum() / hi)
-            for row in irrad.itertuples():
-                daz, dz = map(lambda x: numpy.diff(x)[0], (azimuth, zenith))
-                i, j = int(row.sun_zenith // dz), int(row.sun_azimuth // daz)
-                lum[i, j] += row.dni
-            lum /= lum.sum()
-            hi = horizontal_irradiance(lum, 90 - z_c).sum()
-        else:
-            if sky_type == 'blended':
-                epsilon = all_weather_sky_clearness(irrad.dni, irrad.dhi, irrad.sun_zenith)
-                f_soc = 1 - f_clear_sky(epsilon)
-                # scale diffuse part
-                lum *= (irrad.ghi / hi * f_soc).sum()
-            for row in irrad.itertuples():
-                if sky_type == 'all_weather':
-                    brightness = all_weather_sky_brightness(row.dates, row.dhi, row.sun_zenith)
-                    clearness = all_weather_sky_clearness(row.dni, row.dhi, row.sun_zenith)
-                    _lum = all_weather_relative_luminance(grid,
-                                                          sun_zenith=row.sun_zenith,
-                                                          sun_azimuth=row.sun_azimuth,
-                                                          brightness=brightness,
-                                                          clearness=clearness)
-                    _lum /= _lum.sum()
-                    _hi = horizontal_irradiance(_lum, 90 - z_c).sum()
-                    lum += (row.ghi / _hi * _lum)
-                else:
-                    _lum = cie_relative_luminance(grid=grid,
-                                                   sun_zenith=row.sun_zenith,
-                                                   sun_azimuth=row.sun_azimuth,
-                                                   type='clear_sky')
-                    _lum /= _lum.sum()
-                    _hi = horizontal_irradiance(_lum, 90 - z_c).sum()
-                    if sky_type == 'clear_sky':
-                        lum += (row.ghi / _hi * _lum)
-                    elif sky_type == 'blended':
-                        epsilon = all_weather_sky_clearness(row.dni, row.dhi,row.sun_zenith)
-                        lum += (row.ghi / _hi * _lum * f_clear_sky(epsilon))
-                    else:
-                        raise ValueError('undefined direct lightning strategy for sky type: ' + sky_type)
-
-            lum /= lum.sum()
-            hi = horizontal_irradiance(lum, 90 - z_c).sum()
-
-    return lum, hi
 
 
 

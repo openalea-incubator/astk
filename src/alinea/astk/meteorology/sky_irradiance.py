@@ -46,18 +46,16 @@ _latitude = 43.36
 _altitude = 56
 
 
-def horizontal_irradiance(normal_irradiance, elevation):
-    """ irradiance measured on a horizontal surface from a source
-    with known elevation (degrees) and known normal irradiance
+def horizontal_irradiance(d_luminance, elevation):
+    """horizontal irradiance of a source emitting a given directional luminance
     """
-    return normal_irradiance * numpy.sin(numpy.radians(elevation))
+    return d_luminance * numpy.sin(numpy.radians(elevation))
 
 
-def normal_irradiance(horizontal_irradiance, elevation):
-    """ irradiance measured on a surface perpendicular
-    to a source with known elevation (degrees) and horizontal irradiance
+def directional_luminance(h_irradiance, elevation):
+    """ directional luminance of a source producing a given horizontal irradiance
     """
-    return horizontal_irradiance / numpy.sin(numpy.radians(elevation))
+    return h_irradiance / numpy.sin(numpy.radians(elevation))
 
 
 def air_mass(zenith, altitude=0, with_pvlib=True):
@@ -311,7 +309,7 @@ def actual_sky_irradiances(dates=None, daydate=_daydate, ghi=None,
                                                    1.47 - 1.66 * RsRso,
                                                    R)))
         df['dhi'] = df.ghi * RdRs
-        df['dni'] = normal_irradiance(df['ghi'] - df['dhi'], df['elevation'])
+        df['dni'] = directional_luminance(df['ghi'] - df['dhi'], df['elevation'])
 
     return df.loc[:, ('ghi', 'dhi', 'dni')]
 
@@ -373,8 +371,7 @@ def sky_irradiance(dates=None, daydate=_daydate, ghi=None, dhi=None, ppfd=None,
         else:
             df['ghi'] = ghi
             df['dhi'] = dhi
-            df['dni'] = normal_irradiance(numpy.array(ghi) - numpy.array(dhi),
-                                          df.elevation)
+            df['dni'] = directional_luminance(numpy.array(ghi) - numpy.array(dhi), df.elevation)
     if ppfd is None:
         ppfd = df.ghi * micromol_per_joule(df.index, df.ghi, df.elevation, temp_dew=temp_dew)
     df['ppfd'] = ppfd

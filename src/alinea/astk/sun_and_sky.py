@@ -232,7 +232,7 @@ def sky_sources(sky_type='soc', irradiance=1, turtle_sectors=46, dates=None, day
                                             sun_azimuth=row['azimuth'],
                                             avoid_sun=True)
             source_irradiance += (
-            horizontal_irradiance(rad, source_elevation) * row['wsky'])
+                    horizontal_irradiance(rad, source_elevation) * row['wsky'])
     else:
         raise ValueError(
             'unknown type: ' + sky_type +
