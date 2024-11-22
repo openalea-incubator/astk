@@ -33,11 +33,15 @@ def sky_grid(d_az=1, d_z=1, n_az=None, n_z=None):
 
     # grid cell centers positioned in a 2D grid matrix
     az_c, z_c = numpy.meshgrid(_c(azimuth), _c(zenith))
-    return azimuth, zenith , az_c, z_c
+    # grid cell relative area on sky hemisphere
+    w_c = numpy.radians(d_az) * (numpy.cos(numpy.radians(z_c - d_z / 2)) - numpy.cos(numpy.radians(z_c + d_z / 2)))
+    return azimuth, zenith , az_c, z_c, w_c
+
 
 def sky_dirs(d_az=10, d_z=10, n_az=None, n_z=None):
-    _,_,az, z = sky_grid(d_az=d_az, d_z=d_z, n_az=n_az, n_z=n_z)
+    _,_,az, z, _ = sky_grid(d_az=d_az, d_z=d_z, n_az=n_az, n_z=n_z)
     return [*zip(90 - z.flatten(), az.flatten())]
+
 
 def sun_path(sky_irradiance):
     irr = sky_irradiance
@@ -56,12 +60,14 @@ def sky_turtle(sectors=46):
     nb_sect = [1, 6, 16, 46][numpy.searchsorted([1, 6, 16, 46], min(46, sectors))]
     return [*zip(elevations_h[:nb_sect], azimuths_h[:nb_sect])]
 
+
 def closest_point(point_grid, point_list):
     dists = [numpy.sum((point_grid - p)**2, axis=2) for p in point_list]
     return numpy.argmin(numpy.stack(dists, axis=2), axis=2)
 
+
 def sky_map(luminance_grid, luminance_map, directions):
-    _, _, az, z = luminance_grid
+    _, _, az, z, _ = luminance_grid
 
     def _polar(az, z):
         theta = numpy.radians(az)
@@ -70,11 +76,12 @@ def sky_map(luminance_grid, luminance_map, directions):
     grid_points = numpy.stack(_polar(az, z), axis=2)
     target_points = numpy.array([_polar(a,90- el) for el,a in directions])
     targets = closest_point(grid_points, target_points)
-    lums = numpy.bincount(targets.flatten(), weights=luminance_map.flatten())
+    slum = numpy.bincount(targets.flatten(), weights=luminance_map.flatten())
     smap = numpy.zeros_like(luminance_map)
-    for i, w in enumerate(lums):
+    for i, w in enumerate(slum):
         smap[targets==i] = w
-    return lums, smap
+    return slum, smap
+
 
 def show_sky(grid, sky, cmap='jet', shading='flat'):
     """Display sky luminance polar image
@@ -83,7 +90,7 @@ def show_sky(grid, sky, cmap='jet', shading='flat'):
         grid: a (azimuth, zenith, az_c, z_c) tuple, such as returned by sky_grid
         sky: a 2-D array of values to be plotted on the grid
     """
-    az, z, _, _ = grid
+    az, z, _, _ , _= grid
     theta = numpy.radians(az)
     r = z
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
