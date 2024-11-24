@@ -214,13 +214,14 @@ def all_weather_relative_luminance(grid, sun_zenith, sun_azimuth, clearness, bri
     return gradation * indicatrix
 
 
-def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
+def sky_luminance(grid, sky_type='soc', sky_irradiance=None, how='relative'):
     """Normalised sky luminance map for different conditions, periods and sky types
 
     Args:
         sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'sun_soc', 'blended', 'all_weather')
-        sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
-        astk.sky_irradiance.sky_irradiance. Needed for all sky_types except 'uoc' and 'soc'
+        sky_irradianceadiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
+        astk.sky_irradianceadiance.sky_irradianceadiance. Needed for all sky_types except 'uoc' and 'soc'
+        lum : a string specifying how the luminance is expressed. Could be 'relative' (sum(lum=1)), 'Wm2', 'MJ' or 'PPFD' 
     """
 
     azimuth, zenith, az_c, z_c, w_c = grid
@@ -232,7 +233,6 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
     if sky_type in ('soc', 'uoc'):
         lum = w_c * cie_relative_luminance(grid=grid, type=sky_type)
         lum /= lum.sum()
-        return lum
     elif sky_type == 'clear_sky':
         for row in irrad.itertuples():
             _lum = w_c * cie_relative_luminance(grid=grid,
@@ -243,7 +243,6 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
             _hi = sky_hi(grid, _lum)
             lum += (row.ghi / _hi * _lum)
         lum /= lum.sum()
-        return lum
     elif sky_type == 'all_weather':
         for row in irrad.itertuples():
             brightness = all_weather_sky_brightness(row.dates, row.dhi, row.sun_zenith)
@@ -257,7 +256,6 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
             _hi = sky_hi(grid, _lum)
             lum += (row.ghi / _hi * _lum)
         lum /= lum.sum()
-        return lum
     elif sky_type == 'sun_soc':
         lum = w_c * cie_relative_luminance(grid=grid, type='soc')
         # scale to total luminance of sky
@@ -269,7 +267,6 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
             i, j = int(row.sun_zenith // dz), int(row.sun_azimuth // daz)
             lum[i, j] += row.dni
         lum /= lum.sum()
-        return lum
     elif sky_type == 'blended':
         soc = w_c * cie_relative_luminance(grid=grid, type='soc')
         for row in irrad.itertuples():
@@ -284,9 +281,18 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
             _hi = sky_hi(grid, _lum)
             lum += (row.ghi / _hi * _lum)
         lum /= lum.sum()
-        return lum
     else:
         raise ValueError('undefined sky type: ' + sky_type)
+    
+    if how == 'PPFD':
+        lum *= sky_irradiance.ppfd.mean()
+    elif how == 'Wm2':
+        lum *= sky_irradiance.ghi.mean()
+    elif how == 'MJ':
+        lum *= sky_irradiance.ghi.sum() * 3600 / 1e5
+    else:
+        pass
+    return lum
 
 
 

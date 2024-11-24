@@ -80,7 +80,9 @@ def sky_map(luminance_grid, luminance_map, directions):
     smap = numpy.zeros_like(luminance_map)
     for i, w in enumerate(slum):
         smap[targets==i] = w
-    return slum, smap
+    elevation, azimuth= zip(*directions)
+    sky_sources = list(zip(elevation, azimuth, slum))
+    return sky_sources, smap
 
 
 def show_sky(grid, sky, cmap='jet', shading='flat'):
