@@ -1,9 +1,13 @@
 """
 Provides utilities for scheduling models in simulation
 """
+from __future__ import division
 import numpy
+from six.moves import map
+from six.moves import zip
+from functools import reduce
 
-class TimeControlSet:
+class TimeControlSet(object):
 
     def __init__(self, **kwd):
         """  Create a TimeControlSet , that is a simple class container for named object"""
@@ -19,7 +23,7 @@ def simple_delay_timing(delay = 1, steps =1):
     return (TimeControlSet(dt=delay) if not i % delay  else TimeControlSet(dt=0) for i in range(steps))
             
             
-class TimeControl:
+class TimeControl(object):
 
     def __init__(self, delay=None, steps=None, model=None, weather=None, start_date=None):
         """ create a generator-like timecontrol object """
@@ -42,11 +46,11 @@ class TimeControl:
     def __iter__(self):
         return TimeControl(delay=self.delay, steps=self.steps, model=self.model, weather=self.weather, start_date=self.start_date) 
 
-    def next(self):
-        return self._timing.next()
+    def __next__(self):
+        return next(self._timing)
                   
             
-class TimeControler:
+class TimeControler(object):
 
     def __init__(self, **kwd):
         """ create a controler for parallel run of time controls
@@ -56,16 +60,18 @@ class TimeControler:
         self.numiter = 0
         
     def __iter__(self):
-        self._timedict = dict((k,iter(v)) for k,v in self._timedict.iteritems())
+        self._timedict = dict((k,iter(v)) for k,v in self._timedict.items())
         self.numiter = 0
         return self
     
-    def next(self):
-        d = dict((k,v.next()) for k,v in self._timedict.iteritems())
+    def __next__(self):
+        d = dict((k,next(v)) for k,v in self._timedict.items())
         if len(d) == 0:
             raise StopIteration
         self.numiter += 1
         return d
+    
+
         
 
 # new approach
@@ -77,7 +83,7 @@ def evaluation_sequence(delays):
     seq = [[True if i == 0 else False for i in range(int(d))] for d in delays]
     return reduce(lambda x,y: x + y, seq)
 
-class EvalValue:
+class EvalValue(object):
     
     def __init__(self, eval, value, dt):
         self.eval = eval
@@ -99,12 +105,12 @@ class IterWithDelays(object):
     def __iter__(self):
         return IterWithDelays(self.values, self.delays)
         
-    def next(self):
-        self.ev = self._evalseq.next()
+    def __next__(self):
+        self.ev = next(self._evalseq)
         if self.ev : 
             try: #prevent value exhaustion to stop iterating
-                self.val = self._iterable.next()
-                self.dt = self._iterdelays.next()
+                self.val = next(self._iterable)
+                self.dt = next(self._iterdelays)
             except StopIteration:
                 pass
         return EvalValue(self.ev, self.val, self.dt)
@@ -112,8 +118,8 @@ class IterWithDelays(object):
 
 def _truncdata(data, before, after, last):
     d = data.truncate(before = before, after = after)
-    if after.to_datetime() < last.to_datetime():
-        d = d.ix[:-1,]
+    if after.to_datetime64() < last.to_datetime64():
+        d = d.iloc[:-1,]
     return d
         
 def time_control(time_sequence, eval_filter, data=None):
@@ -133,10 +139,10 @@ def time_control(time_sequence, eval_filter, data=None):
     ends = starts[1:].tolist() + [time_sequence[-1]]
     last = time_sequence[-1]
     if data is not None:
-        controls = [((end - start).total_seconds() / 3600, _truncdata(data, start, end, last)) for start,end in zip(starts,ends)]
+        controls = [((end - start).total_seconds() // 3600, _truncdata(data, start, end, last)) for start,end in zip(starts,ends)]
     else:
-        controls = [((end - start).total_seconds() / 3600, None) for start,end in zip(starts,ends)]
-    delays, values = zip(*controls)
+        controls = [((end - start).total_seconds() // 3600, None) for start,end in zip(starts,ends)]
+    delays, values = list(zip(*controls))
     return values, delays
  
   
@@ -168,7 +174,7 @@ def date_filter(time_sequence, time_data):
    - time_data : a datetimle indexed panda dataframe
     """
     
-    filter = [True if d.to_datetime() in time_data.index.to_datetime() else False for d in time_sequence]
+    filter = [True if d.to_datetime64() in time_data.index.to_datetime64() else False for d in time_sequence]
     return filter
     
 def date_filter_node(time_sequence, time_data):
@@ -201,7 +207,7 @@ def rain_filter_node(time_sequence, weather):
     filter = rain_filter(time_sequence, weather)
     return time_sequence, filter, weather.data
    
-class DegreeDayModel:
+class DegreeDayModel(object):
     """ Classical degreeday model equation
     """
     
@@ -255,7 +261,7 @@ def thermal_time_filter(time_sequence, weather, model = DegreeDayModel(Tbase = 0
     """
     
     TT = thermal_time(time_sequence, weather.data, model)
-    intTT = numpy.array(map(int,TT / delay))
+    intTT = numpy.array(list(map(int,TT / delay)))
     filter = [True] +(intTT[1:] != intTT[:-1]).tolist()
     return filter
   
@@ -268,8 +274,12 @@ def filter_or(filters):
  
 def filter_and(filters):
     return reduce(lambda x,y: numpy.array(x) & numpy.array(y), filters)
- 
-from openalea.core.system.systemnodes import IterNode    
+
+try: 
+    from openalea.core.system.systemnodes import IterNode    
+except ImportError:
+    IterNode = object
+    pass
     
 class IterWithDelaysNode(IterNode):
     """ Iteration Node """
@@ -287,20 +297,20 @@ class IterWithDelaysNode(IterNode):
             if(hasattr(self, "nextval")):
                 self.outputs[0] = self.nextval
             else:
-                self.outputs[0] = self.iterable.next()
+                self.outputs[0] = next(self.iterable)
                 
-            self.nextval = self.iterable.next()
-            delay = self.iterdelay.next()
+            self.nextval = next(self.iterable)
+            delay = next(self.iterdelay)
             self.outputs[1] = delay
             self.outputs[2] = numpy.random.random() #used to trigger lazy nodes every delay
             return delay
 
-        except TypeError, e:
+        except TypeError as e:
             self.outputs[0] = self.inputs[0]
             self.outputs[1] = self.inputs[1]
             return False
 
-        except StopIteration, e:
+        except StopIteration as e:
             if self.wait > 1:
                 self.wait -= 1
                 return True

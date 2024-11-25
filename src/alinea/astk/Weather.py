@@ -5,6 +5,8 @@ Created on Wed Apr 24 14:29:15 2013
 @author: lepse
 """
 
+from __future__ import division
+from __future__ import print_function
 import pandas
 import pytz
 from datetime import datetime, timedelta
@@ -15,30 +17,19 @@ from alinea.astk.meteorology.sun_position import sun_position
 import alinea.astk.sun_and_sky as sunsky
 
 
-def septo3d_reader(data_file):
+def septo3d_reader(data_file, sep):
     """ reader for septo3D meteo files """
 
-    def parse(yr, doy, hr):
-        """ Convert the 'An', 'Jour' and 'hhmm' variables of the
-        meteo dataframe in a datetime object (%Y-%m-%d %H:%M:%S format)
-        """
-        an, jour, heure = [int(x) for x in [yr, doy, int(hr) / 100]]
-        dt = datetime(an - 1, 12, 31)
-        delta = timedelta(days=jour, hours=heure)
-        return dt + delta
-
-    data = pandas.read_csv(data_file,
-                           parse_dates={'date': ['An', 'Jour', 'hhmm']},
-                           date_parser=parse, sep='\t')
+    data = pandas.read_csv(data_file, sep=sep)
     # ,
     # usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
 
+    data['date'] = pandas.to_datetime(data['An'] * 1000 + data['Jour'], format='%Y%j')+pandas.to_timedelta(data.hhmm/100, unit='H')
     data.index = data.date
     data = data.rename(columns={'PAR': 'PPFD', 'Tair': 'temperature_air',
                                 'HR': 'relative_humidity', 'Vent': 'wind_speed',
                                 'Pluie': 'rain'})
     return data
-
 
 def PPFD_to_global(data):
     """ Convert the PAR (ppfd in micromol.m-2.sec-1)
@@ -84,7 +75,7 @@ def linear_degree_days(data, start_date=None, base_temp=0., max_temp=35.):
     return dd - dd[df.index.searchsorted(start_date)]
 
 
-class Weather(object):
+class Weather:
     """ Class compliying echap local_microclimate model protocol (meteo_reader).
         expected variables of the data_file are:
             - 'An'
@@ -99,7 +90,7 @@ class Weather(object):
         - timezone indicates the standard timezone name (see pytz infos) to be used for interpreting the date (default 'UTC')
     """
 
-    def __init__(self, data_file='', reader=septo3d_reader, wind_screen=2,
+    def __init__(self, data_file='', reader=septo3d_reader,sep='\t', wind_screen=2,
                  temperature_screen=2,
                  localisation={'city': 'Montpellier', 'latitude': 43.61,
                                'longitude': 3.87},
@@ -111,13 +102,13 @@ class Weather(object):
                        'degree_days': linear_degree_days}
 
         self.timezone = pytz.timezone(timezone)
-        if data_file is '':
+        if data_file == '':
             self.data = None
         else:
-            self.data = reader(data_file)
+            self.data = reader(data_file,sep)
             date = self.data['date']
-            date = map(lambda x: self.timezone.localize(x), date)
-            utc = map(lambda x: x.astimezone(pytz.utc), date)
+            date = [self.timezone.localize(x) for x in date]
+            utc = [x.astimezone(pytz.utc) for x in date]
             self.data.index = utc
             self.data.index.name = 'date_utc'
 
@@ -235,7 +226,7 @@ def weather_node(weather_path):
 def weather_check_node(weather, vars, models):
     ok = weather.check(vars, models)
     if not numpy.all(ok):
-        print "weather_check: warning, missing  variables!!!"
+        print("weather_check: warning, missing  variables!!!")
     return weather
 
 
@@ -255,10 +246,13 @@ def date_range_node(start, end, periods, freq, tz, normalize,
 def sample_weather(periods=24):
     """ provides a sample weather instance for testing other modules
     """
-    from openalea.deploy.shared_data import shared_data
-    import alinea.septo3d
+    #from openalea.deploy.shared_data import shared_data
+    #import alinea.septo3d
+    import astk_data
+    from path import Path
 
-    meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
+    meteo_path = Path(astk_data.__path__[0])/'meteo00-01.txt'
+    #meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
     t_deb = "2000-10-01 01:00:00"
     seq = pandas.date_range(start="2000-10-02", periods=periods, freq='H')
     weather = Weather(data_file=meteo_path)

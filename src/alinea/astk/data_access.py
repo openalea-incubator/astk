@@ -6,6 +6,7 @@ this package data
 from os import listdir
 from os.path import dirname, exists, isdir
 from os.path import join as pj
+from io import open
 
 
 pkg_root_dir = dirname(dirname(__file__))

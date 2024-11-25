@@ -1,29 +1,39 @@
-{% set version = "2.0.0" %}
+{% set data = load_setup_py_data() %}
 
 package:
   name: alinea.astk
-  version: {{ version }}
+  version: {{ data.get('version') }}
 
 source:
   path: ..
 
 build:
+  noarch: python
   preserve_egg_dir: True
-  number: 0
-  script: python setup.py install
+  number: 1
+  script: python setup.py install #--single-version-externally-managed --record=record.txt
 
 requirements:
   build:
     - python
     - setuptools
+
   run:
-    - openalea.core
-    - numpy
-    - pandas
+    - python >=3.6
     - openalea.plantgl
+    - pvlib-python
+    - six
+
 test:
+  requires:
+    - pytest
   imports:
     - alinea.astk
+  source_files:
+    - test/test_*.py
+  commands:
+   - cd test
+   - pytest -v
 
 about:
   home: http://github.com/openalea-incubator/astk
