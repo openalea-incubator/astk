@@ -214,14 +214,14 @@ def all_weather_relative_luminance(grid, sun_zenith, sun_azimuth, clearness, bri
     return gradation * indicatrix
 
 
-def sky_luminance(grid, sky_type='soc', sky_irradiance=None, how='relative'):
+def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
     """Normalised sky luminance map for different conditions, periods and sky types
+       Luminance are normalised so that sum(luminance) = 1.
 
     Args:
         sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'sun_soc', 'blended', 'all_weather')
-        sky_irradianceadiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
-        astk.sky_irradianceadiance.sky_irradianceadiance. Needed for all sky_types except 'uoc' and 'soc'
-        lum : a string specifying how the luminance is expressed. Could be 'relative' (sum(lum=1)), 'Wm2', 'MJ' or 'PPFD' 
+        sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
+        astk.sky_irradiance.sky_irradiance. Needed for all sky_types except 'uoc' and 'soc'
     """
 
     azimuth, zenith, az_c, z_c, w_c = grid
@@ -283,17 +283,38 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None, how='relative'):
         lum /= lum.sum()
     else:
         raise ValueError('undefined sky type: ' + sky_type)
-    
-    if how == 'PPFD':
-        lum *= sky_irradiance.ppfd.mean()
-    elif how == 'Wm2':
-        lum *= sky_irradiance.ghi.mean()
-    elif how == 'MJ':
-        lum *= sky_irradiance.ghi.sum() * 3600 / 1e5
-    else:
-        pass
+
     return lum
 
 
+def scale_sky_sources(sky_sources, sky_irradiance, scale='Wm2', diffuse_only=False):
+    """Scale relative luminance values to a given scale depending on horizontal irradiance time series
+
+    Args:
+        sky_sources: a list of (elevation, azimuth, luminance) tuples
+        sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
+        astk.sky_irradiance.sky_irradiance.
+    ky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
+        astk.sky_irradiance.sky_irradiance
+    """
+    el, az, lum = zip(*sky_sources)
+    # rescale to horizontal irradiance = 1
+    hi = sum((horizontal_irradiance(l, e) for l, e in zip(lum, el)))
+    lum = numpy.array(lum) / hi
+    # Scale to new unit
+    if scale == 'PPFD':
+        lum *= sky_irradiance.ppfd.mean()
+    elif scale == 'Wm2':
+        lum *= sky_irradiance.ghi.mean()
+    elif scale == 'MJ':
+        lum *= sky_irradiance.ghi.sum() * 3600 / 1e6
+    elif scale == 'molPAR':
+        lum *= sky_irradiance.ppfd.sum() * 3600 / 1e6
+    else:
+        raise ValueError('undefined scale: ' + scale + '. Should be one of PPFD, Wm2, MJ, molPAR')
+    if diffuse_only:
+        lum *= sky_irradiance.dhi.sum() / sky_irradiance.ghi.sum()
+
+    return list(zip(el, az, lum))
 
 
