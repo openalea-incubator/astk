@@ -215,11 +215,11 @@ def all_weather_relative_luminance(grid, sun_zenith, sun_azimuth, clearness, bri
 
 
 def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
-    """Normalised sky luminance map for different conditions, periods and sky types
-       Luminance are normalised so that sum(luminance) = 1.
+    """Relative sky luminance map for different conditions, periods and sky types
+       Luminance are scaled so that total sky horizontal irradiance equals one.
 
     Args:
-        sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'sun_soc', 'blended', 'all_weather')
+        sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'blended', 'all_weather')
         sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
         astk.sky_irradiance.sky_irradiance. Needed for all sky_types except 'uoc' and 'soc'
     """
@@ -232,17 +232,14 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
 
     if sky_type in ('soc', 'uoc'):
         lum = w_c * cie_relative_luminance(grid=grid, type=sky_type)
-        lum /= lum.sum()
     elif sky_type == 'clear_sky':
         for row in irrad.itertuples():
             _lum = w_c * cie_relative_luminance(grid=grid,
                                           sun_zenith=row.sun_zenith,
                                           sun_azimuth=row.sun_azimuth,
                                           type='clear_sky')
-            _lum /= _lum.sum()
             _hi = sky_hi(grid, _lum)
             lum += (row.ghi / _hi * _lum)
-        lum /= lum.sum()
     elif sky_type == 'all_weather':
         for row in irrad.itertuples():
             brightness = all_weather_sky_brightness(row.dates, row.dhi, row.sun_zenith)
@@ -252,21 +249,8 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
                                                   sun_azimuth=row.sun_azimuth,
                                                   brightness=brightness,
                                                   clearness=clearness)
-            _lum /= _lum.sum()
             _hi = sky_hi(grid, _lum)
             lum += (row.ghi / _hi * _lum)
-        lum /= lum.sum()
-    elif sky_type == 'sun_soc':
-        lum = w_c * cie_relative_luminance(grid=grid, type='soc')
-        # scale to total luminance of sky
-        lum /= lum.sum()
-        hi = sky_hi(grid, lum)
-        lum *= (irrad.dhi.sum() / hi)
-        for row in irrad.itertuples():
-            daz, dz = map(lambda x: numpy.diff(x)[0], (azimuth, zenith))
-            i, j = int(row.sun_zenith // dz), int(row.sun_azimuth // daz)
-            lum[i, j] += row.dni
-        lum /= lum.sum()
     elif sky_type == 'blended':
         soc = w_c * cie_relative_luminance(grid=grid, type='soc')
         for row in irrad.itertuples():
@@ -277,14 +261,14 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
             epsilon = all_weather_sky_clearness(row.dni, row.dhi, row.sun_zenith)
             f_clear = f_clear_sky(epsilon)
             _lum = f_clear * cs + (1 - f_clear) * soc
-            _lum /= _lum.sum()
             _hi = sky_hi(grid, _lum)
             lum += (row.ghi / _hi * _lum)
-        lum /= lum.sum()
     else:
         raise ValueError('undefined sky type: ' + sky_type)
 
-    return lum
+    # scale so that ghi = 1
+    hi = sky_hi(grid, lum)
+    return lum / hi
 
 
 def scale_sky_sources(sky_sources, sky_irradiance, scale='Wm2', diffuse_only=False):
