@@ -26,6 +26,7 @@ from __future__ import division
 import math
 import numpy
 import warnings
+from alinea.astk.colormap import jet_colors
 
 display_enable = True
 try:
@@ -33,6 +34,18 @@ try:
 except ImportError:
     warnings.warn('PlantGL not installed: display is not enable!')
     display_enable = False
+
+def sky_turtle(turtle_mesh, sky_sources):
+    vertices, faces = turtle_mesh
+    colors = jet_colors((lum for _,_,lum in sky_sources))
+    scene = pgl.Scene()
+    for i, face in enumerate(faces):
+        vtx = [vertices[v] for v in face]
+        idx = range(len(face))
+        mat = pgl.Material(pgl.Color3(*colors[i]))
+        shape = pgl.Shape(pgl.FaceSet(pointList=vtx, indexList=[idx]), mat)
+        scene += shape
+    return scene
 
 
 def display(vertices, faces, colors=None, view=True):
@@ -90,7 +103,7 @@ def spherical(points):
     x, y, z = zip(*proj)
     theta = numpy.arccos(z)
     phi = numpy.arctan2(y, x)
-    return zip(theta, phi)
+    return list(zip(theta, phi))
 
 
 def rotation_matrix(axis, theta):
@@ -396,21 +409,20 @@ def refine(level=0):
     return iter_triangle, iter_star
 
 
-def turtle_dome(refine_level=3):
+def turtle_mesh(min_faces=46):
     """Generate faces of a dual icosphere polyhedron mapping the Z+ hemisphere
 
     Args:
-        refine_level (int): the level of refinement of the dual icosphere. By
-        default 46 polygons are returned (refine_level=3).
-
-        For information, here are the number of faces obtained for the first ten
-        refinement level: 0: 6, 1: 16, 2: 26, 3: 46, 4: 66, 5: 91, 6: 136,
-        7: 196, 8: 251, 9: 341, 10: 406
+        min_faces (int) : the minimal number of faces for the polyhedron
+        The number of faces obtained for the first ten polyhedrons are:
+        6, 16, 26, 46, 66, 91, 136, 196, 251, 341, 406
 
     Returns:
         a list of vertices and a list of faces
     """
-
+    sectors = [ 1, 6, 16, 26, 46, 66, 91, 136, 196, 251, 341, 406]
+    refines = [-1, 0,  1,  2,  3,  4,  5,   6,   7,   8,   9,  10]
+    refine_level = refines[numpy.searchsorted(sectors, min(max(sectors), min_faces))]
     vertices, faces = dual(*icosphere(*refine(refine_level)))
     # filter faces with centroids below horizontal plane
     centers = [centroid([vertices[p] for p in face]) for face in faces]
@@ -431,37 +443,17 @@ def turtle_dome(refine_level=3):
     return new_vertices, new_faces
 
 
-def turtle_sectors(nb_sectors=46):
-    """Generate faces of a dual icosphere polyhedron mapping the Z+ hemisphere
-
-    Args:
-        refine_level (int): the level of refinement of the dual icosphere. By
-        default 46 polygons are returned (refine_level=3).
-
-        For information, here are the number of faces obtained for the first ten
-        refinement level: 0: 6, 1: 16, 2: 26, 3: 46, 4: 66, 5: 91, 6: 136,
-        7: 196, 8: 251, 9: 341, 10: 406
-
-    Returns:
-        a list of vertices and a list of faces
+def spherical_face_centers(turtle_mesh):
+    """ Spherical coordinates of turtle mesh faces centers
     """
-    sectors = [ 1, 6, 16, 26, 46, 66, 91, 136, 196, 251, 341, 406]
-    refines = [-1, 0,  1,  2,  3,  4,  5,   6,   7,   8,   9,  10]
-    s2r = dict(zip(sectors,refines))
-
-    if nb_sectors not in s2r:
-        print('Use a value of nb_sectors in the set ', sectors)
-
-    refine_level = s2r[nb_sectors]
-
-    vertices, faces = turtle_dome(refine_level)
+    vertices, faces = turtle_mesh
 
     # Compute the centroid of each face
     centers = [centroid([vertices[p] for p in face]) for face in faces]
 
-    elevations, azimuths = spherical(centers)
+    zeniths, azimuths = zip(*spherical(centers))
 
-    return elevations, azimuths
+    return list(zip(90-numpy.degrees(zeniths), numpy.degrees(azimuths)))
 
 
 def sample_faces(vertices, faces, iter=2, spheric=False):
