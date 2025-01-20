@@ -38,7 +38,7 @@ def septo3d_reader(data_file, sep):
     # ,
     # usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
 
-    data['date'] = pandas.to_datetime(data['An'] * 1000 + data['Jour'], format='%Y%j')+pandas.to_timedelta(data.hhmm/100, unit='H')
+    data['date'] = pandas.to_datetime(data['An'] * 1000 + data['Jour'], format='%Y%j')+pandas.to_timedelta(data.hhmm/100, unit='h')
     data.index = data.date
     data = data.rename(columns={'PAR': 'PPFD', 'Tair': 'temperature_air',
                                 'HR': 'relative_humidity', 'Vent': 'wind_speed',
@@ -137,14 +137,14 @@ class Weather:
         start and end are expected in local time
         """
         if end is None:
-            seq = pandas.date_range(start=start, periods=by, freq='H',
+            seq = pandas.date_range(start=start, periods=by, freq='h',
                                     tz=self.timezone.zone)
             return seq.tz_convert('UTC')
         else:
-            seq = pandas.date_range(start=start, end=end, freq='H',
+            seq = pandas.date_range(start=start, end=end, freq='h',
                                     tz=self.timezone.zone)
             seq = seq.tz_convert('UTC')
-            bins = pandas.date_range(start=start, end=end, freq=str(by) + 'H',
+            bins = pandas.date_range(start=start, end=end, freq=str(by) + 'h',
                                      tz=self.timezone.zone)
             bins = bins.tz_convert('UTC')
             return [seq[(seq >= bins[i]) & (seq < bins[i + 1])] for i in
@@ -267,7 +267,7 @@ def sample_weather(periods=24):
     meteo_path = str(Path(datadir.__path__[0])/'meteo00-01.txt')
     #meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
     t_deb = "2000-10-01 01:00:00"
-    seq = pandas.date_range(start="2000-10-02", periods=periods, freq='H')
+    seq = pandas.date_range(start="2000-10-02", periods=periods, freq='h')
     weather = Weather(data_file=meteo_path)
     weather.check(
         ['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain',

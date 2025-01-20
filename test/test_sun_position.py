@@ -1,9 +1,9 @@
 import numpy
 
-from alinea.astk.meteorology.sun_position import (
+from openalea.astk.meteorology.sun_position import (
     sun_position, 
     sun_extraradiation)
-from alinea.astk.meteorology.sun_position_astk import (
+from openalea.astk.meteorology.sun_position_astk import (
     sun_position as sun_position_astk, 
     sun_extraradiation as sun_extraradiation_astk)
 

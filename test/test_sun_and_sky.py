@@ -1,11 +1,12 @@
-from alinea.astk.sun_and_sky import (
+import numpy
+import pandas
+
+from openalea.astk.sun_and_sky import (
     sky_discretisation, 
     sky_radiance_distribution, 
     sky_sources, 
     sun_sources, 
     sun_sky_sources)
-import numpy
-import pandas
 
 
 def test_sky_discretisation():
