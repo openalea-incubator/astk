@@ -1,6 +1,6 @@
 from __future__ import division
 from openalea.plantgl import all as pgl
-from six.moves import range
+#from six.moves import range
 
 def _is_iterable(x):
     try:
