@@ -28,15 +28,15 @@ def parse_requirements(fname):
 
     return reqs
 
-# find version number in src/alinea/astk/version.py
+# find version number in src/openalea/astk/version.py
 version = {}
-with open("src/alinea/astk/version.py") as fp:
+with open("src/openalea/astk/version.py") as fp:
     exec(fp.read(), version)
 version_astk = version["__version__"]
 
 data_files = []
 
-nb = len(normpath(abspath("src/astk_data"))) + 1
+nb = len(normpath(abspath("src/openalea/astk/data"))) + 1
 
 
 def data_rel_pth(pth):
@@ -46,7 +46,7 @@ def data_rel_pth(pth):
     return abs_pth[nb:]
 
 
-for root, dnames, fnames in walk("src/astk_data"):
+for root, dnames, fnames in walk("src/openalea/astk/data"):
     for name in fnames:
         data_files.append(data_rel_pth(pj(root, name)))
 
@@ -62,11 +62,11 @@ setup_kwds = dict(
     license='cecill-c',
     zip_safe=False,
 
-    packages=find_namespace_packages(where='src', include=['alinea.*', 'astk_data']),
+    packages=find_namespace_packages(where='src', include=['alinea.*', 'openalea.*']),
     package_dir={'': 'src'},
     
     include_package_data=True,
-    package_data={'astk_data': data_files},
+    package_data={'openalea.astk.data': data_files},
     #install_requires=parse_requirements("requirements.txt"),
     #tests_require=parse_requirements("dvlpt_requirements.txt"),
     entry_points={},
@@ -75,7 +75,7 @@ setup_kwds = dict(
 # #}
 # change setup_kwds below before the next pkglts tag
 
-setup_kwds['entry_points']['wralea'] = ['astk = alinea.astk_wralea']
+setup_kwds['entry_points']['wralea'] = ['astk = openalea.astk_wralea']
 #setup_kwds['namespace_packages']=['alinea']
 
 # do not change things below

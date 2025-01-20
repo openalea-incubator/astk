@@ -1,7 +1,5 @@
-# {# pkglts, base
+from openalea.astk import *
 
-from . import version
+from warnings import warn
 
-__version__ = version.__version__
-
-# #}
+warn("This is deprecated; Use openalea namespace instead alinea!", DeprecationWarning, stacklevel=2)
