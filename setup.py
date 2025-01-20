@@ -12,7 +12,7 @@ from setuptools import setup, find_namespace_packages
 
 
 short_descr = "The Alinea.astk package provides utilities for simulation of FSPM models builds under alinea standards"
-readme = open('README.rst').read()
+readme = open('README.md').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
 

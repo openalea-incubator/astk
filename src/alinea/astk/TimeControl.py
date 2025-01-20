@@ -3,8 +3,8 @@ Provides utilities for scheduling models in simulation
 """
 from __future__ import division
 import numpy
-from six.moves import map
-from six.moves import zip
+#from six.moves import map
+#from six.moves import zip
 from functools import reduce
 
 class TimeControlSet(object):
@@ -261,7 +261,7 @@ def thermal_time_filter(time_sequence, weather, model = DegreeDayModel(Tbase = 0
     """
     
     TT = thermal_time(time_sequence, weather.data, model)
-    intTT = numpy.array(list(map(int,TT / delay)))
+    intTT = (TT/delay).astype(int)
     filter = [True] +(intTT[1:] != intTT[:-1]).tolist()
     return filter
   
