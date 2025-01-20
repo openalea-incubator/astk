@@ -18,12 +18,12 @@ irradiance
 from __future__ import division
 import numpy
 import pandas
-from alinea.astk.meteorology.sky_irradiance import (
+from .meteorology.sky_irradiance import (
     sky_irradiance,
     clear_sky_irradiances,
     horizontal_irradiance)
-from alinea.astk.meteorology.sky_luminance import cie_relative_luminance
-from alinea.astk.meteorology.sun_position import sun_position
+from .meteorology.sky_luminance import cie_relative_luminance
+from .meteorology.sun_position import sun_position
 
 # default location and dates
 _daydate = '2000-06-21'

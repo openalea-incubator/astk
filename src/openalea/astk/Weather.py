@@ -10,11 +10,12 @@ from __future__ import print_function
 import pandas
 import pytz
 from datetime import timedelta
+from pathlib import Path
 
-
-from alinea.astk.TimeControl import *
-from alinea.astk.meteorology.sun_position import sun_position
-import alinea.astk.sun_and_sky as sunsky
+from .TimeControl import *
+from .meteorology.sun_position import sun_position
+from . import sun_and_sky as sunsky
+from . import data as datadir
 
 
 def septo3d_reader(data_file, sep):
@@ -248,10 +249,9 @@ def sample_weather(periods=24):
     """
     #from openalea.deploy.shared_data import shared_data
     #import alinea.septo3d
-    import astk_data
-    from path import Path
+    #from path import Path
 
-    meteo_path = Path(astk_data.__path__[0])/'meteo00-01.txt'
+    meteo_path = str(Path(datadir.__path__[0])/'meteo00-01.txt')
     #meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
     t_deb = "2000-10-01 01:00:00"
     seq = pandas.date_range(start="2000-10-02", periods=periods, freq='H')

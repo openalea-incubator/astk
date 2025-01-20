@@ -31,12 +31,17 @@ except ImportError:
     warnings.warn('pvlib not installed: using pure python, but less accurate, functions')
 
 if pvlib:
-    from alinea.astk.meteorology.sun_position import sun_position, \
+    from .sun_position import (
+        sun_position, 
         sun_extraradiation
-    from alinea.astk.meteorology.sun_position_astk import sinel_integral
+    )
+    from .sun_position_astk import sinel_integral
 else:
-    from alinea.astk.meteorology.sun_position_astk import sun_position, \
-        sun_extraradiation, sinel_integral
+    from .sun_position_astk import (
+        sun_position, 
+        sun_extraradiation, 
+        sinel_integral
+    )
 
 # default location and dates
 _daydate = '2000-06-21'

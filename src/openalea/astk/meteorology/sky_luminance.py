@@ -14,8 +14,12 @@
 """ A collection of equation for modelling distribution of sky luminance
 """
 import numpy
-from alinea.astk.meteorology.sky_irradiance import (horizontal_irradiance, all_weather_sky_clearness, f_clear_sky,
-                                                    all_weather_sky_brightness)
+from .sky_irradiance import (
+    horizontal_irradiance, 
+    all_weather_sky_clearness, 
+    f_clear_sky,
+    all_weather_sky_brightness
+)
 
 
 def sky_hi(grid, luminance):
