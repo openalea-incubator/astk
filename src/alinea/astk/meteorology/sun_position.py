@@ -61,7 +61,7 @@ def sun_position(dates=None, daydate=_day, latitude=_latitude,
     """
 
     if dates is None:
-        dates = pandas.date_range(daydate, periods=24, freq='H')
+        dates = pandas.date_range(daydate, periods=24, freq='h')
 
     if dates.tz is None:
         times = dates.tz_localize(timezone)
@@ -93,7 +93,7 @@ def sun_extraradiation(dates=None, daydate=_day, solar_constant=1366.1,
              dates is not already localised.
     """
     if dates is None:
-        dates = pandas.date_range(daydate, periods=24, freq='H')
+        dates = pandas.date_range(daydate, periods=24, freq='h')
 
     if dates.tz is None:
         times = dates.tz_localize(timezone)

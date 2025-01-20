@@ -26,6 +26,7 @@ from __future__ import division
 import math
 import numpy
 import warnings
+from alinea.astk.colormap import jet_colors
 
 display_enable = True
 try:
@@ -34,14 +35,26 @@ except ImportError:
     warnings.warn('PlantGL not installed: display is not enable!')
     display_enable = False
 
+def sky_turtle(turtle_mesh, sky_sources):
+    vertices, faces = turtle_mesh
+    colors = jet_colors((lum for _,_,lum in sky_sources))
+    scene = pgl.Scene()
+    for i, face in enumerate(faces):
+        vtx = [vertices[v] for v in face]
+        idx = range(len(face))
+        mat = pgl.Material(pgl.Color3(*colors[i]))
+        shape = pgl.Shape(pgl.FaceSet(pointList=vtx, indexList=[idx]), mat)
+        scene += shape
+    return scene
 
-def display(vertices, faces, color=None, view=True):
+
+def display(vertices, faces, colors=None, view=True):
     """3D display of a polyhedron with PlantGL
 
     Args:
         vertices (list of tuples): list of 3D coordinates of polyhedron vertices
         faces (list of tuple): list of vertex indices defining the faces
-        color: a (r,g,b) tuple defining color.
+        color: a list of (r,g,b) tuple defining color.
         If None (default), default PlantGL material is used.
         view (bool): should the shape be displayed ?
 
@@ -50,18 +63,23 @@ def display(vertices, faces, color=None, view=True):
     """
     global display_enable
     if display_enable:
-        if color is None:
+        scene = pgl.Scene()
+        if colors is None:
             shape = pgl.Shape(pgl.FaceSet(pointList=vertices, indexList=faces))
+            scene += shape
         else:
-            m = pgl.Material(pgl.Color3(*color))
-            shape = pgl.Shape(pgl.FaceSet(pointList=vertices, indexList=faces),
-                              m)
+            for i,face in enumerate(faces):
+                vtx = [vertices[v] for v in face]
+                idx = range(len(face))
+                mat = pgl.Material(pgl.Color3(*colors[i]))
+                shape = pgl.Shape(pgl.FaceSet(pointList=vtx, indexList=[idx]), mat)
+                scene += shape
         if view:
-            pgl.Viewer.display(shape)
+            pgl.Viewer.display(scene)
     else:
         warnings.warn('PlantGL not installed: display is not enable!')
         shape = None
-    return shape
+    return scene
 
 
 def normed(point):
@@ -81,8 +99,11 @@ def norm(vector):
 
 def spherical(points):
     """ zenital and azimutal coordinate of a list of points"""
-    x, y, z = list(zip(*points))
-    return numpy.arccos(z), numpy.arctan2(y, x)
+    proj = [normed(p) for p in points]
+    x, y, z = zip(*proj)
+    theta = numpy.arccos(z)
+    phi = numpy.arctan2(y, x)
+    return list(zip(theta, phi))
 
 
 def rotation_matrix(axis, theta):
@@ -154,7 +175,7 @@ def icosahedron():
     vertices.append(normed((-t, 0, 1)))
 
     # align to get second point on Z+
-    theta, phi = list(zip(*spherical(vertices)))[1]
+    theta, phi = spherical(vertices)[1]
     vertices = inverse_rotation(vertices, theta, phi)
 
     # create 20 triangles of the icosahedron
@@ -206,11 +227,16 @@ def split_triangles(vertices, faces, tags=None):
     This is a python implementation of the C code found here:
     http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 """
+    # copy input
+    new_faces = [f for f in faces]
+    new_vertices = [v for v in vertices]
+    if tags is not None:
+        new_tags = [t for t in tags]
     # cache is a (index_p1, index_p2): middle_point_index dict refering
     # to vertices
     cache = {}
     for i in range(len(faces)):
-        face = faces.pop(0)
+        face = new_faces.pop(0)
         v1, v2, v3 = face
         p1 = vertices[v1]
         p2 = vertices[v2]
@@ -221,35 +247,35 @@ def split_triangles(vertices, faces, tags=None):
         if ka in cache:
             va = cache[ka]
         else:
-            vertices.append(normed(middle_point(p1, p2)))
-            va = len(vertices) - 1
+            new_vertices.append(normed(middle_point(p1, p2)))
+            va = len(new_vertices) - 1
             cache.update({ka: va})
         if kb in cache:
             vb = cache[kb]
         else:
-            vertices.append(normed(middle_point(p2, p3)))
-            vb = len(vertices) - 1
+            new_vertices.append(normed(middle_point(p2, p3)))
+            vb = len(new_vertices) - 1
             cache.update({kb: vb})
         if kc in cache:
             vc = cache[kc]
         else:
-            vertices.append(normed(middle_point(p1, p3)))
-            vc = len(vertices) - 1
+            new_vertices.append(normed(middle_point(p1, p3)))
+            vc = len(new_vertices) - 1
             cache.update({kc: vc})
 
-        faces.append((v1, va, vc))
-        faces.append((v2, vb, va))
-        faces.append((v3, vc, vb))
-        faces.append((va, vb, vc))
+        new_faces.append((v1, va, vc))
+        new_faces.append((v2, vb, va))
+        new_faces.append((v3, vc, vb))
+        new_faces.append((va, vb, vc))
 
         if tags is not None:
-            tag = tags.pop(0)
-            tags.extend([tag] * 4)
+            tag = new_tags.pop(0)
+            new_tags.extend([tag] * 4)
 
     if tags is None:
-        return vertices, faces
+        return new_vertices, new_faces
     else:
-        return vertices, faces, tags
+        return new_vertices, new_faces, new_tags
 
 
 def sorted_faces(center, face_indices, faces):
@@ -309,21 +335,27 @@ def star_split(vertices, faces, tags=None):
         of tags referencing the tag of the parent face
     """
 
+    # copy input
+    new_faces = [f for f in faces]
+    new_vertices = [v for v in vertices]
+    if tags is not None:
+        new_tags = [t for t in tags]
+
     for i in range(len(faces)):
-        face = faces.pop(0)
+        face = new_faces.pop(0)
         center = normed(centroid([vertices[p] for p in face]))
-        icenter = len(vertices)
-        vertices.append(center)
+        icenter = len(new_vertices)
+        new_vertices.append(center)
         for j in range(len(face) - 1):
-            faces.append((face[j], face[j + 1], icenter))
-        faces.append((face[-1], face[0], icenter))
+            new_faces.append((face[j], face[j + 1], icenter))
+        new_faces.append((face[-1], face[0], icenter))
         if tags is not None:
-            tag = tags.pop(0)
-            tags.extend([tag] * len(face))
+            tag = new_tags.pop(0)
+            new_tags.extend([tag] * len(face))
     if tags is None:
-        return vertices, faces
+        return new_vertices, new_faces
     else:
-        return vertices, faces, tags
+        return new_vertices, new_faces, new_tags
 
 
 def icosphere(iter_triangle=0, iter_star=0):
@@ -377,21 +409,20 @@ def refine(level=0):
     return iter_triangle, iter_star
 
 
-def turtle_dome(refine_level=3):
+def turtle_mesh(min_faces=46):
     """Generate faces of a dual icosphere polyhedron mapping the Z+ hemisphere
 
     Args:
-        refine_level (int): the level of refinement of the dual icosphere. By
-        default 46 ^polygons are returned (refine_level=3).
-
-        For information, here are the number of faces obtained for the first ten
-        refinement level: 0: 6, 1: 16, 2: 26, 3: 46, 4: 66, 5: 91, 6: 136,
-        7: 196, 8: 251, 9: 341, 10: 406
+        min_faces (int) : the minimal number of faces for the polyhedron
+        The number of faces obtained for the first ten polyhedrons are:
+        6, 16, 26, 46, 66, 91, 136, 196, 251, 341, 406
 
     Returns:
         a list of vertices and a list of faces
     """
-
+    sectors = [ 1, 6, 16, 26, 46, 66, 91, 136, 196, 251, 341, 406]
+    refines = [-1, 0,  1,  2,  3,  4,  5,   6,   7,   8,   9,  10]
+    refine_level = refines[numpy.searchsorted(sectors, min(max(sectors), min_faces))]
     vertices, faces = dual(*icosphere(*refine(refine_level)))
     # filter faces with centroids below horizontal plane
     centers = [centroid([vertices[p] for p in face]) for face in faces]
@@ -412,70 +443,48 @@ def turtle_dome(refine_level=3):
     return new_vertices, new_faces
 
 
-def turtle_sectors(nb_sectors=46):
-    """Generate faces of a dual icosphere polyhedron mapping the Z+ hemisphere
-
-    Args:
-        refine_level (int): the level of refinement of the dual icosphere. By
-        default 46 polygons are returned (refine_level=3).
-
-        For information, here are the number of faces obtained for the first ten
-        refinement level: 0: 6, 1: 16, 2: 26, 3: 46, 4: 66, 5: 91, 6: 136,
-        7: 196, 8: 251, 9: 341, 10: 406
-
-    Returns:
-        a list of vertices and a list of faces
+def spherical_face_centers(turtle_mesh):
+    """ Spherical coordinates of turtle mesh faces centers
     """
-    sectors = [ 1, 6, 16, 26, 46, 66, 91, 136, 196, 251, 341, 406]
-    refines = [-1, 0,  1,  2,  3,  4,  5,   6,   7,   8,   9,  10]
-    s2r = dict(zip(sectors,refines))
-
-    if nb_sectors not in s2r:
-        print('Use a value of nb_sectors in the set ', sectors)
-
-    refine_level = s2r[nb_sectors]
-
-    vertices, faces = turtle_dome(refine_level)
+    vertices, faces = turtle_mesh
 
     # Compute the centroid of each face
     centers = [centroid([vertices[p] for p in face]) for face in faces]
 
-    elevations, azimuths = spherical(centers)
+    zeniths, azimuths = zip(*spherical(centers))
 
-    return elevations, azimuths
+    return list(zip(90-numpy.degrees(zeniths), numpy.degrees(azimuths)))
 
 
 def sample_faces(vertices, faces, iter=2, spheric=False):
-    """Generate a set of points that regularly sample the faces of a polyhedron
+    """Generate a set of points or spherical directions that regularly sample
+    the faces of a polyhedron
     the number of sampling points is 6 * 4**iter or 5 * 4**iter
 
     Args:
         vertices (list of tuples): list of 3D coordinates of polyhedron vertices
         faces (list of tuple): list of vertex indices defining the faces
-        iter: the number of triangular interation to apply on the satr-split
+        iter: the number of triangular iteration to apply on the star-split
         of the polyhedron. If None, face centers are returned
-        speric (bool): if True, zenital and azimuth are returnd
+        spheric (bool): if True, zenithal and azimuth are returned
         instead of points
 
     Returns:
-        a {face_index: [points]} dict
+        a list of points or of (theta, phi) tuples and a list of tags
     """
-
-    if iter is None:
-        points = {i: [centroid([vertices[p] for p in face])] for i, face in
-                enumerate(faces)}
-    else:
-        tags = list(range(len(faces)))
+    tags = range(len(faces))
+    if iter is not None:
         vertices, faces, tags = star_split(vertices, faces, tags)
         for i in range(iter):
             vertices, faces, tags = split_triangles(vertices, faces, tags)
 
-        points = {tag: [] for tag in set(tags)}
-        for i, face in enumerate(faces):
-            points[tags[i]].append(centroid([vertices[p] for p in face]))
+    face_points = [[centroid([vertices[p] for p in face])] for face in faces]
 
+    points = reduce(lambda x, y: x + y, face_points)
+    npt = map(len, face_points)
+    tags = reduce(lambda x, y: x + y, [[t] * n for t, n in zip(tags, npt)])
     if spheric:
-        points = {k:spherical(v) for k, v in points.items()}
+        points = spherical(points)
 
-    return points
+    return points, tags
 

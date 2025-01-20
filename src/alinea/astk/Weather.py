@@ -9,7 +9,7 @@ from __future__ import division
 from __future__ import print_function
 import pandas
 import pytz
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 
 from alinea.astk.TimeControl import *
