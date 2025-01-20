@@ -11,7 +11,7 @@ from os.path import join as pj
 from setuptools import setup, find_namespace_packages
 
 
-short_descr = "The Alinea.astk package provides utilities for simulation of FSPM models builds under alinea standards"
+short_descr = "The OpenAlea.astk package provides utilities for simulation of FSPM models builds under alinea standards"
 readme = open('README.md').read()
 history = open('HISTORY.rst').read().replace('.. :changelog:', '')
 
@@ -52,13 +52,13 @@ for root, dnames, fnames in walk("src/openalea/astk/data"):
 
 
 setup_kwds = dict(
-    name='alinea.astk',
+    name='openalea.astk',
     version=version_astk,
     description=short_descr,
     long_description=readme + '\n\n' + history,
     author="Christian Fournier, Guillaume Garin, Romain Chapuis, ",
     author_email="christian.fournier __at__ inrae.fr ",
-    url='https://github.com/openalea-incubator/astk',
+    url='https://github.com/openalea/astk',
     license='cecill-c',
     zip_safe=False,
 
@@ -76,7 +76,6 @@ setup_kwds = dict(
 # change setup_kwds below before the next pkglts tag
 
 setup_kwds['entry_points']['wralea'] = ['astk = openalea.astk_wralea']
-#setup_kwds['namespace_packages']=['alinea']
 
 # do not change things below
 # {# pkglts, pysetup.call
