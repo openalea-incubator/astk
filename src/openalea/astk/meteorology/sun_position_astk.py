@@ -1,3 +1,16 @@
+# -*- python -*-
+#
+#       Copyright 2016-2025 Inria - CIRAD - INRAe
+#
+#       Distributed under the Cecill-C License.
+#       See accompanying file LICENSE.txt or copy at
+#           http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html
+#
+#       WebSite : https://github.com/openalea/astk
+#
+#       File author(s): Christian Fournier <christian.fournier@inrae.fr>
+#
+# ==============================================================================
 """ Astronomical equation for determining sun position
 """
 

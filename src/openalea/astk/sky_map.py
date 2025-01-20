@@ -1,16 +1,17 @@
 # -*- python -*-
 #
-#       Copyright 2016 INRIA - CIRAD - INRA
+#       Copyright 2016-2025 Inria - CIRAD - INRAe
 #
 #       Distributed under the Cecill-C License.
 #       See accompanying file LICENSE.txt or copy at
 #           http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html
 #
-#       WebSite : https://github.com/openalea-incubator/astk
+#       WebSite : https://github.com/openalea/astk
 #
-#       File author(s): Christian Fournier <Christian.Fournier@supagro.inra.fr>
+#       File author(s): Christian Fournier <christian.fournier@inrae.fr>
 #
 # ==============================================================================
+
 """Creation and plotting of sky maps
 """
 import numpy

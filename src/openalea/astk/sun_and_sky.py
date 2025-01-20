@@ -1,6 +1,6 @@
 # -*- python -*-
 #
-#       Copyright 2016 INRIA - CIRAD - INRA
+#       Copyright 2016-2025 Inria - CIRAD - INRAe
 #
 #       Distributed under the Cecill-C License.
 #       See accompanying file LICENSE.txt or copy at
@@ -8,7 +8,7 @@
 #
 #       WebSite : https://github.com/openalea-incubator/astk
 #
-#       File author(s): Christian Fournier <Christian.Fournier@supagro.inra.fr>
+#       File author(s): Christian Fournier <christian.fournier@inrae.fr>
 #
 # ==============================================================================
 """ A collection of equation for modelling sun position, sun irradiance and sky
