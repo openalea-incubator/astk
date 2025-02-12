@@ -1,0 +1,14 @@
+name: astkd
+channels:
+  - conda-forge
+  - openalea3
+dependencies:
+  - python
+  - pip
+  - pvlib-python
+  - openalea.plantgl
+  - numpy
+  - matplotlib
+  - pytest
+  - ipython
+  - jupyterlab

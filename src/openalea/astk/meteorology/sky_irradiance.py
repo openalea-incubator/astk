@@ -381,10 +381,8 @@ def sky_irradiance(dates=None, daydate=_daydate, ghi=None, dhi=None, ppfd=None,
         ppfd = df.ghi * micromol_per_joule(df.index, df.ghi, df.elevation, temp_dew=temp_dew)
     df['ppfd'] = ppfd
 
-    df = df.rename(columns={'azimuth': 'sun_azimuth', 'elevation': 'sun_elevation', 'zenith': 'sun_zenith'})
-
     return df.loc[:,
-           ['sun_azimuth', 'sun_zenith', 'sun_elevation', 'ghi', 'dni', 'dhi', 'ppfd']]
+           ['azimuth', 'zenith', 'elevation', 'ghi', 'dni', 'dhi', 'ppfd']]
 
 
 
