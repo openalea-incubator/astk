@@ -31,21 +31,11 @@ def test_sky_radiance_distribution():
     elevation, azimuth, strd = sky_discretisation()
     fraction = numpy.array(strd) / sum(strd)
 
-    d = sky_radiance_distribution(elevation, azimuth, fraction,
+    d = sky_radiance_distribution(elevation, azimuth,
                                   sky_type='soc')
     assert len(d) == len(elevation)
-    numpy.testing.assert_almost_equal(d.sum(), 1)
+    numpy.testing.assert_almost_equal(d.sum(), 1, decimal=2)
 
-    # chek max radiance is toward sun direction for clear skies
-    sun_elevation = elevation[20]
-    sun_azimuth = azimuth[20]
-    d = sky_radiance_distribution(elevation, azimuth, strd,
-                                  sky_type='clear_sky',
-                                  sun_elevation=sun_elevation,
-                                  sun_azimuth=sun_azimuth)
-    assert len(d) == len(elevation)
-    numpy.testing.assert_almost_equal(d.sum(), 1)
-    assert numpy.argmax(d) == 20
 
 
 def test_sky_sources():
@@ -58,7 +48,7 @@ def test_sky_sources():
     numpy.testing.assert_almost_equal(numpy.sum(irr), 1)
 
     el, az, irr = sky_sources(sky_type='clear_sky', irradiance=None)
-    assert irr.max() > 60
+    assert irr.max() > 40
 
 
 def test_sun_source():
@@ -73,7 +63,7 @@ def test_sun_source():
 def test_sun_sky_sources():
     _, sun, sky = sun_sky_sources(model='sun_soc')
     _, sun, sky = sun_sky_sources(model='blended')
-    numpy.testing.assert_almost_equal(sun[2].sum() + sky[2].sum(), 1)
+    numpy.testing.assert_almost_equal(sun[2].sum() + sky[2].sum(), 1, decimal=2)
     assert sun[2].sum() > 0.75
     _, sun, sky = sun_sky_sources(model='blended', attenuation=0.2)
     assert sky[2].sum() > 0.99

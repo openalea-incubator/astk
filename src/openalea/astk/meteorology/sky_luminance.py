@@ -239,18 +239,18 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
     elif sky_type == 'clear_sky':
         for row in irrad.itertuples():
             _lum = w_c * cie_relative_luminance(grid=grid,
-                                          sun_zenith=row.sun_zenith,
-                                          sun_azimuth=row.sun_azimuth,
+                                          sun_zenith=row.zenith,
+                                          sun_azimuth=row.azimuth,
                                           type='clear_sky')
             _hi = sky_hi(grid, _lum)
             lum += (row.ghi / _hi * _lum)
     elif sky_type == 'all_weather':
         for row in irrad.itertuples():
-            brightness = all_weather_sky_brightness(row.dates, row.dhi, row.sun_zenith)
-            clearness = all_weather_sky_clearness(row.dni, row.dhi, row.sun_zenith)
+            brightness = all_weather_sky_brightness(row.dates, row.dhi, row.zenith)
+            clearness = all_weather_sky_clearness(row.dni, row.dhi, row.zenith)
             _lum = w_c * all_weather_relative_luminance(grid,
-                                                  sun_zenith=row.sun_zenith,
-                                                  sun_azimuth=row.sun_azimuth,
+                                                  sun_zenith=row.zenith,
+                                                  sun_azimuth=row.azimuth,
                                                   brightness=brightness,
                                                   clearness=clearness)
             _hi = sky_hi(grid, _lum)
@@ -259,10 +259,10 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
         soc = w_c * cie_relative_luminance(grid=grid, type='soc')
         for row in irrad.itertuples():
             cs = w_c * cie_relative_luminance(grid=grid,
-                                          sun_zenith=row.sun_zenith,
-                                          sun_azimuth=row.sun_azimuth,
+                                          sun_zenith=row.zenith,
+                                          sun_azimuth=row.azimuth,
                                           type='clear_sky')
-            epsilon = all_weather_sky_clearness(row.dni, row.dhi, row.sun_zenith)
+            epsilon = all_weather_sky_clearness(row.dni, row.dhi, row.zenith)
             f_clear = f_clear_sky(epsilon)
             _lum = f_clear * cs + (1 - f_clear) * soc
             _hi = sky_hi(grid, _lum)

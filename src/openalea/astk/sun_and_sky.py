@@ -22,8 +22,10 @@ from .meteorology.sky_irradiance import (
     sky_irradiance,
     clear_sky_irradiances,
     horizontal_irradiance)
-from .meteorology.sky_luminance import cie_relative_luminance
+from .meteorology.sky_luminance import sky_luminance
 from .meteorology.sun_position import sun_position
+from .sky_map import sky_grid, sky_map
+
 
 # default location and dates
 _daydate = '2000-06-21'
@@ -77,9 +79,8 @@ def sky_discretisation(turtle_sectors=46, nb_az=None, nb_el=None):
     return elevations_h[:nb_sect], azimuths_h[:nb_sect], sky_fraction
 
 
-def sky_radiance_distribution(sky_elevation, sky_azimuth, sky_fraction,
-                              sky_type='soc', sun_elevation=None,
-                              sun_azimuth=None, avoid_sun=True):
+def sky_radiance_distribution(sky_elevation, sky_azimuth,
+                              sky_type='soc', sky_irradiance=None):
     """Normalised sky radiance distribution as a function of sky type for a
     finite set of directions sampling the sky hemisphere.
 
@@ -88,43 +89,20 @@ def sky_radiance_distribution(sky_elevation, sky_azimuth, sky_fraction,
             sampling the sky hemisphere
         sky_azimuth: (float or list of float) azimuth (degrees, from North,
             positive clockwise) of directions sampling the sky hemisphere
-        sky_fraction: (float or list of float) fraction of sky associated to
-            directions sampling the sky hemisphere
-        sky_type: (str) one of  'soc' (standard overcast sky),
-                                'uoc' (uniform luminance)
-                                'clear_sky' (standard clear sky low turbidity)
-        sun_elevation: sun elevation (degrees). Only needed for clear_sky
-        sun_azimuth: sun azimuth (degrees, from North, positive clockwise).
-            Only needed for clear_sky
-        avoid_sun (bool): avoid sampling radiance distribution toward directions
-        directly pointing to solar disc
+        sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'blended', 'all_weather')
+        sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
+        astk.sky_irradiance.sky_irradiance. Needed for all sky_types except 'uoc' and 'soc'
 
     Returns:
-        the relative radiance(s) associated to the sky directions
+        a list relative_luminance
     """
 
-    el = numpy.radians(sky_elevation)
-    az = numpy.radians(sky_azimuth)
-    sky_fraction = numpy.array(sky_fraction)
-
-    if sun_elevation is not None:
-        sun_elevation = numpy.radians(sun_elevation)
-    if sun_azimuth is not None:
-        sun_azimuth = numpy.radians(sun_azimuth)
-
-    if avoid_sun and sky_type == 'clear_sky':
-        delta_el = abs(el - sun_elevation)
-        delta_az = abs(az - sun_azimuth)
-        sun_disc = numpy.radians(0.553)
-        az += numpy.where((delta_az < sun_disc) & (delta_el < sun_disc), sun_disc,
-                          0)
-
-    lum = cie_relative_luminance(el, az, sun_elevation, sun_azimuth,
-                                 type=sky_type)
-    rad_dist = lum * sky_fraction
-    rad_dist /= sum(rad_dist)
-
-    return rad_dist
+    grid = sky_grid()
+    lum = sky_luminance(grid, sky_type, sky_irradiance)
+    directions = [*zip(sky_elevation, sky_azimuth)]
+    sky_sources, smap = sky_map(grid, lum, directions)
+    slum = list(zip(*sky_sources))[2]
+    return horizontal_irradiance(slum, sky_elevation)
 
 
 def sun_sources(irradiance=1, dates=None, daydate=_daydate,
@@ -173,10 +151,7 @@ def sky_sources(sky_type='soc', irradiance=1, turtle_sectors=46, dates=None, day
                 altitude=_altitude, timezone=_timezone):
     """ Light sources representing standard cie sky types in 46 directions
     Args:
-        sky_type:(str) type of sky luminance model. One of :
-                           'soc' (standard overcast sky),
-                           'uoc' (uniform overcast sky)
-                           'clear_sky' (standard clear sky)
+        sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'blended', 'all_weather')
         irradiance: (float) sum of horizontal irradiance of all sources. If None
          diffuse horizontal clear_sky irradiance are used for clear_sky type and
           20% attenuated clear_sky global horizontal irradiances are used for
@@ -197,49 +172,23 @@ def sky_sources(sky_type='soc', irradiance=1, turtle_sectors=46, dates=None, day
 
     source_elevation, source_azimuth, source_fraction = sky_discretisation(turtle_sectors)
 
+    c_sky = sky_irradiance(dates=dates, daydate=daydate,
+                                  longitude=longitude, latitude=latitude,
+                                  altitude=altitude, timezone=timezone)
     if sky_type == 'soc' or sky_type == 'uoc':
-        radiance = sky_radiance_distribution(source_elevation, source_azimuth,
-                                             source_fraction,
-                                             sky_type=sky_type)
-        source_irradiance = horizontal_irradiance(radiance, source_elevation)
+        source_irradiance = sky_radiance_distribution(source_elevation, source_azimuth,
+                                                      sky_type=sky_type)
         if irradiance is None:
-            sky_irradiance = clear_sky_irradiances(dates=dates, daydate=daydate,
-                                               longitude=longitude,
-                                               latitude=latitude,
-                                               altitude=altitude,
-                                               timezone=timezone)
-            irradiance = sum(sky_irradiance['ghi']) * 0.2
-
-    elif sky_type == 'clear_sky':
-        sun = sun_position(dates=dates, daydate=daydate, latitude=latitude,
-                           longitude=longitude, altitude=altitude,
-                           timezone=timezone)
-        c_sky = clear_sky_irradiances(dates=dates, daydate=daydate,
-                                      longitude=longitude, latitude=latitude,
-                                      altitude=altitude, timezone=timezone)
-        c_sky = pandas.concat([sun, c_sky], axis=1)
+            irradiance = sum(c_sky['ghi']) * 0.2
+    else:
+        source_irradiance = sky_radiance_distribution(source_elevation, source_azimuth,
+                                                      sky_type=sky_type, sky_irradiance=c_sky)
         if irradiance is None:
             irradiance = sum(c_sky['dhi'])
 
-        # temporal weigths : use dhi (diffuse horizontal irradiance)
-        c_sky['wsky'] = c_sky['dhi'] / sum(c_sky['dhi'])
-        source_irradiance = numpy.zeros_like(source_fraction)
-        for i, row in c_sky.iterrows():
-            rad = sky_radiance_distribution(source_elevation, source_azimuth,
-                                            source_fraction,
-                                            sky_type='clear_sky',
-                                            sun_elevation=row['elevation'],
-                                            sun_azimuth=row['azimuth'],
-                                            avoid_sun=True)
-            source_irradiance += (
-                    horizontal_irradiance(rad, source_elevation) * row['wsky'])
-    else:
-        raise ValueError(
-            'unknown type: ' + sky_type +
-            ' (should be one of uoc, soc, clear_sky')
-
     source_irradiance /= sum(source_irradiance)
     source_irradiance *= irradiance
+
     return source_elevation, source_azimuth, source_irradiance
 
 
@@ -307,16 +256,13 @@ def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
     sun = sun_sources(irradiance=f_sun, dates=dates,
                       daydate=daydate, latitude=latitude, longitude=longitude,
                       altitude=altitude, timezone=timezone)
+    source_elevation, source_azimuth, source_fraction = sky_discretisation()
 
     if model == 'blended' and f_sun > 0:
-        f_clear_sky, f_soc = f_clear_sky(sky_irr, f_sun)
-        sky_el, sky_az, soc = sky_sources(sky_type='soc', irradiance=f_soc)
-        _, _, csky = sky_sources(sky_type='clear_sky',
-                                 irradiance=f_clear_sky, dates=dates,
-                                 daydate=daydate, latitude=latitude,
-                                 longitude=longitude, altitude=altitude,
-                                 timezone=timezone)
-        sky = sky_el, sky_az, soc + csky
+        source_irradiance = sky_radiance_distribution(source_elevation, source_azimuth,
+                                                      sky_type='blended', sky_irradiance=sky_irr)
+        source_irradiance *= (1 - f_sun)
+        sky = source_elevation, source_azimuth, source_irradiance
     elif model == 'sun_soc' or f_sun == 0:
         sky = sky_sources(sky_type='soc', irradiance= 1 - f_sun)
     elif f_sun == 0:
@@ -325,6 +271,7 @@ def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
         raise ValueError(
             'unknown model: ' + model +
             ' (should be one of: soc_sun, blended)')
+
     return sky_irr, sun, sky
 
 
