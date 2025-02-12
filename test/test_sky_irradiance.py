@@ -1,5 +1,5 @@
 import numpy
-from alinea.astk.meteorology.sky_irradiance import (
+from openalea.astk.meteorology.sky_irradiance import (
     clear_sky_irradiances,
     actual_sky_irradiances,
     sky_irradiance)

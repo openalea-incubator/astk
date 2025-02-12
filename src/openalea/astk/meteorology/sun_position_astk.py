@@ -1,3 +1,16 @@
+# -*- python -*-
+#
+#       Copyright 2016-2025 Inria - CIRAD - INRAe
+#
+#       Distributed under the Cecill-C License.
+#       See accompanying file LICENSE.txt or copy at
+#           http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html
+#
+#       WebSite : https://github.com/openalea/astk
+#
+#       File author(s): Christian Fournier <christian.fournier@inrae.fr>
+#
+# ==============================================================================
 """ Astronomical equation for determining sun position
 """
 
@@ -276,7 +289,7 @@ def sun_position(dates=None, daydate=_day, latitude=_latitude,
     """
 
     if dates is None:
-        dates = pandas.date_range(daydate, periods=24, freq='H')
+        dates = pandas.date_range(daydate, periods=24, freq='h')
 
     if dates.tz is None:
         times = dates.tz_localize(timezone)
@@ -312,7 +325,7 @@ def sun_extraradiation(dates=None, daydate=_day, solar_constant=1366.1,
              dates is not already localised.
     """
     if dates is None:
-        dates = pandas.date_range(daydate, periods=24, freq='H')
+        dates = pandas.date_range(daydate, periods=24, freq='h')
 
     if dates.tz is None:
         times = dates.tz_localize(timezone)

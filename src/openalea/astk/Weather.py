@@ -1,4 +1,17 @@
 # -*- coding: utf-8 -*-
+# -*- python -*-
+#
+#       Copyright 2016-2025 Inria - CIRAD - INRAe
+#
+#       Distributed under the Cecill-C License.
+#       See accompanying file LICENSE.txt or copy at
+#           http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html
+#
+#       WebSite : https://github.com/openalea/astk
+#
+#       File author(s): Christian Fournier <christian.fournier@inrae.fr>
+#
+# ==============================================================================
 """
 Created on Wed Apr 24 14:29:15 2013
 
@@ -10,11 +23,12 @@ from __future__ import print_function
 import pandas
 import pytz
 from datetime import timedelta
+from pathlib import Path
 
-
-from alinea.astk.TimeControl import *
-from alinea.astk.meteorology.sun_position import sun_position
-import alinea.astk.sun_and_sky as sunsky
+from .TimeControl import *
+from .meteorology.sun_position import sun_position
+from . import sun_and_sky as sunsky
+from . import data as datadir
 
 
 def septo3d_reader(data_file, sep):
@@ -24,7 +38,7 @@ def septo3d_reader(data_file, sep):
     # ,
     # usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
 
-    data['date'] = pandas.to_datetime(data['An'] * 1000 + data['Jour'], format='%Y%j')+pandas.to_timedelta(data.hhmm/100, unit='H')
+    data['date'] = pandas.to_datetime(data['An'] * 1000 + data['Jour'], format='%Y%j')+pandas.to_timedelta(data.hhmm/100, unit='h')
     data.index = data.date
     data = data.rename(columns={'PAR': 'PPFD', 'Tair': 'temperature_air',
                                 'HR': 'relative_humidity', 'Vent': 'wind_speed',
@@ -123,14 +137,14 @@ class Weather:
         start and end are expected in local time
         """
         if end is None:
-            seq = pandas.date_range(start=start, periods=by, freq='H',
+            seq = pandas.date_range(start=start, periods=by, freq='h',
                                     tz=self.timezone.zone)
             return seq.tz_convert('UTC')
         else:
-            seq = pandas.date_range(start=start, end=end, freq='H',
+            seq = pandas.date_range(start=start, end=end, freq='h',
                                     tz=self.timezone.zone)
             seq = seq.tz_convert('UTC')
-            bins = pandas.date_range(start=start, end=end, freq=str(by) + 'H',
+            bins = pandas.date_range(start=start, end=end, freq=str(by) + 'h',
                                      tz=self.timezone.zone)
             bins = bins.tz_convert('UTC')
             return [seq[(seq >= bins[i]) & (seq < bins[i + 1])] for i in
@@ -248,13 +262,12 @@ def sample_weather(periods=24):
     """
     #from openalea.deploy.shared_data import shared_data
     #import alinea.septo3d
-    import astk_data
-    from path import Path
+    #from path import Path
 
-    meteo_path = Path(astk_data.__path__[0])/'meteo00-01.txt'
+    meteo_path = str(Path(datadir.__path__[0])/'meteo00-01.txt')
     #meteo_path = shared_data(alinea.septo3d, 'meteo00-01.txt')
     t_deb = "2000-10-01 01:00:00"
-    seq = pandas.date_range(start="2000-10-02", periods=periods, freq='H')
+    seq = pandas.date_range(start="2000-10-02", periods=periods, freq='h')
     weather = Weather(data_file=meteo_path)
     weather.check(
         ['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain',

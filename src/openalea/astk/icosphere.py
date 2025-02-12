@@ -1,6 +1,6 @@
 # -*- python -*-
 #
-#       Copyright 2016 INRIA - CIRAD - INRA
+#       Copyright 2016-2025 Inria - CIRAD - INRAe
 #
 #       Distributed under the Cecill-C License.
 #       See accompanying file LICENSE.txt or copy at
@@ -8,7 +8,7 @@
 #
 #       WebSite : https://github.com/openalea-incubator/astk
 #
-#       File author(s): Christian Fournier <Christian.Fournier@supagro.inra.fr>
+#       File author(s): Christian Fournier <christian.fournier@inrae.fr>
 #
 #       Credits:
 #       Starting point for developing this module the C code found here:
@@ -26,7 +26,8 @@ from __future__ import division
 import math
 import numpy
 import warnings
-from alinea.astk.colormap import jet_colors
+from .colormap import jet_colors
+from functools import reduce
 
 display_enable = True
 try:
@@ -472,7 +473,7 @@ def sample_faces(vertices, faces, iter=2, spheric=False):
     Returns:
         a list of points or of (theta, phi) tuples and a list of tags
     """
-    tags = range(len(faces))
+    tags = list(range(len(faces)))
     if iter is not None:
         vertices, faces, tags = star_split(vertices, faces, tags)
         for i in range(iter):
@@ -481,7 +482,7 @@ def sample_faces(vertices, faces, iter=2, spheric=False):
     face_points = [[centroid([vertices[p] for p in face])] for face in faces]
 
     points = reduce(lambda x, y: x + y, face_points)
-    npt = map(len, face_points)
+    npt = [len(x) for x in face_points]
     tags = reduce(lambda x, y: x + y, [[t] * n for t, n in zip(tags, npt)])
     if spheric:
         points = spherical(points)

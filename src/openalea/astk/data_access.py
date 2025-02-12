@@ -1,3 +1,16 @@
+# -*- python -*-
+#
+#       Copyright 2016-2025 Inria - CIRAD - INRAe
+#
+#       Distributed under the Cecill-C License.
+#       See accompanying file LICENSE.txt or copy at
+#           http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html
+#
+#       WebSite : https://github.com/openalea/astk
+#
+#       File author(s): Christian Fournier <christian.fournier@inrae.fr>
+#
+# ==============================================================================
 # {# pkglts, data
 """ Set of function to work with resources that are located inside
 this package data
@@ -9,12 +22,12 @@ from os.path import join as pj
 from io import open
 import pandas
 
-pkg_root_dir = dirname(dirname(__file__))
-pkg_data_dir = pj(pkg_root_dir, "astk_data")
+pkg_root_dir = dirname(__file__)
+pkg_data_dir = pj(pkg_root_dir, "data")
 if not exists(pkg_data_dir):
     # we are certainly using a namespace
     pkg_root_dir = dirname(pkg_root_dir)
-    pkg_data_dir = pj(pkg_root_dir, "astk_data")
+    pkg_data_dir = pj(pkg_root_dir, "data")
     if not exists(pkg_data_dir):
         raise UserWarning("No data dir at this location: %s" % pkg_data_dir)
 

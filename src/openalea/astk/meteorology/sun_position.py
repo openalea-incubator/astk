@@ -1,6 +1,6 @@
 # -*- python -*-
 #
-#       Copyright 2016 INRIA - CIRAD - INRA
+#       Copyright 2016-2025 Inria - CIRAD - INRAe
 #
 #       Distributed under the Cecill-C License.
 #       See accompanying file LICENSE.txt or copy at
