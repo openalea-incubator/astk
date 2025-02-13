@@ -1,7 +1,7 @@
 # Time control
-from alinea.astk.TimeControl import *
-from alinea.astk.Weather import Weather
-from alinea.astk.data_access import get_path
+from openalea.astk.TimeControl import *
+from openalea.astk.Weather import Weather
+from openalea.astk.data_access import get_path
 import pandas
 import io
 import os

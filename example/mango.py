@@ -3,7 +3,7 @@
 
 import pandas
 
-from alinea.astk.Weather import Weather
+from openalea.astk.Weather import Weather
 import openalea.plantgl.all as pgl
 
 from math import radians, pi
