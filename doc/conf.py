@@ -67,7 +67,7 @@ except ImportError:
 # default settings that can be redefined outside of the pkglts block
 todo_include_todos = True
 autosummary_generate = True
-intersphinx_mapping = {'python': ('https://docs.python.org/3.4', None)}
+intersphinx_mapping = {'python': ('https://docs.python.org/3.7', None)}
 inheritance_node_attrs = dict(shape='ellipse', fontsize=12,
                               color='orange', style='filled')
 
@@ -84,8 +84,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'alinea.astk'
-copyright = u'2015, alinea.astk'
+project = u'openalea.astk'
+copyright = u'2015-2025, openalea.astk'
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -94,7 +94,7 @@ copyright = u'2015, alinea.astk'
 
 # find version number in /src/$pkg_pth/version.py
 pkgver = {}
-with open("../src/alinea/astk/version.py") as fp:
+with open("../src/openalea/astk/version.py") as fp:
     exec(fp.read(), pkgver)
 
 # The short X.Y version.
