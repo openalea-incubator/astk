@@ -1,7 +1,7 @@
 {% set data = load_setup_py_data() %}
 
 package:
-  name: alinea.astk
+  name: openalea.astk
   version: {{ data.get('version') }}
 
 source:
@@ -11,7 +11,7 @@ build:
   noarch: python
   preserve_egg_dir: True
   number: 1
-  script: python setup.py install #--single-version-externally-managed --record=record.txt
+  script: python setup.py install 
 
 requirements:
   build:
@@ -19,10 +19,9 @@ requirements:
     - setuptools
 
   run:
-    - python >=3.6
+    - python >=3.7
     - openalea.plantgl
     - pvlib-python
-    - six
 
 test:
   requires:
@@ -38,5 +37,5 @@ test:
 about:
   home: http://github.com/openalea-incubator/astk
   license: CeCILL_C
-  summary: The Alinea.astk package provides utilities for simulation of FSPM models.
+  summary: The openalea.astk package computes sun irradiance according to sun position, and manage weather data.
 
