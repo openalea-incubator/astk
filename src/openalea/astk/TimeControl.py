@@ -236,7 +236,7 @@ class DegreeDayModel(object):
         ----------
         - `time_sequence` (panda dateTime index)
             A sequence of TimeStamps indicating the dates of all elementary time steps of the simulation
-        - weather (alinea.astk.Weather instance)
+        - weather (openalea.astk.Weather instance)
             A Weather database
 
         """    
@@ -265,7 +265,7 @@ def thermal_time_filter(time_sequence, weather, model = DegreeDayModel(Tbase = 0
     ----------
     - `time_sequence` (panda dateTime index)
         A sequence of TimeStamps indicating the dates of all elementary time steps of the simulation
-    - weather (alinea.astk.Weather instance)
+    - weather (openalea.astk.Weather instance)
         A Weather database
     - `model` a model returning Thermal Time accumulation as a function of time_sequence and weather
     - `delay` (int)
