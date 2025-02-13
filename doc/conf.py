@@ -294,7 +294,7 @@ texinfo_documents = [
      u'astk Documentation',
      u'Christian Fournier',
      'astk',
-     'The Alinea.astk package provides utilities for simulation of FSPM models builds under alinea standards',
+     'The openalea.astk package provides utilities for simulation of FSPM models builds under openalea standards',
      'Miscellaneous'),
 ]
 
