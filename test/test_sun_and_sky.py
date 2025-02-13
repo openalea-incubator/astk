@@ -1,7 +1,7 @@
 import numpy
 import pandas
 
-from openalea.astk.sun_and_sky import (
+from openalea.astk.sky_sources import (
     sky_discretisation, 
     sky_radiance_distribution, 
     sky_sources, 

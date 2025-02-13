@@ -36,7 +36,7 @@ except ImportError:
     warnings.warn('PlantGL not installed: display is not enable!')
     display_enable = False
 
-def sky_turtle(turtle_mesh, sky_sources):
+def sky_dome(turtle_mesh, sky_sources):
     vertices, faces = turtle_mesh
     colors = jet_colors((lum for _,_,lum in sky_sources))
     scene = pgl.Scene()

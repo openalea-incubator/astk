@@ -275,34 +275,3 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
     return lum / hi
 
 
-def scale_sky_sources(sky_sources, sky_irradiance, scale='Wm2', diffuse_only=False):
-    """Scale relative luminance values to a given scale depending on horizontal irradiance time series
-
-    Args:
-        sky_sources: a list of (elevation, azimuth, luminance) tuples
-        sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
-        astk.sky_irradiance.sky_irradiance.
-    ky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
-        astk.sky_irradiance.sky_irradiance
-    """
-    el, az, lum = zip(*sky_sources)
-    # rescale to horizontal irradiance = 1
-    hi = sum((horizontal_irradiance(l, e) for l, e in zip(lum, el)))
-    lum = numpy.array(lum) / hi
-    # Scale to new unit
-    if scale == 'PPFD':
-        lum *= sky_irradiance.ppfd.mean()
-    elif scale == 'Wm2':
-        lum *= sky_irradiance.ghi.mean()
-    elif scale == 'MJ':
-        lum *= sky_irradiance.ghi.sum() * 3600 / 1e6
-    elif scale == 'molPAR':
-        lum *= sky_irradiance.ppfd.sum() * 3600 / 1e6
-    else:
-        raise ValueError('undefined scale: ' + scale + '. Should be one of PPFD, Wm2, MJ, molPAR')
-    if diffuse_only:
-        lum *= sky_irradiance.dhi.sum() / sky_irradiance.ghi.sum()
-
-    return list(zip(el, az, lum))
-
-

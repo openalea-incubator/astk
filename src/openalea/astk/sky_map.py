@@ -16,7 +16,7 @@
 """
 import numpy
 from matplotlib import pyplot as plt
-
+from openalea.astk.icosphere import turtle_mesh, spherical_face_centers
 
 def sky_grid(d_az=1, d_z=1, n_az=None, n_z=None):
     """Azimuth and zenital grid coordinates"""
@@ -49,7 +49,7 @@ def sun_path(sky_irradiance):
     return [*zip(irr.sun_elevation, irr.sun_azimuth)]
 
 
-def sky_turtle(sectors=46):
+def hierarchical_turtle(sectors=46):
     # Hierarchical direction from tutle.xls file of J Dauzat
     elevations_h = [90.] + [26.57] * 5 + [52.62] * 5 + [10.81] * 5 + [69.16] * 5 + [
         47.41] * 5 + [31.08] * 10 + [9.23] * 10
@@ -61,6 +61,15 @@ def sky_turtle(sectors=46):
     nb_sect = [1, 6, 16, 46][numpy.searchsorted([1, 6, 16, 46], min(46, sectors))]
     return [*zip(elevations_h[:nb_sect], azimuths_h[:nb_sect])]
 
+def icospherical_turtle(sectors=46):
+    sky_mesh = turtle_mesh(46)
+    return spherical_face_centers(sky_mesh)
+
+def sky_turtle(sectors=46):
+    if sectors <= 46:
+        return hierarchical_turtle(sectors)
+    else:
+        return icospherical_turtle(sectors)
 
 def closest_point(point_grid, point_list):
     dists = [numpy.sum((point_grid - p)**2, axis=2) for p in point_list]
@@ -81,9 +90,7 @@ def sky_map(luminance_grid, luminance_map, directions):
     smap = numpy.zeros_like(luminance_map)
     for i, w in enumerate(slum):
         smap[targets==i] = w
-    elevation, azimuth= zip(*directions)
-    sky_sources = list(zip(elevation, azimuth, slum))
-    return sky_sources, smap
+    return slum, smap
 
 
 def show_sky(grid, sky, cmap='jet', shading='flat'):

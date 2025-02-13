@@ -27,7 +27,7 @@ from pathlib import Path
 
 from .TimeControl import *
 from .meteorology.sun_position import sun_position
-from . import sun_and_sky as sunsky
+from . import sky_sources as sunsky
 from . import data as datadir
 
 
