@@ -61,9 +61,15 @@ TODO found example
 ## Documentation
 TODO Doc in Readthedoc
 
-## Contributing
+### Contributors
+
 
 All contributions, bug reports, bug fixes, documentation improvements, enhancements, and ideas are welcome.
 
 A detailed overview on how to contribute can be found in the [contributing guide](http://virtualplants.github.io/contribute/devel/git-workflow.html)
+
+<a href="https://github.com/openalea-incubator/astk/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=openalea-incubator/astk" />
+</a>
+
 
