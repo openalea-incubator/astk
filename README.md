@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/openalea/openalea.rtfd.io/master/doc/_static/openalea_web.svg" width="70"/> alinea.astk
+# <img src="https://raw.githubusercontent.com/openalea/openalea.rtfd.io/master/doc/_static/openalea_web.svg" width="70"/> openalea.astk
 
 **Authors:** Christian Fournier [@christian34](https://github.com/christian34), christian.fournier@inrae.fr
 
@@ -12,7 +12,7 @@
 
 ## Descriptions
 
-alinea.astk package provides utilities for FSPM model. It include particularly equation to calculate sun irradiance according to sun position and manage weather data.
+openalea.astk package provides utilities for FSPM model. It include particularly equation to calculate sun irradiance according to sun position and manage weather data.
 
 ## Contents
 
@@ -42,13 +42,13 @@ condition or estimate them from meteorological data using pvlib library.
 ### Users
 
 ```
-conda create -n astk -c openalea3 - c conda-forge alinea.astk
+mamba create -n astk -c openalea3 -c conda-forge openalea.astk
 ```
 
 ### Developpers
 
 ```
-conda create -n astk -c openalea3 - c conda-forge alinea.astk
+conda create -n astk -c openalea3 - c conda-forge openalea.astk
 git clone 'https://github.com/openalea-incubator/astk.git'
 cd astk
 python setup.py install (or develop)
@@ -61,9 +61,15 @@ TODO found example
 ## Documentation
 TODO Doc in Readthedoc
 
-## Contributing
+### Contributors
+
 
 All contributions, bug reports, bug fixes, documentation improvements, enhancements, and ideas are welcome.
 
 A detailed overview on how to contribute can be found in the [contributing guide](http://virtualplants.github.io/contribute/devel/git-workflow.html)
+
+<a href="https://github.com/openalea-incubator/astk/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=openalea-incubator/astk" />
+</a>
+
 

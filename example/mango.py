@@ -3,11 +3,11 @@
 
 import pandas
 
-from alinea.astk.Weather import Weather
+from openalea.astk.Weather import Weather
 import openalea.plantgl.all as pgl
 
 from math import radians, pi
-#from alinea.adel.astk_interface import AdelWheat
+#from openalea.adel.astk_interface import AdelWheat
 from vplants.mangosim.util_path import data
 
 from vplants.fractalysis.light.directLight import directionalInterception
