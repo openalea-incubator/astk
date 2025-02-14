@@ -14,7 +14,7 @@
 """ A collection of equation for modelling distribution of sky luminance
 """
 import numpy
-from .sky_irradiance import (
+from openalea.astk.meteorology.sky_irradiance import (
     horizontal_irradiance, 
     all_weather_sky_clearness, 
     f_clear_sky,
@@ -218,7 +218,20 @@ def all_weather_relative_luminance(grid, sun_zenith, sun_azimuth, clearness, bri
     return gradation * indicatrix
 
 
-def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
+def sun_to_zero(grid, luminance, sun_zenith, sun_azimuth, sun_hi):
+    """Set luminance arround the sun to zero, up to a sun_hi decrease of sky horrizontal irradiance"""
+
+    ksi = ksi_grid(grid, sun_zenith=sun_zenith, sun_azimuth=sun_azimuth)
+    sun_order = numpy.argsort(ksi, None)
+    _, _, _, sky_zenith, _ = grid
+    shi = horizontal_irradiance(luminance, 90 - sky_zenith)
+    lim = numpy.searchsorted(shi.flatten()[sun_order].cumsum(), sun_hi)
+    newlum = luminance.flatten()
+    newlum[sun_order[:lim]] = 0
+    return newlum.reshape(luminance.shape)
+
+
+def sky_luminance(grid, sky_type='soc', sky_irradiance=None, hide_sun=False):
     """Relative sky luminance map for different conditions, periods and sky types
        Luminance are scaled so that total sky horizontal irradiance equals one.
 
@@ -226,13 +239,25 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
         sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'blended', 'all_weather')
         sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
         astk.sky_irradiance.sky_irradiance. Needed for all sky_types except 'uoc' and 'soc'
+        hide_sun: Should the sun be shaded  ?
     """
 
     azimuth, zenith, az_c, z_c, w_c = grid
     lum = numpy.zeros_like(az_c)
+
     if sky_irradiance is not None:
         irrad = sky_irradiance.copy()
         irrad['dates'] = irrad.index
+
+    def _scale_lum(grid, _lum, row, hide_sun):
+        _hi = sky_hi(grid, _lum)
+        if hide_sun:
+            sun_hi = (row.ghi - row.dhi) / row.ghi * _hi
+            _lum = sun_to_zero(grid, _lum, row.zenith, row.azimuth, sun_hi)
+            _hi = sky_hi(grid, _lum)
+            return row.dhi / _hi * _lum
+        else:
+            return row.ghi / _hi * _lum
 
     if sky_type in ('soc', 'uoc'):
         lum = w_c * cie_relative_luminance(grid=grid, type=sky_type)
@@ -242,8 +267,7 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
                                           sun_zenith=row.zenith,
                                           sun_azimuth=row.azimuth,
                                           type='clear_sky')
-            _hi = sky_hi(grid, _lum)
-            lum += (row.ghi / _hi * _lum)
+            lum += _scale_lum(grid, _lum, row, hide_sun)
     elif sky_type == 'all_weather':
         for row in irrad.itertuples():
             brightness = all_weather_sky_brightness(row.dates, row.dhi, row.zenith)
@@ -253,8 +277,7 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
                                                   sun_azimuth=row.azimuth,
                                                   brightness=brightness,
                                                   clearness=clearness)
-            _hi = sky_hi(grid, _lum)
-            lum += (row.ghi / _hi * _lum)
+            lum += _scale_lum(grid, _lum, row, hide_sun)
     elif sky_type == 'blended':
         soc = w_c * cie_relative_luminance(grid=grid, type='soc')
         for row in irrad.itertuples():
@@ -265,12 +288,11 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None):
             epsilon = all_weather_sky_clearness(row.dni, row.dhi, row.zenith)
             f_clear = f_clear_sky(epsilon)
             _lum = f_clear * cs + (1 - f_clear) * soc
-            _hi = sky_hi(grid, _lum)
-            lum += (row.ghi / _hi * _lum)
+            lum += _scale_lum(grid, _lum, row, hide_sun)
     else:
         raise ValueError('undefined sky type: ' + sky_type)
 
-    # scale so that ghi = 1
+    # scale so that hi = 1
     hi = sky_hi(grid, lum)
     return lum / hi
 

@@ -20,7 +20,6 @@ This module is mainly a collection of syntactic sugar to pvlib clearsky and
 irradiances packages.
 """
 
-from __future__ import division
 import numpy
 import pandas
 import warnings
@@ -31,16 +30,14 @@ except ImportError:
     warnings.warn('pvlib not installed: using pure python, but less accurate, functions')
 
 if pvlib:
-    from .sun_position import (
+    from openalea.astk.meteorology.sun_position import (
         sun_position, 
         sun_extraradiation
     )
-    from .sun_position_astk import sinel_integral
 else:
-    from .sun_position_astk import (
+    from openalea.astk.meteorology.sun_position_astk import (
         sun_position, 
-        sun_extraradiation, 
-        sinel_integral
+        sun_extraradiation,
     )
 
 # default location and dates
