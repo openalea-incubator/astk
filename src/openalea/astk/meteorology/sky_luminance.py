@@ -218,82 +218,78 @@ def all_weather_relative_luminance(grid, sun_zenith, sun_azimuth, clearness, bri
     return gradation * indicatrix
 
 
-def sun_to_zero(grid, luminance, sun_zenith, sun_azimuth, sun_hi):
-    """Set luminance arround the sun to zero, up to a sun_hi decrease of sky horrizontal irradiance"""
-
-    ksi = ksi_grid(grid, sun_zenith=sun_zenith, sun_azimuth=sun_azimuth)
-    sun_order = numpy.argsort(ksi, None)
-    _, _, _, sky_zenith, _ = grid
-    shi = horizontal_irradiance(luminance, 90 - sky_zenith)
-    lim = numpy.searchsorted(shi.flatten()[sun_order].cumsum(), sun_hi)
-    newlum = luminance.flatten()
-    newlum[sun_order[:lim]] = 0
-    return newlum.reshape(luminance.shape)
-
-
-def sky_luminance(grid, sky_type='soc', sky_irradiance=None, hide_sun=False):
-    """Relative sky luminance map for different conditions, periods and sky types
-       Luminance are scaled so that total sky horizontal irradiance equals one.
+def sky_luminance(grid, sky_type='soc', sky_irradiance=None, add_sun=False, sun_disc=5):
+    """Sky luminance as a function of sky type and sky_irradiance, scaled so that sky horizontal irradiance equals one.
 
     Args:
+        grid: a (azimuth, zenith, az_c, z_c, w_c) tuple of sky coordinates, such as returned by astk.sky_map.sky_grid
         sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'blended', 'all_weather')
         sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
-        astk.sky_irradiance.sky_irradiance. Needed for all sky_types except 'uoc' and 'soc'
-        hide_sun: Should the sun be shaded  ?
+        astk.meteorology.sky_irradiance.sky_irradiance. Needed for all sky_types except 'uoc' and 'soc'
+        add_sun: Should the sun be added  ? If True, sun luminance is added to sky luminance in the sun region.
+        sun_disc: angular diameter of the sun region (degree)
     """
+
+    if add_sun or sky_type not in ('soc', 'uoc'):
+        if sky_irradiance is None:
+            raise ValueError('sky_irradiance is required for this type of sky')
 
     azimuth, zenith, az_c, z_c, w_c = grid
     lum = numpy.zeros_like(az_c)
 
-    if sky_irradiance is not None:
-        irrad = sky_irradiance.copy()
-        irrad['dates'] = irrad.index
-
-    def _scale_lum(grid, _lum, row, hide_sun):
-        _hi = sky_hi(grid, _lum)
-        if hide_sun:
-            sun_hi = (row.ghi - row.dhi) / row.ghi * _hi
-            _lum = sun_to_zero(grid, _lum, row.zenith, row.azimuth, sun_hi)
-            _hi = sky_hi(grid, _lum)
-            return row.dhi / _hi * _lum
-        else:
-            return row.ghi / _hi * _lum
-
-    if sky_type in ('soc', 'uoc'):
+    if sky_type in ('soc', 'uoc') and not add_sun:
         lum = w_c * cie_relative_luminance(grid=grid, type=sky_type)
-    elif sky_type == 'clear_sky':
-        for row in irrad.itertuples():
-            _lum = w_c * cie_relative_luminance(grid=grid,
-                                          sun_zenith=row.zenith,
-                                          sun_azimuth=row.azimuth,
-                                          type='clear_sky')
-            lum += _scale_lum(grid, _lum, row, hide_sun)
-    elif sky_type == 'all_weather':
-        for row in irrad.itertuples():
-            brightness = all_weather_sky_brightness(row.dates, row.dhi, row.zenith)
-            clearness = all_weather_sky_clearness(row.dni, row.dhi, row.zenith)
-            _lum = w_c * all_weather_relative_luminance(grid,
-                                                  sun_zenith=row.zenith,
-                                                  sun_azimuth=row.azimuth,
-                                                  brightness=brightness,
-                                                  clearness=clearness)
-            lum += _scale_lum(grid, _lum, row, hide_sun)
-    elif sky_type == 'blended':
-        soc = w_c * cie_relative_luminance(grid=grid, type='soc')
-        for row in irrad.itertuples():
-            cs = w_c * cie_relative_luminance(grid=grid,
-                                          sun_zenith=row.zenith,
-                                          sun_azimuth=row.azimuth,
-                                          type='clear_sky')
-            epsilon = all_weather_sky_clearness(row.dni, row.dhi, row.zenith)
-            f_clear = f_clear_sky(epsilon)
-            _lum = f_clear * cs + (1 - f_clear) * soc
-            lum += _scale_lum(grid, _lum, row, hide_sun)
     else:
-        raise ValueError('undefined sky type: ' + sky_type)
+        soc = None
+        if sky_type == 'blended':
+            soc = w_c * cie_relative_luminance(grid=grid, type='soc')
+        for row in sky_irradiance.itertuples():
+            if sky_type in ('soc', 'uoc'):
+                _lum = w_c * cie_relative_luminance(grid=grid, type=sky_type)
+            elif sky_type == 'clear_sky':
+                _lum = w_c * cie_relative_luminance(grid=grid,
+                                          sun_zenith=row.zenith,
+                                          sun_azimuth=row.azimuth,
+                                          type='clear_sky')
+            elif sky_type == 'all_weather':
+                brightness = all_weather_sky_brightness(row.Index, row.dhi, row.zenith)
+                clearness = all_weather_sky_clearness(row.dni, row.dhi, row.zenith)
+                _lum = w_c * all_weather_relative_luminance(grid,
+                                                            sun_zenith=row.zenith,
+                                                            sun_azimuth=row.azimuth,
+                                                            brightness=brightness,
+                                                            clearness=clearness)
+            elif sky_type == 'blended':
+                cs = w_c * cie_relative_luminance(grid=grid,
+                                              sun_zenith=row.zenith,
+                                              sun_azimuth=row.azimuth,
+                                              type='clear_sky')
+                epsilon = all_weather_sky_clearness(row.dni, row.dhi, row.zenith)
+                f_clear = f_clear_sky(epsilon)
+                _lum = f_clear * cs + (1 - f_clear) * soc
+            else:
+                raise ValueError('undefined sky type: ' + sky_type)
 
+            _hi = sky_hi(grid, _lum)
+            _lum = _lum / _hi * row.dhi
+            if add_sun:
+                ksi_sun = ksi_grid(grid, sun_zenith=row.zenith, sun_azimuth=row.azimuth)
+                if row.dni > _lum[ksi_sun <= sun_disc].sum(): # only add sun if it is brighter than sky
+                    lost_hi = horizontal_irradiance(_lum[ksi_sun <= sun_disc], 90 - z_c[ksi_sun <= sun_disc]).sum()
+                    _lum *= row.dhi / (row.dhi - lost_hi)
+                    _lum[ksi_sun <= sun_disc] = row.dni / _lum[ksi_sun <= sun_disc].size
+            lum += _lum
     # scale so that hi = 1
     hi = sky_hi(grid, lum)
+    hi=1
     return lum / hi
+
+
+def hide_sun(grid, luminance, sun_zenith, sun_azimuth, sun_disc=5):
+    """Hide sun"""
+    hlum = luminance.copy()
+    ksi_sun = ksi_grid(grid, sun_zenith=sun_zenith, sun_azimuth=sun_azimuth)
+    hlum[ksi_sun <= sun_disc] = 0
+    return hlum
 
 
