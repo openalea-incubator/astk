@@ -1,4 +1,6 @@
-# <img src="https://raw.githubusercontent.com/openalea/openalea.rtfd.io/master/doc/_static/openalea_web.svg" width="70"/> openalea.astk
+# README
+
+## <img src="https://raw.githubusercontent.com/openalea/openalea.rtfd.io/master/doc/_static/openalea_web.svg" width="70"/> openalea.astk
 
 **Authors:** Christian Fournier [@christian34](https://github.com/christian34), christian.fournier@inrae.fr
 
@@ -12,7 +14,7 @@
 
 ## Descriptions
 
-openalea.astk package provides utilities for FSPM model. It include particularly equation to calculate sun irradiance according to sun position and manage weather data.
+openalea.astk package provides utilities for FSPM model. It includes particularly equation to calculate sun irradiance according to sun position and manage weather data.
 
 ## Contents
 
@@ -24,20 +26,20 @@ condition or estimate them from meteorological data using pvlib library.
 - TimeControl: Provides utilities for scheduling models in simulation.
 - Weather: Provides utilities for weather protocol and conversion of some weather variable.
 - data_access: Set of function to work with resources that are located inside this package data.
-- icosphere : Generation of regular spherical polyhedrons: icospheres and their hexagonal/pentagonal duals.
+- icosphere : Generation of regular spherical polyhedrons: ionospheres and their hexagonal/pentagonal duals.
 - plant_interface: ?
 - plantgl_utils: A generic module to get plant variable from scene.
 - sun_and_sky: A collection of equation for modelling sun position, sun irradiance and sky irradiance.
 
 ## Installation
 
-### Requierments
+### Requirements
 
 - python > 3.7
 - pvlib-python
 - numpy
 - pandas
-- openalea.plangl
+- openalea.plantgl
 
 ### Users
 
@@ -45,7 +47,7 @@ condition or estimate them from meteorological data using pvlib library.
 mamba create -n astk -c openalea3 -c conda-forge openalea.astk
 ```
 
-### Developpers
+### Developers
 
 ```
 conda create -n astk -c openalea3 - c conda-forge openalea.astk
@@ -59,7 +61,7 @@ python setup.py install (or develop)
 TODO found example
 
 ## Documentation
-TODO Doc in Readthedoc
+https://astk.rtfd.io
 
 ### Contributors
 
