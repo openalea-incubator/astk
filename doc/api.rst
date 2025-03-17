@@ -87,3 +87,36 @@ Reference guide
     :undoc-members:
     :inherited-members:
     :show-inheritance:
+
+:mod:`openalea.astk.meteorology.sky_irradiance` module
+===========================
+.. automodule:: openalea.astk.meteorology.sky_irradiance
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+
+:mod:`openalea.astk.meteorology.sky_luminance` module
+===========================
+.. automodule:: openalea.astk.meteorology.sky_luminance
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+
+:mod:`openalea.astk.meteorology.sun_position` module
+===========================
+.. automodule:: openalea.astk.meteorology.sun_position
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+
+:mod:`openalea.astk.meteorology.sun_position_astk` module
+===========================
+.. automodule:: openalea.astk.meteorology.sun_position_astk
+    :members:
+    :undoc-members:
+    :inherited-members:
+    :show-inheritance:
+
