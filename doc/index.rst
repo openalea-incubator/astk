@@ -13,7 +13,7 @@ Contents:
    contributing
    authors
    history
-    api
+   api
 
 Indices and tables
 ==================
