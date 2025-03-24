@@ -61,15 +61,18 @@ def hierarchical_turtle(sectors=46):
     nb_sect = [1, 6, 16, 46][numpy.searchsorted([1, 6, 16, 46], min(46, sectors))]
     return [*zip(elevations_h[:nb_sect], azimuths_h[:nb_sect])]
 
+
 def icospherical_turtle(sectors=46):
     sky_mesh = turtle_mesh(46)
     return spherical_face_centers(sky_mesh)
+
 
 def sky_turtle(sectors=46):
     if sectors <= 46:
         return hierarchical_turtle(sectors)
     else:
         return icospherical_turtle(sectors)
+
 
 def closest_point(point_grid, point_list):
     dists = [numpy.sum((point_grid - p)**2, axis=2) for p in point_list]
