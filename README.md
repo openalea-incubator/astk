@@ -50,10 +50,10 @@ mamba create -n astk -c openalea3 -c conda-forge openalea.astk
 ### Developers
 
 ```
-conda create -n astk -c openalea3 - c conda-forge openalea.astk
+mamba create -n astk -c openalea3 -c conda-forge openalea.astk --only-deps
 git clone 'https://github.com/openalea-incubator/astk.git'
 cd astk
-python setup.py install (or develop)
+pip install . (or -e)
 ```
 
 ## Quick Start
