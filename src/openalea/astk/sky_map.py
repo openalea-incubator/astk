@@ -16,7 +16,7 @@
 """
 import numpy
 from matplotlib import pyplot as plt
-from openalea.astk.icosphere import turtle_mesh, spherical_face_centers
+
 
 def sky_grid(d_az=1, d_z=1, n_az=None, n_z=None):
     """Azimuth and zenital grid coordinates"""
@@ -25,53 +25,25 @@ def sky_grid(d_az=1, d_z=1, n_az=None, n_z=None):
     # grid cell boundaries
     if n_az is None:
         azimuth = numpy.linspace(0, 360, 360 // d_az + 1)
+        n_az = len(azimuth) - 1
     else:
         azimuth = numpy.linspace(0, 360, n_az + 1)
     if n_z is None:
         zenith = numpy.linspace(0, 90, 90 // d_z + 1)
+        n_z = len(zenith) - 1
     else:
         zenith = numpy.linspace(0, 90, n_z + 1)
 
+
     # grid cell centers positioned in a 2D grid matrix
     az_c, z_c = numpy.meshgrid(_c(azimuth), _c(zenith))
+    d_az = numpy.ones_like(az_c)
+    d_z = numpy.ones_like(az_c)
+    d_az *= 360 / n_az
+    d_z *= 90 / n_z
     # grid cell relative area on sky hemisphere
     w_c = numpy.radians(d_az) * (numpy.cos(numpy.radians(z_c - d_z / 2)) - numpy.cos(numpy.radians(z_c + d_z / 2)))
     return azimuth, zenith , az_c, z_c, w_c
-
-
-def sky_dirs(d_az=10, d_z=10, n_az=None, n_z=None):
-    _,_,az, z, _ = sky_grid(d_az=d_az, d_z=d_z, n_az=n_az, n_z=n_z)
-    return [*zip(90 - z.flatten(), az.flatten())]
-
-
-def sun_path(sky_irradiance):
-    irr = sky_irradiance
-    return [*zip(irr.sun_elevation, irr.sun_azimuth)]
-
-
-def hierarchical_turtle(sectors=46):
-    # Hierarchical direction from tutle.xls file of J Dauzat
-    elevations_h = [90.] + [26.57] * 5 + [52.62] * 5 + [10.81] * 5 + [69.16] * 5 + [
-        47.41] * 5 + [31.08] * 10 + [9.23] * 10
-    az1 = [0, 72, 144, 216, 288]
-    az2 = [36, 108, 180, 252, 324]
-    azimuths_h = [180.] + az1 + az2 * 2 + az1 * 2 + [
-        23.27, 48.73, 95.27, 120.73, 167.27, 192.73, 239.27, 264.73, 311.27, 336.73] + [
-        12.23, 59.77, 84.23, 131.77, 156.23, 203.77, 228.23, 275.77, 300.23, 347.77]
-    nb_sect = [1, 6, 16, 46][numpy.searchsorted([1, 6, 16, 46], min(46, sectors))]
-    return [*zip(elevations_h[:nb_sect], azimuths_h[:nb_sect])]
-
-
-def icospherical_turtle(sectors=46):
-    sky_mesh = turtle_mesh(46)
-    return spherical_face_centers(sky_mesh)
-
-
-def sky_turtle(sectors=46):
-    if sectors <= 46:
-        return hierarchical_turtle(sectors)
-    else:
-        return icospherical_turtle(sectors)
 
 
 def closest_point(point_grid, point_list):
@@ -79,20 +51,26 @@ def closest_point(point_grid, point_list):
     return numpy.argmin(numpy.stack(dists, axis=2), axis=2)
 
 
-def sky_map(luminance_grid, luminance_map, directions):
-    _, _, az, z, _ = luminance_grid
+def sky_map(grid, luminance_map, directions):
+    _, _, az, z, wc = grid
 
     def _polar(az, z):
-        theta = numpy.radians(az)
+        # az is from north, positive clockwise.
+        # Theta is from x+ positive counter-clockwise
+        # north is along Y+
+        theta = numpy.pi / 2 - numpy.radians(az)
         return z * numpy.cos(theta), z * numpy.sin(theta)
 
     grid_points = numpy.stack(_polar(az, z), axis=2)
-    target_points = numpy.array([_polar(a,90- el) for el,a in directions])
+    target_points = numpy.array([_polar(a, 90 - el) for el, a in directions])
     targets = closest_point(grid_points, target_points)
-    slum = numpy.bincount(targets.flatten(), weights=luminance_map.flatten())
+    wlum = luminance_map * wc
+    slum = numpy.bincount(targets.flatten(), weights=wlum.flatten())
+    slum /= numpy.bincount(targets.flatten(), weights=wc.flatten())
     smap = numpy.zeros_like(luminance_map)
     for i, w in enumerate(slum):
         smap[targets==i] = w
+    smap *= luminance_map.sum() / smap.sum()
     return slum, smap
 
 
@@ -104,7 +82,7 @@ def show_sky(grid, sky, cmap='jet', shading='flat'):
         sky: a 2-D array of values to be plotted on the grid
     """
     az, z, _, _ , _= grid
-    theta = numpy.radians(az)
+    theta = numpy.pi/2 - numpy.radians(az)
     r = z
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
     ax.pcolormesh(theta, r, sky, edgecolors='face', cmap=cmap, shading=shading)

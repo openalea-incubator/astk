@@ -250,7 +250,7 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None, scale=None, sun_in_
             - 'clear_sky', 'uoc' and 'soc' are CIE sky types defined in [1]. For all these types, only relative sky luminance
                 are returned (sun source list is empty), and total sky horizontal irradiance equals one.
             - 'sun_soc' refers to the approach defined in [2] where direct normal irradiance comes from the sun, and
-                and diffuse horizontal irradiance comes from an CIE soc sky luminance distribution
+                 diffuse horizontal irradiance comes from an CIE soc sky luminance distribution
             - 'blended' refers to the sky blending approach defined in [3], where direct normal irradiance comes from
                 the sun, and diffuse horizontal irradiance comes from a blending of CIE clear-sky and CIE soc sky luminance
                 distribution, that depends on sky clearness index
@@ -278,19 +278,21 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None, scale=None, sun_in_
     sun = []
     if sky_type in ('soc', 'uoc'):
         sky = w_c * cie_relative_luminance(grid=grid, type=sky_type)
+        sky /= sky_hi(grid, sky)
         if sky_irradiance is None:
-            sky /= sky_hi(grid, sky)
             return [], sky
     else:
         sky = numpy.zeros_like(w_c)
         if sky_type in ('blended', 'sun_soc'):
             soc = w_c * cie_relative_luminance(grid=grid, type='soc')
+            soc /= sky_hi(grid, soc)
         for row in sky_irradiance.itertuples():
             if sky_type in ('clear_sky', 'blended'):
                 cs = w_c * cie_relative_luminance(grid=grid,
                                           sun_zenith=row.zenith,
                                           sun_azimuth=row.azimuth,
                                           type='clear_sky')
+                cs /= sky_hi(grid, cs)
             if sky_type == 'clear_sky':
                 _lum = cs
             elif sky_type == 'sun_soc':
@@ -307,23 +309,24 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None, scale=None, sun_in_
                                                             sun_azimuth=row.azimuth,
                                                             brightness=brightness,
                                                             clearness=clearness)
+                _lum /= sky_hi(grid, _lum)
             else:
                 raise ValueError('undefined sky type: ' + sky_type)
-            _hi = sky_hi(grid, _lum)
-            _lum = _lum / _hi * row.dhi
+            _lum *= row.dhi
 
-            ksi_sun = ksi_grid(grid, sun_zenith=row.zenith, sun_azimuth=row.azimuth)
-            if row.dni > _lum[ksi_sun <= sun_disc].sum():  # only add sun if it is brighter than sky
+            if row.dni > 0:
                 sun.append((90 - row.zenith, row.azimuth, row.dni))
-                if sun_in_sky:
-                    # spread dhi behind the sun disc over the whole sky
-                    lost_hi = horizontal_irradiance(_lum[ksi_sun <= sun_disc], 90 - z_c[ksi_sun <= sun_disc]).sum()
-                    _lum *= row.dhi / (row.dhi - lost_hi)
-                    # add sun
-                    shi = row.ghi - row.dhi
-                    sun_size = _lum[ksi_sun <= sun_disc].size
-                    _lum[ksi_sun <= sun_disc] = w_c[ksi_sun <= sun_disc] * directional_luminance(shi / sun_size, 90 - z_c[ksi_sun <= sun_disc])
-                    _lum[ksi_sun <= sun_disc] *= shi / horizontal_irradiance(_lum[ksi_sun <= sun_disc], 90 - z_c[ksi_sun <= sun_disc]).sum()
+
+            if sun_in_sky:
+                ksi_sun = ksi_grid(grid, sun_zenith=row.zenith, sun_azimuth=row.azimuth)
+                # spread dhi behind the sun disc over the whole sky
+                lost_hi = horizontal_irradiance(_lum[ksi_sun <= sun_disc], 90 - z_c[ksi_sun <= sun_disc]).sum()
+                _lum *= row.dhi / (row.dhi - lost_hi)
+                # add sun
+                shi = row.ghi - row.dhi
+                sun_size = _lum[ksi_sun <= sun_disc].size
+                _lum[ksi_sun <= sun_disc] = w_c[ksi_sun <= sun_disc] * directional_luminance(shi / sun_size, 90 - z_c[ksi_sun <= sun_disc])
+                _lum[ksi_sun <= sun_disc] *= shi / horizontal_irradiance(_lum[ksi_sun <= sun_disc], 90 - z_c[ksi_sun <= sun_disc]).sum()
             sky += _lum
 
     if sky_type == 'clear_sky' or sun_in_sky:
