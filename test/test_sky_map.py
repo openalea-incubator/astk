@@ -1,7 +1,7 @@
 import numpy
-from openalea.astk.sky_map import (sky_grid, cell_boundaries, rescale_sky,
+from openalea.astk.sky_map import (sky_grid, cell_boundaries, scale_sky,
                                    sky_map, sky_hi, sky_ni, uniform_sky,
-                                    surfacic_irradiance)
+                                   surfacic_irradiance)
 from openalea.astk.sky_sources import regular_sky, sky_turtle
 
 
@@ -38,9 +38,9 @@ def test_sky_irradiance():
     numpy.testing.assert_almost_equal(hi.sum(), numpy.pi, decimal=2)
 
 
-def test_rescale_sky():
+def test_scale_sky():
     grid, lum = uniform_sky()
-    scaled = rescale_sky(grid, lum)
+    scaled = scale_sky(grid, lum)
     hi = sky_hi(grid, scaled)
     ni = sky_ni(grid, scaled)
     numpy.testing.assert_almost_equal(ni.sum(), 2, decimal=2)
@@ -73,7 +73,7 @@ def test_sky_map():
     # luminance is not conserved : has been rescaled to accomodate hi conservation
     assert (lum_agg != 1).all()
     assert (new_lum != 1).all()
-    numpy.testing.assert_almost_equal(hi_agg.sum(), hi_ref, decimal=1)
+    numpy.testing.assert_almost_equal(hi_agg.sum(), hi_ref, decimal=2)
     #
     # Test extreme case with one light source
     dirs = sky_turtle(1)

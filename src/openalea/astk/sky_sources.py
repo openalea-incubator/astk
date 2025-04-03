@@ -22,7 +22,7 @@ from .sky_map import sky_grid, sky_map
 
 
 def regular_sky(d_az=10, d_z=10, n_az=None, n_z=None):
-    _,_,az, z, _ = sky_grid(d_az=d_az, d_z=d_z, n_az=n_az, n_z=n_z)
+    az, z, _ = sky_grid(d_az=d_az, d_z=d_z, n_az=n_az, n_z=n_z)
     return [*zip(90 - z.flatten(), az.flatten())]
 
 

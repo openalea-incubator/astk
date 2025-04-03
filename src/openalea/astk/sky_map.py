@@ -88,8 +88,15 @@ def sky_ni(grid, luminance):
     az, z, sr = grid
     return luminance * sr
 
+def sun_hi(sun):
+    el, az, lum = zip(*sun)
+    return lum * numpy.sin(numpy.radians(el))
 
-def rescale_sky(grid, luminance, irradiance=1):
+def sun_ni(sun):
+    el, az, lum = zip(*sun)
+    return numpy.array(lum)
+
+def scale_sky(grid, luminance, irradiance=1):
     """Rescale sky luminance to force producing a given sky irradiance
 
     Args:
@@ -148,7 +155,7 @@ def sky_map(grid, luminance, new_directions, rescale=False):
 
     if rescale:
         hi = sky_hi(grid, luminance)
-        luminance_agg = rescale_sky(grid_agg, luminance_agg, hi.sum())
+        luminance_agg = scale_sky(grid_agg, luminance_agg, hi.sum())
         for i, w in enumerate(luminance_agg):
             new_luminance[targets == i] = w
 
