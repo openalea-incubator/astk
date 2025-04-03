@@ -183,7 +183,7 @@ def surfacic_irradiance(grid, luminance, zenith=0, azimuth=0):
     ksi = ksi_grid(grid, zenith, azimuth)
     ni = sky_ni(grid, luminance)
 
-    return ni * numpy.abs(numpy.cos(numpy.radians(ksi)))
+    return (ni * numpy.abs(numpy.cos(numpy.radians(ksi)))).sum()
 
 
 def uniform_sky():
