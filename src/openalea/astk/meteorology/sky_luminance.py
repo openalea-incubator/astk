@@ -20,6 +20,7 @@ from openalea.astk.meteorology.sky_irradiance import (
     f_clear_sky,
     all_weather_sky_brightness
 )
+from openalea.astk.sky_map import ksi_grid
 
 
 def sky_hi(grid, luminance):
@@ -173,30 +174,6 @@ def all_weather_abcde(sun_zenith, clearness, brightness):
     return a, b, c, d, e
 
 
-def ksi_grid(grid, sun_zenith=0, sun_azimuth=0):
-    """acute angle between an array of sky elements and the sun """
-
-    def _cartesian(zenith, azimuth):
-        theta = numpy.radians(zenith)
-        phi = numpy.radians(azimuth)
-        return (numpy.sin(theta) * numpy.cos(phi),
-                numpy.sin(theta) * numpy.sin(phi),
-
-                numpy.cos(theta))
-
-    def _acute(v1, v2):
-        """acute angle between 2 3d vectors"""
-        x = numpy.dot(v1, v2) / (numpy.linalg.norm(v1, axis=2) * numpy.linalg.norm(v2))
-        angle = numpy.arccos(numpy.clip(x, -1, 1))
-        return numpy.degrees(angle)
-
-    _, _, sky_azimuth, sky_zenith, _ = grid
-    v_sky = numpy.stack(_cartesian(sky_zenith, sky_azimuth), axis=2)
-    v_sun = _cartesian(sun_zenith, sun_azimuth)
-
-    return _acute(v_sky, v_sun)
-
-
 def all_weather_relative_luminance(grid, sun_zenith, sun_azimuth, clearness, brightness):
     """All weather relative luminance of a sky element relative to the luminance
     at zenith
@@ -227,7 +204,7 @@ def sky_luminance(grid, sky_type='soc', sky_irradiance=None, scale=None, sun_in_
     """Sun and sky luminance as a function of sky type and sky_irradiance
 
     Args:
-        grid: a (azimuth, zenith, az_c, z_c, w_c) tuple of sky coordinates, such as returned by astk.sky_map.sky_grid
+        grid: a (azimuth, zenith, az_c, z_c, sr_c) tuple of sky coordinates, such as returned by astk.sky_map.sky_grid
         sky_type (str): sky type (see details below), one of ('soc', 'uoc', 'clear_sky', 'sun_soc', 'blended', 'all_weather').
         sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period , such as returned by
             astk.meteorology.sky_irradiance.sky_irradiance. Needed for all sky_types except 'uoc' and 'soc'
