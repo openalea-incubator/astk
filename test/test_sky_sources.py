@@ -75,14 +75,16 @@ def test_sky_sources():
 
     sun, sky = sky_sources('blended', sky_irradiance=sky_irr)
     el, az, lum = map(numpy.array, zip(*sky))
-    north = numpy.where(az <= 180)
-    south = numpy.where(az > 180)
+    north = numpy.where((az <= 180) & (el > 45))
+    south = numpy.where((az > 180) & (el > 45))
     delta_cs = lum[south].sum() - lum[north].sum()
     sun, sky = sky_sources('blended', sky_irradiance=sky_irradiance(attenuation=0.2))
     el, az, lum = map(numpy.array, zip(*sky))
-    north = numpy.where(az <= 180)
-    south = numpy.where(az > 180)
+    north = numpy.where((az <= 180) & (el > 45))
+    south = numpy.where((az > 180) & (el > 45))
     delta_soc = lum[south].sum() - lum[north].sum()
+    numpy.testing.assert_almost_equal(delta_cs / delta_soc, 14.6, decimal=1)
+
 
 
 

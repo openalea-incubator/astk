@@ -80,8 +80,9 @@ def test_all_weather():
 def test_sun_in_sky():
     grid = sky_grid()
     sky_irr = sky_irradiance()
-    sun, sky = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='sun_soc', sun_in_sky=True)
-    assert len(sun) == 0
+    sun, soc = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='sun_soc', scale='ghi')
+    nosun, sky = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='sun_soc', sun_in_sky=True, scale='ghi')
+    assert len(nosun) == 0
     numpy.testing.assert_allclose(1, sky_hi(grid, sky).sum())
     #TODO check that removing sun yield soc and sun
 

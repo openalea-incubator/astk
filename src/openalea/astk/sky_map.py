@@ -88,6 +88,10 @@ def sky_ni(grid, luminance):
     az, z, sr = grid
     return luminance * sr
 
+def sky_lum(grid, ni):
+    az, z, sr = grid
+    return ni / sr
+
 def sun_hi(sun):
     el, az, lum = zip(*sun)
     return lum * numpy.sin(numpy.radians(el))
@@ -115,15 +119,15 @@ def closest_point(point_grid, point_list):
     return numpy.argmin(numpy.stack(dists, axis=2), axis=2)
 
 
-def sky_map(grid, luminance, new_directions, rescale=False):
+def sky_map(grid, luminance, new_directions, force_hi=False):
     """Aggregate luminance for a given new set of directions
 
     Args:
         grid: a (az_c, z_c, sr_c) tuple of sky coordinates, such as returned by astk.sky_map.sky_grid
         luminance : sky luminance gridded array describing distribution of luminance over the sky hemisphere
         new_directions : a [(elevation, azimuth),..] list of tuples defining directions of the aggregated sky
-        rescale: if True, aggregated luminance are rescaled to ensure conservation of global horizontal irradiance.
-            If False (default), sky direct normal irradiance is preserved, but not horizontal irradiance
+        force_hi: if True, aggregated luminance are rescaled to force conservation of global horizontal irradiance.
+            If False (default), no rescaled is applied
 
     Returns:
         luminance_agg: luminance aggregated along new directions
@@ -153,7 +157,7 @@ def sky_map(grid, luminance, new_directions, rescale=False):
     el_agg, az_agg = list(map(numpy.array, zip(*new_directions)))
     grid_agg = (az_agg, 90 - el_agg, sr_agg)
 
-    if rescale:
+    if force_hi:
         hi = sky_hi(grid, luminance)
         luminance_agg = scale_sky(grid_agg, luminance_agg, hi.sum())
         for i, w in enumerate(luminance_agg):

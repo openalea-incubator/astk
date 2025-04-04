@@ -68,7 +68,7 @@ def test_sky_map():
     numpy.testing.assert_almost_equal(ni_newlum.sum(), ni_ref, decimal=2)
     numpy.testing.assert_almost_equal(hi_newlum.sum(), hi_ref, decimal=2)
     # alternative solution with rescale
-    lum_agg, grid_agg, new_lum = sky_map(grid, lum, dirs, rescale=True)
+    lum_agg, grid_agg, new_lum = sky_map(grid, lum, dirs, force_hi=True)
     hi_agg = sky_hi(grid_agg, lum_agg)
     # luminance is not conserved : has been rescaled to accomodate hi conservation
     assert (lum_agg != 1).all()

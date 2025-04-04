@@ -18,7 +18,7 @@ import numpy
 
 from .icosphere import turtle_mesh, spherical_face_centers
 from .meteorology.sky_luminance import sky_luminance
-from .sky_map import sky_grid, sky_map
+from .sky_map import sky_grid, sky_map, sky_hi, sky_ni, sun_hi
 
 
 def regular_sky(d_az=10, d_z=10, n_az=None, n_z=None):
@@ -51,7 +51,7 @@ def sky_turtle(sectors=46):
         return icospherical_turtle(sectors)
 
 
-def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, north=90, sun_in_sky=False):
+def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, source_irradiance='normal', north=90, sun_in_sky=False, force_hi=True):
     """ Light sources representing the sun and the sky in a scene
 
     Args:
@@ -67,9 +67,14 @@ def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, 
             - 'ppfd' : sun+sky horizontal flux equals mean PPFD (micromolPAR.m-2.s-1)
             - 'global': sun+sky horizontal flux equals time-integrated global irradiance (MJ.m-2)
             - 'par': sun+sky horizontal flux equals time-integrated PPFD (molPAR.m-2)
+        source_irradiance (str): How should source irradiance be given ? Should one of:
+            - 'normal' : irradiance are given as normal irradiances (perpendicular to source direction)
+            - 'horizontal': irradiance are given as horizontal irradiances
         north: the angle between X+ and North (deg, positive counter-clockwise)
         sun_in_sky: Should the sun be added to the sky ? If True, sky luminance is set to sun luminance in the sun region,
             and sun luminance list is emptied. Ignored for sky types 'uoc' and 'soc'.
+        force_hi: if True (default), sky sources are rescaled to ensure that global horizontal irradiance of discretised
+            sources is the same as the original sky luminance distrisbution. If False , no rescaling append, ensuring that global direct irradiance of sky is preserved
 
     Returns:
         sun, sky tuple
@@ -114,15 +119,23 @@ def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, 
     if sky_dirs is None:
         sky_dirs = sky_turtle()
 
-    sky_lum, _ = sky_map(grid, sky, sky_dirs)
+    sky_agg, grid_agg, _ = sky_map(grid, sky, sky_dirs, force_hi=force_hi)
+    if source_irradiance == 'horizontal':
+        sky_irr = sky_hi(grid_agg, sky_agg)
+    elif source_irradiance == 'normal':
+        sky_irr = sky_ni(grid_agg, sky_agg)
+    else:
+        raise ValueError('Unvalid option for source_irradiance: ' + source_irradiance)
     sky_elevation, sky_azimuth = zip(*sky_dirs)
     sky_azimuth = _normalise_angle(sky_azimuth, north)
-    sky_sources = list(zip(sky_elevation, sky_azimuth, sky_lum))
+    sky_sources = list(zip(sky_elevation, sky_azimuth, sky_irr))
 
     if len(sun) > 0:
-        sun_elevation, sun_azimuth, sun_lum = zip(*sun)
+        sun_elevation, sun_azimuth, sun_irr = zip(*sun)
+        if source_irradiance == 'horizontal':
+            sun_irr = sun_hi(sun)
         sun_azimuth = _normalise_angle(sun_azimuth, north)
-        sun_sources = list(zip(sun_elevation, sun_azimuth, sun_lum))
+        sun_sources = list(zip(sun_elevation, sun_azimuth, sun_irr))
     else:
         sun_sources = sun
 
