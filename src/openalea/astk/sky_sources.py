@@ -142,4 +142,15 @@ def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, 
     return sun_sources, sky_sources
 
 
+def caribu_light_sources(sun, sky):
+    def _vecteur_direction(elevation, azimuth):
+        """ coordinate of look_at source vector from elevation and azimuth (deg, f
+        rom X+ positive counter-clockwise)"""
+        theta = numpy.radians(90 - numpy.array(elevation))
+        phi = numpy.radians(azimuth)
+        return -numpy.sin(theta) * numpy.cos(phi), -numpy.sin(theta) * numpy.sin(phi), -numpy.cos(theta)
 
+    el, az, irrad = zip(*(sun + sky))
+    x, y, z = _vecteur_direction(el, az)
+    return [(irr, (xx, yy, zz)) for irr, xx, yy, zz in
+            zip(irrad, x, y, z)]
