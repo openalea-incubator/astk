@@ -25,6 +25,6 @@ def test_day_to_hour():
         sun, sky = sky_sources(sky_type='blended', sky_irradiance=irr, scale='global', source_irradiance='horizontal')
         lights = caribu_light_sources(sun, sky)
         # then caribu with caribuscene(scene,light=lights,...)
-        print(sky_sources)
+        print(lights)
 
 
