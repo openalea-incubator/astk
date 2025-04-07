@@ -30,12 +30,12 @@ except ImportError:
     warnings.warn('pvlib not installed: using pure python, but less accurate, functions')
 
 if pvlib:
-    from openalea.astk.meteorology.sun_position import (
+    from openalea.astk.sun_position import (
         sun_position, 
         sun_extraradiation
     )
 else:
-    from openalea.astk.meteorology.sun_position_astk import (
+    from openalea.astk.sun_position_astk import (
         sun_position, 
         sun_extraradiation,
     )
@@ -380,31 +380,5 @@ def sky_irradiance(dates=None, daydate=_daydate, ghi=None, dhi=None, ppfd=None,
 
     return df.loc[:,
            ['azimuth', 'zenith', 'elevation', 'ghi', 'dni', 'dhi', 'ppfd']]
-
-
-
-
-def mean_shortwave_irradiance(sky_irradiance, relative_global_irradiances, areas):
-    df = sky_irradiance
-    return df.ghi.mean() * relative_global_irradiances * areas / areas.sum()
-
-
-def mean_ppfd(sky_irradiance, relative_global_irradiances, areas, temp_dew=None):
-    df = sky_irradiance
-    par = df.ghi * micromol_per_joule(df.index, df.ghi, df.sun_elevation, temp_dew=temp_dew)
-    return par.mean() * relative_global_irradiances * areas / areas.sum()
-
-
-def ipar(sky_irradiance, relative_global_irradiances, areas):
-    return mean_ppfd(sky_irradiance, relative_global_irradiances, areas) * areas.sum() * 3600 * 4.57 / 1e6
-
-
-def ppfd_h(sky_irradiance, relative_direct_irradiance_h, relative_diffuse_irradiance_h, areas):
-    pass
-
-
-def short_wave_h(sky_irradiance, relative_direct_irradiance_h, relative_diffuse_irradiance_h):
-    pass
-
 
 

@@ -5,7 +5,7 @@ Welcome to astk's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    readme
    installation
@@ -13,6 +13,7 @@ Contents:
    contributing
    authors
    history
+   api
 
 Indices and tables
 ==================

@@ -14,294 +14,132 @@
 """ A collection of equation for modelling sun position, sun irradiance and sky
 irradiance
 """
-
-from __future__ import division
 import numpy
-import pandas
-from .meteorology.sky_irradiance import (
-    sky_irradiance,
-    clear_sky_irradiances,
-    horizontal_irradiance)
-from .meteorology.sky_luminance import sky_luminance
-from .meteorology.sun_position import sun_position
-from .sky_map import sky_grid, sky_map
+
+from .icosphere import turtle_mesh, spherical_face_centers
+from openalea.astk.sky_luminance import sky_luminance
+from .sky_map import sky_grid, sky_map, sky_hi, sky_ni, sun_hi
 
 
-# default location and dates
-_daydate = '2000-06-21'
-_timezone = 'Europe/Paris'
-_longitude = 3.52
-_latitude = 43.36
-_altitude = 56
+def regular_sky(d_az=10, d_z=10, n_az=None, n_z=None):
+    az, z, _ = sky_grid(d_az=d_az, d_z=d_z, n_az=n_az, n_z=n_z)
+    return [*zip(90 - z.flatten(), az.flatten())]
 
 
-# sky models / equations
-
-
-def sky_discretisation(turtle_sectors=46, nb_az=None, nb_el=None):
-    """ return elevation, azimuth and fraction of sky represented of a turtle sky discretisation
-
-    Parameters
-    ----------
-    turtle_sectors : the minimal number of sectors to be used for discretising the sky hemisphere. Turtle discretisation
-    will be one of 1, 6, 16 or 46 sectors
-    nb_az
-    nb_el
-
-    Returns
-    -------
-    elevation, azimuth and fraction of sky discretisation
-    """
-    # Hierarchical direction from tutle.xls file of J Dauzat
-    elevations_h = [90] + [26.57] * 5 + [52.62] * 5 + [10.81] * 5 + [69.16] * 5 + [
+def hierarchical_turtle(sectors=46):
+    # Hierarchical direction from turtle.xls file of J Dauzat
+    elevations_h = [90.] + [26.57] * 5 + [52.62] * 5 + [10.81] * 5 + [69.16] * 5 + [
         47.41] * 5 + [31.08] * 10 + [9.23] * 10
     az1 = [0, 72, 144, 216, 288]
     az2 = [36, 108, 180, 252, 324]
-    azimuths_h = [180] + az1 + az2 * 2 + az1 * 2 + [
+    azimuths_h = [180.] + az1 + az2 * 2 + az1 * 2 + [
         23.27, 48.73, 95.27, 120.73, 167.27, 192.73, 239.27, 264.73, 311.27, 336.73] + [
         12.23, 59.77, 84.23, 131.77, 156.23, 203.77, 228.23, 275.77, 300.23, 347.77]
-    nb_sect = [1, 6, 16, 46][numpy.searchsorted([1, 6, 16, 46], min(46, turtle_sectors))]
-    # Vegestar vlues
-    # elevations46 = [9.23] * 10 + [10.81] * 5 + [26.57] * 5 + [31.08] * 10 + [
-    #                 47.41] * 5 + [52.62] * 5 + [69.16] * 5 + [90]
-    # azimuths46 = [12.23, 59.77, 84.23, 131.77, 156.23, 203.77, 228.23, 275.77,
-    #               300.23, 347.77, 36, 108, 180, 252, 324, 0, 72, 144, 216, 288,
-    #               23.27, 48.73, 95.27, 120.73, 167.27, 192.73, 239.27, 264.73,
-    #               311.27, 336.73, 0, 72, 144, 216, 288, 36, 108, 180, 252, 324,
-    #               0, 72, 144, 216, 288, 180]
-    # steradians46 = [0.1355] * 10 + [0.1476] * 5 + [0.1207] * 5 + [
-    #                0.1375] * 10 + [0.1364] * 5 + [0.1442] * 5 + [0.1378] * 5 + [
-    #                    0.1196]
+    nb_sect = [1, 6, 16, 46][numpy.searchsorted([1, 6, 16, 46], min(46, sectors))]
+    return [*zip(elevations_h[:nb_sect], azimuths_h[:nb_sect])]
 
 
-    sky_fraction = [1. / nb_sect] * nb_sect
-
-    return elevations_h[:nb_sect], azimuths_h[:nb_sect], sky_fraction
-
-
-def sky_radiance_distribution(sky_elevation, sky_azimuth,
-                              sky_type='soc', sky_irradiance=None):
-    """Normalised sky radiance distribution as a function of sky type for a
-    finite set of directions sampling the sky hemisphere.
-
-    Args:
-        sky_elevation: (float or list of float) elevation (degrees) of directions
-            sampling the sky hemisphere
-        sky_azimuth: (float or list of float) azimuth (degrees, from North,
-            positive clockwise) of directions sampling the sky hemisphere
-        sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'blended', 'all_weather')
-        sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
-        astk.sky_irradiance.sky_irradiance. Needed for all sky_types except 'uoc' and 'soc'
-
-    Returns:
-        a list relative_luminance
-    """
-
-    grid = sky_grid()
-    lum = sky_luminance(grid, sky_type, sky_irradiance)
-    directions = [*zip(sky_elevation, sky_azimuth)]
-    slum, smap = sky_map(grid, lum, directions)
-    elevation, azimuth= zip(*directions)
-    sky_sources = list(zip(elevation, azimuth, slum))
-    return horizontal_irradiance(slum, sky_elevation)
+def icospherical_turtle(sectors=46):
+    sky_mesh = turtle_mesh(sectors)
+    return spherical_face_centers(sky_mesh)
 
 
-def sun_sources(irradiance=1, dates=None, daydate=_daydate,
-                longitude=_longitude, latitude=_latitude, altitude=_altitude,
-                timezone=_timezone):
-    """ Light sources representing the sun under clear sky conditions
-
-    Args:
-        irradiance: (float) sum of horizontal irradiance of sources.
-            Using irradiance=1 (default) yields relative contribution of sources.
-            If None, clear sky sun horizontal irradiance predicted by
-            Perez/Ineichen model is used.
-        dates: A pandas datetime index (as generated by pandas.date_range). If
-            None, hourly values for daydate are used.
-        daydate: (str) yyyy-mm-dd (not used if dates is not None).
-        longitude: (float) in degrees
-        latitude: (float) in degrees
-        altitude: (float) in meter
-        timezone:(str) the time zone (not used if dates are already localised)
-
-    Returns:
-        elevation (degrees), azimuth (degrees, from North positive clockwise)
-        and horizontal irradiance of sources
-    """
-
-    c_sky = clear_sky_irradiances(dates=dates, daydate=daydate,
-                                  longitude=longitude, latitude=latitude,
-                                  altitude=altitude, timezone=timezone)
-
-    sun_irradiance = c_sky['ghi'] - c_sky['dhi']
-
-    if irradiance is not None:
-        sun_irradiance /= sum(sun_irradiance)
-        sun_irradiance *= irradiance
-
-    # Sr = (1 -cos(cone half angle)) * 2 * pi, frac = Sr / 2 / pi
-    # fsun = 1 - numpy.cos(numpy.radians(.53 / 2))
-    sun = sun_position(dates=dates, daydate=daydate, latitude=latitude,
-                       longitude=longitude, altitude=altitude,
-                       timezone=timezone)
-    return sun['elevation'].values, sun['azimuth'].values, sun_irradiance.values
-
-
-def sky_sources(sky_type='soc', irradiance=1, turtle_sectors=46, dates=None, daydate=_daydate,
-                longitude=_longitude, latitude=_latitude,
-                altitude=_altitude, timezone=_timezone):
-    """ Light sources representing standard cie sky types in 46 directions
-    Args:
-        sky_type (str): sky type, one of ('soc', 'uoc', 'clear_sky', 'blended', 'all_weather')
-        irradiance: (float) sum of horizontal irradiance of all sources. If None
-         diffuse horizontal clear_sky irradiance are used for clear_sky type and
-          20% attenuated clear_sky global horizontal irradiances are used for
-          soc and uoc types.
-        turtle_sectors: (int) the minimal number of sectors to be used for sky discretisation
-        dates: A pandas datetime index (as generated by pandas.date_range). If
-            None, hourly values for daydate are used.
-        daydate: (str) yyyy-mm-dd (not used if dates is not None).
-        longitude: (float) in degrees
-        latitude: (float) in degrees
-        altitude: (float) in meter
-        timezone:(str) the time zone (not used if dates are already localised)
-
-    Returns:
-        elevation (degrees), azimuth (degrees, from North positive clockwise),
-        and horizontal irradiance of sources
-    """
-
-    source_elevation, source_azimuth, source_fraction = sky_discretisation(turtle_sectors)
-
-    c_sky = sky_irradiance(dates=dates, daydate=daydate,
-                                  longitude=longitude, latitude=latitude,
-                                  altitude=altitude, timezone=timezone)
-    if sky_type == 'soc' or sky_type == 'uoc':
-        source_irradiance = sky_radiance_distribution(source_elevation, source_azimuth,
-                                                      sky_type=sky_type)
-        if irradiance is None:
-            irradiance = sum(c_sky['ghi']) * 0.2
+def sky_turtle(sectors=46):
+    if sectors <= 46:
+        return hierarchical_turtle(sectors)
     else:
-        source_irradiance = sky_radiance_distribution(source_elevation, source_azimuth,
-                                                      sky_type=sky_type, sky_irradiance=c_sky)
-        if irradiance is None:
-            irradiance = sum(c_sky['dhi'])
-
-    source_irradiance /= sum(source_irradiance)
-    source_irradiance *= irradiance
-
-    return source_elevation, source_azimuth, source_irradiance
+        return icospherical_turtle(sectors)
 
 
-def sun_fraction(sky):
-    """Sun fraction of sky irradiance
+def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, source_irradiance='normal', north=90, sun_in_sky=False, force_hi=True):
+    """ Light sources representing the sun and the sky in a scene
 
     Args:
-        sky: (pandas DataFrame) sky irradiances as computed by sky_irradiances
-        function
+        sky_type (str): sky type (see details below), one of ('soc', 'uoc', 'clear_sky', 'sun_soc', 'blended', 'all_weather').
+        sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
+            astk.meteorology.sky_irradiance.sky_irradiance. Needed for all sky_types except 'uoc' and 'soc'
+        sky_dirs (list): a [(elevation,azimuth),...] list of directions sampling the sky hemisphere. If None (default)
+            a hierarchical turtle discretisation of 46 directions is used. Azimuths are relative to North, positive
+            clockwise
+        scale (str): How should sun/sky luminance be scaled ? If None (default) luminance are scaled so that sun+sky
+            horizontal irradiance equals one. Other options are:
+            - 'ghi': sun+sky horizontal flux equals mean ghi (W.m-2.s-1)
+            - 'ppfd' : sun+sky horizontal flux equals mean PPFD (micromolPAR.m-2.s-1)
+            - 'global': sun+sky horizontal flux equals time-integrated global irradiance (MJ.m-2)
+            - 'par': sun+sky horizontal flux equals time-integrated PPFD (molPAR.m-2)
+        source_irradiance (str): How should source irradiance be given ? Should one of:
+            - 'normal' : irradiance are given as normal irradiances (perpendicular to source direction)
+            - 'horizontal': irradiance are given as horizontal irradiances
+        north: the angle between X+ and North (deg, positive counter-clockwise)
+        sun_in_sky: Should the sun be added to the sky ? If True, sky luminance is set to sun luminance in the sun region,
+            and sun luminance list is emptied. Ignored for sky types 'uoc' and 'soc'.
+        force_hi: if True (default), sky sources are rescaled to ensure that global horizontal irradiance of discretised
+            sources is the same as the original sky luminance distrisbution. If False , no rescaling append, ensuring that global direct irradiance of sky is preserved
 
     Returns:
-        integrated sun fraction
-    """
-    if sky['dni'].sum() == 0 : return 0
-    return (sky['ghi'] - sky['dhi']).sum() / sky['ghi'].sum()
-
-
-def sun_sky_sources(ghi=None, dhi=None, attenuation=None, model='blended',
-                    dates=None, daydate=_daydate, pressure=101325,
-                    temp_dew=None, longitude=_longitude, latitude=_latitude,
-                    altitude=_altitude, timezone=_timezone):
-    """ Light sources representing the sun and the sky for actual irradiances
-
-    Args:
-        ghi: (array_like): global horizontal irradiance (W. m-2). If None(
-         default) clear sky irradiances are used
-        dhi: (array-like, optional): actual diffuse horizontal irradiance.
-        attenuation: (float) attenuation factor for ghi (actual_ghi =
-         attenuation * ghi). If None (default), no attenuation is applied.
-        model:(str) sky luminance model. One of :
-                'sun_soc' sun/soc mix as a function of dni / dhi
-                'blended' sun/soc/clear_sky blend after Mardaljevic, 2000
-        dates: A pandas datetime index (as generated by pandas.date_range). If
-            None, hourly values for daydate are used.
-        daydate: (str) yyyy-mm-dd (not used if dates is not None).
-        pressure: the site pressure (Pa)
-        temp_dew: the dew point temperature
-        longitude: (float) in degrees
-        latitude: (float) in degrees
-        altitude: (float) in meter
-        timezone:(str) the time zone (not used if dates are already localised)
-        normalisation: (float) If not None, sun and sky sources are normalised
-         so that sum of sun + sky irradiance equals this value.
-
-    Returns:
-        sky_irradiance, sun, sky
-        sky_irradiance is a pandas data frame of sky irradiances
-        sun is a (elevation (degrees), azimuth (degrees, from North positive clockwise),
-        and relative horizontal irradiance (fraction of ghi)) tuple of sources representing the sun
-         sky is a elevation, azimuth, relative irradiance tuple for sources representing the sky
+        sun, sky tuple
+        sun and sky are lists of (elevation (degrees), azimuth (degrees, from X+ positive counter-clockwise),
+        luminance) tuples of sources representing the sun or the sky
 
     Details:
-        J. Mardaljevic. Daylight Simulation: Validation, Sky Models and
-        Daylight Coefficients. PhD thesis, De Montfort University,
-        Leicester, UK, 2000.
-    """
+        sky_type refer to different sky models:
+            - 'clear_sky', 'uoc' and 'soc' are CIE sky types defined in [1]. For all these types, only relative sky luminance
+                are returned (sun source list is empty), and total sky horizontal irradiance equals one.
+            - 'sun_soc' refers to the approach defined in [2] where direct normal irradiance comes from the sun, and
+                 diffuse horizontal irradiance comes from an CIE soc sky luminance distribution
+            - 'blended' refers to the sky blending approach defined in [3], where direct normal irradiance comes from
+                the sun, and diffuse horizontal irradiance comes from a blending of CIE clear-sky and CIE soc sky luminance
+                distribution, that depends on sky clearness index
+            - 'all_weather' refers to the approach defined in [4], where direct normal irradiance comes from
+                the sun, and diffuse horizontal irradiance comes from a luminance distribution that depends on sky
+                clearness and sky brightness
 
-    sky_irr = sky_irradiance(dates=dates, daydate=daydate, ghi=ghi, dhi=dhi,
-                             attenuation=attenuation, pressure=pressure,
-                             temp_dew=temp_dew, longitude=longitude,
-                             latitude=latitude, altitude=altitude,
-                             timezone=timezone)
 
-    f_sun = sun_fraction(sky_irr)
-    sun = sun_sources(irradiance=f_sun, dates=dates,
-                      daydate=daydate, latitude=latitude, longitude=longitude,
-                      altitude=altitude, timezone=timezone)
-    source_elevation, source_azimuth, source_fraction = sky_discretisation()
+        [1] CIE, 2002, Spatial distribution of daylight CIE standard general sky,
+            CIE standard, CIE Central Bureau, Vienna
+        [2] Sinoquet H. & Bonhomme R. (1992) Modeling radiative transfer in mixed and row intercropping
+            systems. Agricultural and Forest Meteorology 62, 219–240
+        [3] J. Mardaljevic. Daylight Simulation: Validation, Sky Models and Daylight Coefficients. PhD thesis, De Montfort University,
+            Leicester, UK, 2000. p193,eq. 5-10
+        [4] R. Perez, R. Seals, J. Michalsky, "All-weather model for sky luminance distribution—Preliminary configuration and
+            validation", Solar Energy, Volume 50, Issue 3, 1993, Pages 235-245
+  """
+    def _normalise_angle(angle, north):
+        """normalise an angle to the [0, 360] range"""
+        angle = numpy.array(angle, dtype=float)
+        angle = north - angle
+        modulo = 360
+        angle %= modulo
+        # force to [0, modulo] range
+        angle = (angle + modulo) % modulo
+        return angle
 
-    if model == 'blended' and f_sun > 0:
-        source_irradiance = sky_radiance_distribution(source_elevation, source_azimuth,
-                                                      sky_type='blended', sky_irradiance=sky_irr)
-        source_irradiance *= (1 - f_sun)
-        sky = source_elevation, source_azimuth, source_irradiance
-    elif model == 'sun_soc' or f_sun == 0:
-        sky = sky_sources(sky_type='soc', irradiance= 1 - f_sun)
-    elif f_sun == 0:
-        sky = sky_sources(sky_type='soc', irradiance=1)
+    grid = sky_grid()
+    sun, sky = sky_luminance(grid, sky_type=sky_type, sky_irradiance=sky_irradiance, scale=scale, sun_in_sky=sun_in_sky)
+    if sky_dirs is None:
+        sky_dirs = sky_turtle()
+
+    sky_agg, grid_agg, _ = sky_map(grid, sky, sky_dirs, force_hi=force_hi)
+    if source_irradiance == 'horizontal':
+        sky_irr = sky_hi(grid_agg, sky_agg)
+    elif source_irradiance == 'normal':
+        sky_irr = sky_ni(grid_agg, sky_agg)
     else:
-        raise ValueError(
-            'unknown model: ' + model +
-            ' (should be one of: soc_sun, blended)')
+        raise ValueError('Unvalid option for source_irradiance: ' + source_irradiance)
+    sky_elevation, sky_azimuth = zip(*sky_dirs)
+    sky_azimuth = _normalise_angle(sky_azimuth, north)
+    sky_sources = list(zip(sky_elevation, sky_azimuth, sky_irr))
 
-    return sky_irr, sun, sky
-
-
-def scale_sky_sources(sky_sources, sky_irradiance, scale='Wm2', diffuse_only=False):
-    """Scale relative luminance values to a given scale depending on horizontal irradiance time series
-
-    Args:
-        sky_sources: a list of (elevation, azimuth, luminance) tuples
-        sky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
-        astk.sky_irradiance.sky_irradiance.
-    ky_irradiance: a datetime indexed dataframe specifying sky irradiances for the period, such as returned by
-        astk.sky_irradiance.sky_irradiance
-    """
-    el, az, lum = zip(*sky_sources)
-    # rescale to horizontal irradiance = 1
-    hi = sum((horizontal_irradiance(l, e) for l, e in zip(lum, el)))
-    lum = numpy.array(lum) / hi
-    # Scale to new unit
-    if scale == 'PPFD':
-        lum *= sky_irradiance.ppfd.mean()
-    elif scale == 'Wm2':
-        lum *= sky_irradiance.ghi.mean()
-    elif scale == 'MJ':
-        lum *= sky_irradiance.ghi.sum() * 3600 / 1e6
-    elif scale == 'molPAR':
-        lum *= sky_irradiance.ppfd.sum() * 3600 / 1e6
+    if len(sun) > 0:
+        sun_elevation, sun_azimuth, sun_irr = zip(*sun)
+        if source_irradiance == 'horizontal':
+            sun_irr = sun_hi(sun)
+        sun_azimuth = _normalise_angle(sun_azimuth, north)
+        sun_sources = list(zip(sun_elevation, sun_azimuth, sun_irr))
     else:
-        raise ValueError('undefined scale: ' + scale + '. Should be one of PPFD, Wm2, MJ, molPAR')
-    if diffuse_only:
-        lum *= sky_irradiance.dhi.sum() / sky_irradiance.ghi.sum()
+        sun_sources = sun
 
-    return list(zip(el, az, lum))
+    return sun_sources, sky_sources
+
+
+
