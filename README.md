@@ -12,26 +12,24 @@
 
 ## Descriptions
 
-openalea.astk package provides utilities for FSPM model. It include particularly equation to calculate sun irradiance according to sun position and manage weather data.
+openalea.astk package provides modules to calculate sky luminance for light models from weather data.
 
 ## Contents
 
-- meteorology : functions to calculate sun irradiance according to sun position
-    - sky_irradiance: Equation for determining global horizontal irradiance (GHI), direct normal irradiance (DNI) and diffuse horizontal irradiance under clearsky
+- sky_irradiance: Equation for determining global horizontal irradiance (GHI), direct normal irradiance (DNI) and diffuse horizontal irradiance under clearsky
 condition or estimate them from meteorological data using pvlib library.
-    - sun_position: Sun position using pvlib library.
-    - sun_position_astk : Astronomical equation for determining sun position.
+- sun_position: Sun position using pvlib library.
+- sun_position_astk : Astronomical equation for determining sun position.
 - TimeControl: Provides utilities for scheduling models in simulation.
 - Weather: Provides utilities for weather protocol and conversion of some weather variable.
 - data_access: Set of function to work with resources that are located inside this package data.
 - icosphere : Generation of regular spherical polyhedrons: icospheres and their hexagonal/pentagonal duals.
-- plant_interface: ?
 - plantgl_utils: A generic module to get plant variable from scene.
-- sun_and_sky: A collection of equation for modelling sun position, sun irradiance and sky irradiance.
+- sky_sources: A collection of equation for modelling sun position, sun irradiance and sky irradiance.
 
 ## Installation
 
-### Requierments
+### Requirements
 
 - python > 3.7
 - pvlib-python
@@ -48,7 +46,7 @@ mamba create -n astk -c openalea3 -c conda-forge openalea.astk
 ### Developpers
 
 ```
-conda create -n astk -c openalea3 - c conda-forge openalea.astk
+mamba create -n astk --only-deps -c openalea3 - c conda-forge openalea.astk
 git clone 'https://github.com/openalea-incubator/astk.git'
 cd astk
 python setup.py install (or develop)
