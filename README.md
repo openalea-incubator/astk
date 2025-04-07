@@ -1,6 +1,4 @@
-# README
-
-## <img src="https://raw.githubusercontent.com/openalea/openalea.rtfd.io/master/doc/_static/openalea_web.svg" width="70"/> openalea.astk
+# <img src="https://raw.githubusercontent.com/openalea/openalea.rtfd.io/master/doc/_static/openalea_web.svg" width="70"/> openalea.astk
 
 **Authors:** Christian Fournier [@christian34](https://github.com/christian34), christian.fournier@inrae.fr
 
@@ -14,22 +12,20 @@
 
 ## Descriptions
 
-openalea.astk package provides utilities for FSPM model. It includes particularly equation to calculate sun irradiance according to sun position and manage weather data.
+openalea.astk package provides modules to calculate sky luminance for light models from weather data.
 
 ## Contents
 
-- meteorology : functions to calculate sun irradiance according to sun position
-    - sky_irradiance: Equation for determining global horizontal irradiance (GHI), direct normal irradiance (DNI) and diffuse horizontal irradiance under clearsky
+- sky_irradiance: Equation for determining global horizontal irradiance (GHI), direct normal irradiance (DNI) and diffuse horizontal irradiance under clearsky
 condition or estimate them from meteorological data using pvlib library.
-    - sun_position: Sun position using pvlib library.
-    - sun_position_astk : Astronomical equation for determining sun position.
+- sun_position: Sun position using pvlib library.
+- sun_position_astk : Astronomical equation for determining sun position.
 - TimeControl: Provides utilities for scheduling models in simulation.
 - Weather: Provides utilities for weather protocol and conversion of some weather variable.
 - data_access: Set of function to work with resources that are located inside this package data.
-- icosphere : Generation of regular spherical polyhedrons: ionospheres and their hexagonal/pentagonal duals.
-- plant_interface: ?
+- icosphere : Generation of regular spherical polyhedrons: icospheres and their hexagonal/pentagonal duals.
 - plantgl_utils: A generic module to get plant variable from scene.
-- sun_and_sky: A collection of equation for modelling sun position, sun irradiance and sky irradiance.
+- sky_sources: A collection of equation for modelling sun position, sun irradiance and sky irradiance.
 
 ## Installation
 
@@ -39,7 +35,7 @@ condition or estimate them from meteorological data using pvlib library.
 - pvlib-python
 - numpy
 - pandas
-- openalea.plantgl
+- openalea.plangl
 
 ### Users
 
@@ -47,13 +43,13 @@ condition or estimate them from meteorological data using pvlib library.
 mamba create -n astk -c openalea3 -c conda-forge openalea.astk
 ```
 
-### Developers
+### Developpers
 
 ```
-mamba create -n astk -c openalea3 -c conda-forge openalea.astk --only-deps
+mamba create -n astk --only-deps -c openalea3 - c conda-forge openalea.astk
 git clone 'https://github.com/openalea-incubator/astk.git'
 cd astk
-pip install . (or -e)
+python setup.py install (or develop)
 ```
 
 ## Quick Start
@@ -61,7 +57,7 @@ pip install . (or -e)
 TODO found example
 
 ## Documentation
-https://astk.rtfd.io
+TODO Doc in Readthedoc
 
 ### Contributors
 

@@ -57,7 +57,7 @@ def sun_position(dates=None, daydate=_day, latitude=_latitude,
 
     Returns:
         a pandas dataframe with sun position at requested dates indexed by
-        localised dates. Sun azimtuth is given from North, positive clockwise.
+        localised dates. Sun azimuth is given from North, positive clockwise.
     """
 
     if dates is None:

@@ -1,9 +1,11 @@
 import numpy
-from openalea.astk.meteorology.sky_irradiance import (
+import pandas
+from openalea.astk.sky_irradiance import (
     clear_sky_irradiances,
     actual_sky_irradiances,
-    sky_irradiance)
-
+    sky_irradiance,
+    all_weather_sky_clearness,
+    f_clear_sky)
 
 
 def test_clear_sky_irradiances():
@@ -38,3 +40,22 @@ def test_sky_irradiances():
     assert df.dhi.sum() / df.ghi.sum() > 0.99
     df2 = sky_irradiance(with_pvlib=False)
     assert len(df2) == 15
+
+
+def test_fsun():
+    df = sky_irradiance()
+    epsilon = all_weather_sky_clearness(df.dni, df.dhi, df.zenith)
+    f_clear = f_clear_sky(epsilon)
+    assert f_clear.sum() == 14
+
+    df = sky_irradiance(attenuation=0.2)
+    epsilon = all_weather_sky_clearness(df.dni, df.dhi, df.zenith)
+    f_clear = f_clear_sky(epsilon)
+    assert f_clear.sum() < 1
+
+
+def test_twilight():
+    sky_irr = sky_irradiance(ghi=1.0, dates=pandas.Timestamp('2017-08-17 19:00:00+0400', tz='Indian/Reunion'), latitude=-21.32,
+                    longitude=55.5, timezone='Indian/Reunion')
+    assert sky_irr.dhi.sum() == 1
+    assert sky_irr.dni.sum() == 0
