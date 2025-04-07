@@ -5,9 +5,10 @@ Credits
 Development Lead
 ----------------
 
-{# pkglts, doc
-* Christian Fournier, <christian.fournier __at__ supagro.inra.fr>* Guillaume Garin, <guillaume.garin __at__ itk.fr>* Romain Chapuis, <romain.chapuis __at__ supagro.inra.fr>
-#}
+* Christian Fournier, <christian.fournier __at__ supagro.inra.fr>
+* Guillaume Garin, <guillaume.garin __at__ itk.fr>
+* Romain Chapuis, <romain.chapuis __at__ supagro.inra.fr>
+
 
 Contributors
 ------------
