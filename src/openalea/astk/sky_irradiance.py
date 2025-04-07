@@ -30,12 +30,12 @@ except ImportError:
     warnings.warn('pvlib not installed: using pure python, but less accurate, functions')
 
 if pvlib:
-    from openalea.astk.meteorology.sun_position import (
+    from openalea.astk.sun_position import (
         sun_position, 
         sun_extraradiation
     )
 else:
-    from openalea.astk.meteorology.sun_position_astk import (
+    from openalea.astk.sun_position_astk import (
         sun_position, 
         sun_extraradiation,
     )

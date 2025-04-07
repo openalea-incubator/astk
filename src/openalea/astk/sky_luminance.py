@@ -14,7 +14,7 @@
 """ A collection of equation for modelling distribution of sky luminance
 """
 import numpy
-from openalea.astk.meteorology.sky_irradiance import (
+from openalea.astk.sky_irradiance import (
     horizontal_irradiance,
     all_weather_sky_clearness, 
     f_clear_sky,

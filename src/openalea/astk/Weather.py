@@ -26,7 +26,7 @@ from datetime import timedelta
 from pathlib import Path
 
 from .TimeControl import *
-from .meteorology.sun_position import sun_position
+from openalea.astk.sun_position import sun_position
 from . import sky_sources as sunsky
 from . import data as datadir
 

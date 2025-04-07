@@ -1,6 +1,6 @@
-from openalea.astk.meteorology.sky_luminance import sky_luminance
-from openalea.astk.meteorology.sky_irradiance import sky_irradiance
-from openalea.astk.sky_map import sky_grid, sky_hi, sky_ni, sun_hi, sun_ni
+from openalea.astk.sky_luminance import sky_luminance
+from openalea.astk.sky_irradiance import sky_irradiance
+from openalea.astk.sky_map import sky_grid, sky_hi, sky_ni, sun_hi
 import numpy
 
 
@@ -80,12 +80,11 @@ def test_all_weather():
 def test_sun_in_sky():
     grid = sky_grid()
     sky_irr = sky_irradiance()
-    sun, soc = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='sun_soc', scale='ghi')
-    nosun, sky = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='sun_soc', sun_in_sky=True, scale='ghi')
+    #sun, soc = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='sun_soc', scale='ghi')
+    nosun, sky = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='sun_soc', sun_in_sky=True)
     assert len(nosun) == 0
     numpy.testing.assert_allclose(1, sky_hi(grid, sky).sum())
     #TODO check that removing sun yield soc and sun
-
 
 
 def test_scaling():

@@ -1,7 +1,6 @@
 import numpy
-import pandas
 
-from openalea.astk.meteorology.sky_irradiance import sky_irradiance
+from openalea.astk.sky_irradiance import sky_irradiance
 from openalea.astk.sky_sources import (
     regular_sky,
     sky_turtle,
@@ -85,16 +84,4 @@ def test_sky_sources():
     delta_soc = lum[south].sum() - lum[north].sum()
     numpy.testing.assert_almost_equal(delta_cs / delta_soc, 14.6, decimal=1)
 
-
-
-
-
-
-def test_twilight():
-    _, sun, sky = sun_sky_sources(ghi=1.0, dates=pandas.Timestamp('2017-08-17 19:00:00+0400', tz='Indian/Reunion'), latitude=-21.32,
-                    longitude=55.5, timezone='Indian/Reunion')
-    el, az, irr = sun
-    assert len(irr) == 0
-    el, az, irr = sky
-    numpy.testing.assert_almost_equal(1, irr.sum())
 

@@ -17,7 +17,7 @@ irradiance
 import numpy
 
 from .icosphere import turtle_mesh, spherical_face_centers
-from .meteorology.sky_luminance import sky_luminance
+from openalea.astk.sky_luminance import sky_luminance
 from .sky_map import sky_grid, sky_map, sky_hi, sky_ni, sun_hi
 
 
