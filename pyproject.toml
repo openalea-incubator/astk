@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools"]
+requires = [
+    "setuptools",
+    "versioningit",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -25,9 +28,13 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering",
 ]
-dynamic = ["version","readme"]
-#version = "3.0.0"
+dynamic = ["version"]
 dependencies = ["pvlib", "matplotlib"]
+
+[tool.versioningit.format]
+distance = "v{base_version}"
+dirty = "v{base_version}"
+distance-dirty = "v{base_version}"
 
 [project.optional-dependencies]
 test = ["pytest"]
@@ -39,9 +46,7 @@ doc = [
   "sphinx-copybutton",
   "ipython_genutils",
   "nbsphinx",
+  "sphinx-pyproject",
 ]
 
 
-[tool.setuptools.dynamic]
-version = {attr = "openalea.astk.__version__"}
-readme = {file = ["README.md"]}

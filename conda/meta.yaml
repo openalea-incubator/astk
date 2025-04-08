@@ -1,8 +1,8 @@
-{% set data = load_setup_py_data() %}
+{% set pyproject = load_file_data('../pyproject.toml', from_recipe_dir=True) %}
 
 package:
-  name: openalea.astk
-  version: {{ data.get('version') }}
+  name: {{ pyproject["project"]["name"] }}
+  version: {{ GIT_DESCRIBE_TAG }}
 
 source:
   path: ..
@@ -10,24 +10,26 @@ source:
 build:
   noarch: python
   preserve_egg_dir: True
-  number: 1
-  script: python old_setup.py install
+  script: {{ PYTHON }} -m pip install . -vv
 
 requirements:
   build:
     - python
-    - setuptools
+    {% for dep in pyproject["build-system"]["requires"] %}
+    - {{ dep.lower() }}
+    {% endfor %}
 
   run:
-    - python >=3.7
-    - openalea.plantgl
-    - pvlib-python
+    - python {{ pyproject["project"]["requires-python"] }}
+    {% for dep in pyproject["project"]["dependencies"] %}
+    - {{ dep.lower() }}
+    {% endfor %}
 
 test:
   requires:
     - pytest
   imports:
-    - alinea.astk
+    - {{ pyproject["project"]["name"] }}
   source_files:
     - test/test_*.py
   commands:
@@ -35,7 +37,7 @@ test:
    - pytest -v
 
 about:
-  home: http://github.com/openalea-incubator/astk
+#  home: {{ home }}
   license: CeCILL_C
-  summary: The openalea.astk package computes sun irradiance according to sun position, and manage weather data.
+#  summary: {{ description }}
 
