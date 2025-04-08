@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openalea.astk"
+authors = [
+  { name = "Christian Fournier", email="christian.fournier@inrae.fr"}
+]
+description = "Sky luminance generator for FSPM light simulators"
+license = {file = "LICENSE"}
+keywords = ["openalea", "sky", "light", "meteorology"]
+requires-python = ">=3.8"
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering",
+]
+dynamic = ["version","readme"]
+#version = "3.0.0"
+dependencies = ["pvlib", "matplotlib"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+doc = [
+  "pydata-sphinx-theme",
+  "myst-parser",
+  "sphinx-favicon",
+  "ipykernel",
+  "sphinx-copybutton",
+  "ipython_genutils",
+  "nbsphinx",
+]
+
+
+[tool.setuptools.dynamic]
+version = {attr = "openalea.astk.__version__"}
+readme = {file = ["README.md"]}
