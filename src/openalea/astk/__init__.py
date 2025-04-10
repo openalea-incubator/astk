@@ -1,7 +1,7 @@
-# {# pkglts, base
+from importlib.metadata import version, PackageNotFoundError
 
-from .version import __version__
-
-
-
-# #}
+try:
+    __version__ = version("openalea.astk")
+except PackageNotFoundError:
+    # package is not installed
+    pass

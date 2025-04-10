@@ -1,14 +1,11 @@
-name: astkd
+name: astk_dev
 channels:
   - conda-forge
   - openalea3
 dependencies:
   - python
   - pip
-  - pvlib-python
+  - pandoc
   - openalea.plantgl
-  - numpy
-  - matplotlib
-  - pytest
-  - ipython
-  - jupyterlab
+  - pip:
+      - -e ..[doc,test,user]

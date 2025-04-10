@@ -1,9 +1,16 @@
 [build-system]
 requires = [
     "setuptools",
-    "versioningit",
+    "setuptools-scm",
 ]
 build-backend = "setuptools.build_meta"
+
+# allow openalea to be a namespace package
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# enable dynamic version based on git tags
+[tool.setuptools_scm]
 
 [project]
 name = "openalea.astk"
@@ -11,30 +18,17 @@ authors = [
   { name = "Christian Fournier", email="christian.fournier@inrae.fr"}
 ]
 description = "Sky luminance generator for FSPM light simulators"
-license = {file = "LICENSE"}
-keywords = ["openalea", "sky", "light", "meteorology"]
-requires-python = ">=3.8"
 classifiers = [
   "Intended Audience :: Science/Research",
-  "Intended Audience :: Developers",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering",
 ]
+license = "CECILL-C"
+license-files = ["LICEN[CS]E*"]
+keywords = ["openalea", "sky", "light", "meteorology"]
+requires-python = ">=3.8"
 dynamic = ["version"]
-dependencies = ["pvlib", "matplotlib"]
-
-[tool.versioningit.format]
-distance = "v{base_version}"
-dirty = "v{base_version}"
-distance-dirty = "v{base_version}"
+dependencies = ["pvlib"]
 
 [project.optional-dependencies]
 test = ["pytest"]
@@ -46,7 +40,25 @@ doc = [
   "sphinx-copybutton",
   "ipython_genutils",
   "nbsphinx",
-  "sphinx-pyproject",
 ]
+user = [
+  "matplotlib",
+  "jupyterlab"
+]
+
+# not used yet
+[tool.conda.environment]
+channels = [
+  "openalea3",
+  "conda-forge"
+]
+optional-dependencies = ["openalea.plantgl"]
+
+[project.urls]
+Repository= "https://github.com/openalea-incubator/astk"
+Homepage = "https://openalea.readthedocs.io/"
+"Bug Tracker" = "https://github.com/openalea-incubator/astk/issues"
+Discussions = "https://github.com/openalea-incubator/astk/discussions"
+
 
 

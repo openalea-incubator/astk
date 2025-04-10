@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
 import os
 import sys
-from sphinx_pyproject import SphinxConfig
-from openalea.astk import __version__ as pkg_version
+from importlib.metadata import metadata
+
+pkg_name='astk'
+meta = metadata('openalea.' + pkg_name)
+release = meta.get("version")
+# for example take major/minor
+version = ".".join(release.split('.')[:3])
+author = meta['Author-email'].split(' <')[0]
+desc = meta['Summary']
+urls = {k:v for k,v in [item.split(',') for item in meta.get_all('Project-URL')]}
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -30,7 +38,6 @@ extensions = [
     "myst_parser",  # for parsing .md files
 ]
 
-config = SphinxConfig("../pyproject.toml", globalns=globals(), config_overrides = {"version": pkg_version})
 
 nbsphinx_allow_errors = True
 # Add any paths that contain templates here, relative to this directory.
@@ -73,7 +80,7 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "GitHub",
-            "url": "https://github.com/openalea-incubator/astk",
+            "url": urls['Repository'],
             "icon": "fa-brands fa-github",
         },
     ],
@@ -104,15 +111,15 @@ html_show_sphinx = True
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
 html_show_copyright = True
 # Output file base name for HTML help builder.
-htmlhelp_basename = "astk_documentation"
+htmlhelp_basename = pkg_name + "_documentation"
 
 # -- Options for LaTeX output ---------------------------------------------
 latex_elements = {}
 latex_documents = [
     (
         master_doc,
-        "astk.tex",
-        "astk Documentation",
+        pkg_name+".tex",
+        pkg_name+" Documentation",
         "INRAe / INRIA / CIRAD",
         "manual",
     ),
@@ -121,7 +128,7 @@ latex_documents = [
 # -- Options for manual page output ---------------------------------------
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, name, "astk Documentation", [author], 1)]
+man_pages = [(master_doc, pkg_name, pkg_name +" Documentation", [author], 1)]
 
 # -- Options for Texinfo output -------------------------------------------
 # Grouping the document tree into Texinfo files. List of tuples
@@ -130,11 +137,11 @@ man_pages = [(master_doc, name, "astk Documentation", [author], 1)]
 texinfo_documents = [
     (
         master_doc,
-        "astk",
-        "astk Documentation",
+        pkg_name,
+        pkg_name + " Documentation",
         author,
-        "astk",
-        "The openalea.astk package provides utilities for simulation of FSPM models builds under openalea standards",
+        pkg_name,
+        desc,
         "Miscellaneous",
     ),
 ]
