@@ -1,0 +1,66 @@
+[build-system]
+requires = [
+    "setuptools",
+    "setuptools-scm",
+]
+build-backend = "setuptools.build_meta"
+
+# allow openalea to be a namespace package
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# enable dynamic version based on git tags
+[tool.setuptools_scm]
+
+[project]
+name = "openalea.astk"
+authors = [
+  { name = "Christian Fournier", email="christian.fournier@inrae.fr"}
+]
+description = "Sky luminance generator for FSPM light simulators"
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Scientific/Engineering",
+]
+license = "CECILL-C"
+license-files = ["LICEN[CS]E*"]
+keywords = ["openalea", "sky", "light", "meteorology"]
+requires-python = ">=3.8"
+dynamic = ["version"]
+dependencies = ["pvlib"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+doc = [
+  "pydata-sphinx-theme",
+  "myst-parser",
+  "sphinx-favicon",
+  "ipykernel",
+  "sphinx-copybutton",
+  "ipython_genutils",
+  "nbsphinx",
+]
+user = [
+  "matplotlib",
+  "jupyterlab"
+]
+
+[project.entry-points."wralea"]
+"astk" = "openalea.astk_wralea"
+
+[project.urls]
+Repository= "https://github.com/openalea-incubator/astk"
+Homepage = "https://openalea.readthedocs.io/"
+"Bug Tracker" = "https://github.com/openalea-incubator/astk/issues"
+Discussions = "https://github.com/openalea-incubator/astk/discussions"
+
+# not used yet
+[tool.conda.environment]
+channels = [
+  "openalea3",
+  "conda-forge"
+]
+optional-dependencies = ["openalea.plantgl"]
+
+

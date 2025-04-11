@@ -92,14 +92,14 @@ def linear_degree_days(data, start_date=None, base_temp=0., max_temp=35.):
 class Weather:
     """ Class compliying echap local_microclimate model protocol (meteo_reader).
         expected variables of the data_file are:
-            - 'An'
-            - 'Jour'
-            - 'hhmm' : hour and minutes (universal time, UTC)
-            - 'PAR' : Quantum PAR (ppfd) in micromol.m-2.sec-1
-            - 'Pluie' : Precipitation (mm)
-            - 'Tair' : Temperature of air (Celcius)
-            - 'HR': Humidity of air (%)
-            - 'Vent' : Wind speed (m.s-1)
+        - 'An'
+        - 'Jour'
+        - 'hhmm' : hour and minutes (universal time, UTC)
+        - 'PAR' : Quantum PAR (ppfd) in micromol.m-2.sec-1
+        - 'Pluie' : Precipitation (mm)
+        - 'Tair' : Temperature of air (Celcius)
+        - 'HR': Humidity of air (%)
+        - 'Vent' : Wind speed (m.s-1)
         - localisation is a {'name':city, 'lontitude':lont, 'latitude':lat} dict
         - timezone indicates the standard timezone name (see pytz infos) to be used for interpreting the date (default 'UTC')
     """
