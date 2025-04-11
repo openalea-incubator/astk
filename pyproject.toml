@@ -46,13 +46,8 @@ user = [
   "jupyterlab"
 ]
 
-# not used yet
-[tool.conda.environment]
-channels = [
-  "openalea3",
-  "conda-forge"
-]
-optional-dependencies = ["openalea.plantgl"]
+[project.entry-points."wralea"]
+"astk" = "openalea.astk_wralea"
 
 [project.urls]
 Repository= "https://github.com/openalea-incubator/astk"
@@ -60,5 +55,12 @@ Homepage = "https://openalea.readthedocs.io/"
 "Bug Tracker" = "https://github.com/openalea-incubator/astk/issues"
 Discussions = "https://github.com/openalea-incubator/astk/discussions"
 
+# not used yet
+[tool.conda.environment]
+channels = [
+  "openalea3",
+  "conda-forge"
+]
+optional-dependencies = ["openalea.plantgl"]
 
 
