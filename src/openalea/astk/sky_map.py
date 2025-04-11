@@ -15,7 +15,13 @@
 """Creation, aggregation and plotting of sky maps
 """
 import numpy
-from matplotlib import pyplot as plt
+import warnings
+matplotlib_installed=True
+try:
+    from matplotlib import pyplot as plt
+except ImportError:
+    matplotlib_installed = False
+    warnings.warn('matplotlib not found: consider installation before calling plotting functions')
 
 
 def sky_grid(d_az=1, d_z=1, n_az=None, n_z=None):
@@ -211,6 +217,8 @@ def show_sky(grid, sky, cmap='jet', shading='flat'):
         grid: a (azimuth, zenith, az_c, z_c) tuple, such as returned by sky_grid
         sky: a 2-D array of values to be plotted on the grid
     """
+    if not matplotlib_installed:
+        raise ImportError('matplotlib not found: consider installation before calling plotting functions')
     az, z = cell_boundaries(grid)
     theta = numpy.pi/2 - numpy.radians(az)
     r = z

@@ -51,7 +51,7 @@ user = [
 
 [project.urls]
 Repository= "https://github.com/openalea-incubator/astk"
-Homepage = "https://openalea.readthedocs.io/"
+Homepage = "https://openalea_astk.readthedocs.io/"
 "Bug Tracker" = "https://github.com/openalea-incubator/astk/issues"
 Discussions = "https://github.com/openalea-incubator/astk/discussions"
 

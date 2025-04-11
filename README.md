@@ -1,5 +1,3 @@
-# <img src="https://raw.githubusercontent.com/openalea/openalea.rtfd.io/master/doc/_static/openalea_web.svg" width="70"/> openalea.astk
-
 **Authors:** Christian Fournier [@christian34](https://github.com/christian34), christian.fournier@inrae.fr
 
 **Institutes:** INRAE
