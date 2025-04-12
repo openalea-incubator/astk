@@ -7,25 +7,25 @@ Reference guide
 .. currentmodule:: openalea.astk.__init__
 
 
-:mod:`openalea.astk` module
+:mod:`openalea.astk.sky_irradiance` module
 ===========================
-.. automodule:: openalea.astk
+.. automodule:: openalea.astk.sky_irradiance
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
 
-:mod:`openalea.astk.data_access` module
+:mod:`openalea.astk.sky_luminance` module
 ===========================
-.. automodule:: openalea.astk.data_access
+.. automodule:: openalea.astk.sky_luminance
     :members:
     :undoc-members:
     :inherited-members:
     :show-inheritance:
 
-:mod:`openalea.astk.icosphere` module
+:mod:`openalea.astk.sky_sources` module
 ===========================
-.. automodule:: openalea.astk.icosphere
+.. automodule:: openalea.astk.sky_sources
     :members:
     :undoc-members:
     :inherited-members:
@@ -50,38 +50,6 @@ Reference guide
 :mod:`openalea.astk.Weather` module
 ===========================
 .. automodule:: openalea.astk.Weather
-    :members:
-    :undoc-members:
-    :inherited-members:
-    :show-inheritance:
-
-:mod:`openalea.astk.sky_irradiance` module
-===========================
-.. automodule:: openalea.astk.sky_irradiance
-    :members:
-    :undoc-members:
-    :inherited-members:
-    :show-inheritance:
-
-:mod:`openalea.astk.sky_luminance` module
-===========================
-.. automodule:: openalea.astk.sky_luminance
-    :members:
-    :undoc-members:
-    :inherited-members:
-    :show-inheritance:
-
-:mod:`openalea.astk.sun_position` module
-===========================
-.. automodule:: openalea.astk.sun_position
-    :members:
-    :undoc-members:
-    :inherited-members:
-    :show-inheritance:
-
-:mod:`openalea.astk.sun_position_astk` module
-===========================
-.. automodule:: openalea.astk.sun_position_astk
     :members:
     :undoc-members:
     :inherited-members:

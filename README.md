@@ -1,16 +1,12 @@
-**Authors:** Christian Fournier [@christian34](https://github.com/christian34), christian.fournier@inrae.fr
+[![Docs](https://readthedocs.org/projects/openalea_mtg/badge/?version=latest)](https://mtg.readthedocs.io/)
+[![Build Status](https://github.com/openalea-incubator/astk/actions/workflows/conda-package-build.yml/badge.svg?branch=master)](https://github.com/openalea-incubator/astk/actions/workflows/conda-package-build.yml?query=branch%3Amaster)
+[![Python Version](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/License--CeCILL-C-blue)](https://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html)
+[![Anaconda-Server Badge](https://anaconda.org/openalea3/astk/badges/version.svg)](https://anaconda.org/openalea3/astk)
 
-**Institutes:** INRAE
+# Astk
 
-**Status** : Python package
-
-**License** : [Cecill-C](https://cecill.info/licences/Licence_CeCILL-C_V1-en.html)
-
-**URL** : https://github.com/openalea-incubator/astk
-
-## Descriptions
-
-openalea.astk package provides modules to calculate sky luminance for light models from weather data.
+**Astk** allows to calculate sky luminance and sky sources to be used with FSPM light models from weather data.
 
 ## Contents
 
@@ -27,42 +23,47 @@ condition or estimate them from meteorological data using pvlib library.
 
 ## Installation
 
-### Requirements
-
-- python > 3.7
-- pvlib-python
-- numpy
-- pandas
-- openalea.plangl
-
 ### Users
 
 ```
-mamba create -n astk -c openalea3 -c conda-forge openalea.astk
+mamba create -n astk -c openalea3 -c conda-forge openalea.astk openalea.plantgl matplotlib
 ```
 
 ### Developpers
 
-```
-mamba create -n astk --only-deps -c openalea3 - c conda-forge openalea.astk
+```bash
 git clone 'https://github.com/openalea-incubator/astk.git'
 cd astk
-python setup.py install (or develop)
+# this will create a fresh astk_dev env for you
+mamba env create -f ./conda/environment.yml
+# As an alternative, if you want to work in an existing environment:
+mamba install --only-deps -c openalea3 - c conda-forge openalea.astk
+pip install -e .[doc,test,usr]
 ```
 
-## Quick Start
+## Quick start
 
-TODO found example
+```python
+from openalea.astk.sky_irradiance import sky_irradiance
+from openalea.astk.sky_sources import sky_sources
 
-## Documentation
-TODO Doc in Readthedoc
+irradiance = sky_irradiance()
+sources = sky_sources('all-weather', irradiance)
+```
 
-### Contributors
+See other example in the documentation
 
+## Credits
+
+The package was mainly developed by Christian Fournier [@christian34](https://github.com/christian34), researcher at INRAE.
 
 All contributions, bug reports, bug fixes, documentation improvements, enhancements, and ideas are welcome.
 
 A detailed overview on how to contribute can be found in the [contributing guide](http://virtualplants.github.io/contribute/devel/git-workflow.html)
+
+### Contributors
+
+Thanks to all that ontribute making this package what it is !
 
 <a href="https://github.com/openalea-incubator/astk/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=openalea-incubator/astk" />
