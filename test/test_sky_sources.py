@@ -4,7 +4,8 @@ from openalea.astk.sky_irradiance import sky_irradiance
 from openalea.astk.sky_sources import (
     regular_sky,
     sky_turtle,
-    sky_sources)
+    sky_sources,
+    source_ni)
 
 
 def test_sky_turtle():
@@ -41,7 +42,8 @@ def test_sky_sources():
     sun, sky = sky_sources('soc')
     assert len(sun) == 0
     assert len(sky) == 46
-    el, az, lum = map(numpy.array, zip(*sky))
+    el, az, irr = map(numpy.array, zip(*sky))
+    lum = source_ni(sky)
     north = numpy.where(az <= 180)
     south = numpy.where(az > 180)
     numpy.testing.assert_almost_equal(lum[north].sum(),
@@ -51,7 +53,8 @@ def test_sky_sources():
     sun, sky = sky_sources('sun_soc', sky_irradiance=sky_irr)
     assert len(sun) == 14
     assert len(sky) == 46
-    el, az, lum = map(numpy.array, zip(*sky))
+    el, az, irr = map(numpy.array, zip(*sky))
+    lum = source_ni(sky)
     north = numpy.where(az <= 180)
     south = numpy.where(az > 180)
     numpy.testing.assert_almost_equal(lum[north].sum(),
@@ -61,24 +64,28 @@ def test_sky_sources():
     sun, sky = sky_sources('sun_soc', sky_irradiance=sky_irr, sun_in_sky=True)
     assert len(sun) == 0
     assert len(sky) == 46
-    el, az, lum = map(numpy.array, zip(*sky))
+    el, az, irr = map(numpy.array, zip(*sky))
+    lum = source_ni(sky)
     north = numpy.where(az <= 180)
     south = numpy.where(az > 180)
     numpy.testing.assert_almost_equal(lum[south].sum() - lum[north].sum(), 0.76, decimal=2)
 
     sun, sky = sky_sources('sun_soc', sky_irradiance=sky_irr, sun_in_sky=True, north=-90)
-    el, az, lum = map(numpy.array, zip(*sky))
+    el, az, irr = map(numpy.array, zip(*sky))
+    lum = source_ni(sky)
     north = numpy.where(az > 180)
     south = numpy.where(az <= 180)
     numpy.testing.assert_almost_equal(lum[south].sum() - lum[north].sum(), 0.76, decimal=2)
 
     sun, sky = sky_sources('blended', sky_irradiance=sky_irr)
-    el, az, lum = map(numpy.array, zip(*sky))
+    el, az, irr = map(numpy.array, zip(*sky))
+    lum = source_ni(sky)
     north = numpy.where((az <= 180) & (el > 45))
     south = numpy.where((az > 180) & (el > 45))
     delta_cs = lum[south].sum() - lum[north].sum()
     sun, sky = sky_sources('blended', sky_irradiance=sky_irradiance(attenuation=0.2))
-    el, az, lum = map(numpy.array, zip(*sky))
+    el, az, irr = map(numpy.array, zip(*sky))
+    lum = source_ni(sky)
     north = numpy.where((az <= 180) & (el > 45))
     south = numpy.where((az > 180) & (el > 45))
     delta_soc = lum[south].sum() - lum[north].sum()

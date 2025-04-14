@@ -22,7 +22,7 @@ def test_day_to_hour():
 
     for row in df.itertuples():
         irr = sky_irradiance(daydate=row.daydate, day_ghi=row.rad, **location)
-        sun, sky = sky_sources(sky_type='blended', sky_irradiance=irr, scale='global', source_irradiance='horizontal')
+        sun, sky = sky_sources(sky_type='blended', sky_irradiance=irr, scale='global')
         lights = caribu_light_sources(sun, sky)
         # then caribu with caribuscene(scene,light=lights,...)
         print(lights)

@@ -18,7 +18,7 @@ import numpy
 
 from .icosphere import turtle_mesh, spherical_face_centers
 from openalea.astk.sky_luminance import sky_luminance
-from .sky_map import sky_grid, sky_map, sky_hi, sky_ni, sun_hi
+from .sky_map import sky_grid, sky_map, sky_hi
 
 
 def regular_sky(d_az=10, d_z=10, n_az=None, n_z=None):
@@ -51,7 +51,7 @@ def sky_turtle(sectors=46):
         return icospherical_turtle(sectors)
 
 
-def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, source_irradiance='normal', north=90, sun_in_sky=False, force_hi=True):
+def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, north=90, sun_in_sky=False, force_hi=True):
     """ Light sources representing the sun and the sky in a scene
 
     Args:
@@ -67,19 +67,16 @@ def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, 
             - 'ppfd' : sun+sky horizontal flux equals mean PPFD (micromolPAR.m-2.s-1)
             - 'global': sun+sky horizontal flux equals time-integrated global irradiance (MJ.m-2)
             - 'par': sun+sky horizontal flux equals time-integrated PPFD (molPAR.m-2)
-        source_irradiance (str): How should source irradiance be given ? Should one of:
-            - 'normal' : irradiance are given as normal irradiances (perpendicular to source direction)
-            - 'horizontal': irradiance are given as horizontal irradiances
         north: the angle between X+ and North (deg, positive counter-clockwise)
         sun_in_sky: Should the sun be added to the sky ? If True, sky luminance is set to sun luminance in the sun region,
             and sun luminance list is emptied. Ignored for sky types 'uoc' and 'soc'.
         force_hi: if True (default), sky sources are rescaled to ensure that global horizontal irradiance of discretised
-            sources is the same as the original sky luminance distrisbution. If False , no rescaling append, ensuring that global direct irradiance of sky is preserved
+            sources is the same as the original sky luminance distribution. If False , no rescaling append, ensuring that global direct irradiance of sky is preserved
 
     Returns:
         sun, sky tuple
         sun and sky are lists of (elevation (degrees), azimuth (degrees, from X+ positive counter-clockwise),
-        luminance) tuples of sources representing the sun or the sky
+        horizontal_irradiance) tuples of sources representing the sun or the sky
 
     Details:
         sky_type refer to different sky models:
@@ -120,20 +117,14 @@ def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, 
         sky_dirs = sky_turtle()
 
     sky_agg, grid_agg, _ = sky_map(grid, sky, sky_dirs, force_hi=force_hi)
-    if source_irradiance == 'horizontal':
-        sky_irr = sky_hi(grid_agg, sky_agg)
-    elif source_irradiance == 'normal':
-        sky_irr = sky_ni(grid_agg, sky_agg)
-    else:
-        raise ValueError('Unvalid option for source_irradiance: ' + source_irradiance)
+    sky_irr = sky_hi(grid_agg, sky_agg)
     sky_elevation, sky_azimuth = zip(*sky_dirs)
     sky_azimuth = _normalise_angle(sky_azimuth, north)
     sky_sources = list(zip(sky_elevation, sky_azimuth, sky_irr))
 
     if len(sun) > 0:
-        sun_elevation, sun_azimuth, sun_irr = zip(*sun)
-        if source_irradiance == 'horizontal':
-            sun_irr = sun_hi(sun)
+        sun_elevation, sun_azimuth, _ = zip(*sun)
+        sun_irr = source_hi(sun)
         sun_azimuth = _normalise_angle(sun_azimuth, north)
         sun_sources = list(zip(sun_elevation, sun_azimuth, sun_irr))
     else:
@@ -142,8 +133,18 @@ def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, 
     return sun_sources, sky_sources
 
 
+def source_hi(src_ni):
+    el, az, ni = zip(*src_ni)
+    return ni * numpy.sin(numpy.radians(el))
+
+
+def source_ni(src_hi):
+    el, az, hi = zip(*src_hi)
+    return numpy.where(el == 0, numpy.nan, hi / numpy.sin(numpy.radians(el)))
+
+
 def caribu_light_sources(sun, sky):
-    def _vecteur_direction(elevation, azimuth):
+    def _vect_dir(elevation, azimuth):
         """ coordinate of look_at source vector from elevation and azimuth (deg, f
         rom X+ positive counter-clockwise)"""
         theta = numpy.radians(90 - numpy.array(elevation))
@@ -151,6 +152,10 @@ def caribu_light_sources(sun, sky):
         return -numpy.sin(theta) * numpy.cos(phi), -numpy.sin(theta) * numpy.sin(phi), -numpy.cos(theta)
 
     el, az, irrad = zip(*(sun + sky))
-    x, y, z = _vecteur_direction(el, az)
+    x, y, z = _vect_dir(el, az)
+
     return [(irr, (xx, yy, zz)) for irr, xx, yy, zz in
             zip(irrad, x, y, z)]
+
+
+

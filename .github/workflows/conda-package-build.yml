@@ -2,12 +2,12 @@ name: build_publish_anaconda
 
 on:
   push:
-    branches: 
+    branches:
       - '**'
     tags:
       - 'v*'
   pull_request:
-    branches: 
+    branches:
       - '**'
 
 jobs:

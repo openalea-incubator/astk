@@ -98,13 +98,6 @@ def sky_lum(grid, ni):
     az, z, sr = grid
     return ni / sr
 
-def sun_hi(sun):
-    el, az, lum = zip(*sun)
-    return lum * numpy.sin(numpy.radians(el))
-
-def sun_ni(sun):
-    el, az, lum = zip(*sun)
-    return numpy.array(lum)
 
 def scale_sky(grid, luminance, irradiance=1):
     """Rescale sky luminance to force producing a given sky irradiance

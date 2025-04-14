@@ -1,6 +1,7 @@
 from openalea.astk.sky_luminance import sky_luminance
 from openalea.astk.sky_irradiance import sky_irradiance
-from openalea.astk.sky_map import sky_grid, sky_hi, sky_ni, sun_hi
+from openalea.astk.sky_map import sky_grid, sky_hi, sky_ni
+from openalea.astk.sky_sources import source_hi
 import numpy
 
 
@@ -30,14 +31,14 @@ def test_sun_soc():
     sky_irr = sky_irradiance()
     sun, sky = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='sun_soc')
     assert len(sun) == numpy.count_nonzero(sky_irr.dni)
-    shi = sun_hi(sun).sum()
+    shi = source_hi(sun).sum()
     numpy.testing.assert_allclose(1 - sky_irr.dhi.sum()/sky_irr.ghi.sum(), shi)
     numpy.testing.assert_allclose(1, shi + sky_hi(grid, sky).sum())
     #
     sky_irr = sky_irradiance(attenuation=0.2)
     sun, sky = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='sun_soc')
     assert len(sun) == numpy.count_nonzero(sky_irr.dni)
-    shi = sun_hi(sun).sum()
+    shi = source_hi(sun).sum()
     numpy.testing.assert_allclose(1 - sky_irr.dhi.sum()/sky_irr.ghi.sum(), shi)
     numpy.testing.assert_allclose(1, shi + sky_hi(grid, sky).sum())
 
@@ -49,13 +50,13 @@ def test_blended():
     _, cs = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='clear_sky')
     sun, sky = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='blended')
     assert len(sun) == numpy.count_nonzero(sky_irr.dni)
-    shi = sun_hi(sun).sum()
+    shi = source_hi(sun).sum()
     numpy.testing.assert_allclose(sky_hi(grid, cs) * (1 - shi), sky_hi(grid, sky), rtol=0.1)
     #
     sky_irr = sky_irradiance(attenuation=0.2)
     sun, sky = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='blended')
     assert len(sun) == numpy.count_nonzero(sky_irr.dni)
-    shi = sun_hi(sun).sum()
+    shi = source_hi(sun).sum()
     numpy.testing.assert_allclose(sky_hi(grid, soc) * (1 - shi), sky_hi(grid, sky), rtol=0.05)
 
 
@@ -67,13 +68,13 @@ def test_all_weather():
     _, cs = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='clear_sky')
     sun, sky = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='all_weather')
     assert len(sun) == numpy.count_nonzero(sky_irr.dni)
-    shi = sun_hi(sun).sum()
+    shi = source_hi(sun).sum()
     numpy.testing.assert_allclose(sky_hi(grid, cs) * (1 - shi), sky_hi(grid, sky), rtol=0.2)
     #
     sky_irr = sky_irradiance(attenuation=0.2)
     sun, sky = sky_luminance(grid, sky_irradiance=sky_irr, sky_type='all_weather')
     assert len(sun) == numpy.count_nonzero(sky_irr.dni)
-    shi = sun_hi(sun).sum()
+    shi = source_hi(sun).sum()
     numpy.testing.assert_allclose(sky_hi(grid, soc) * (1 - shi), sky_hi(grid, sky), rtol=0.4)
 
 
@@ -100,4 +101,4 @@ def test_scaling():
     numpy.testing.assert_allclose(sky_irr.ppfd.sum() * 3600 / 1e6, sky_hi(grid, sky).sum())
     #
     sun, sky = sky_luminance(grid, sky_type='sun_soc', sky_irradiance=sky_irr, scale='ghi')
-    numpy.testing.assert_allclose(sky_irr.ghi.mean(), sun_hi(sun).sum() + sky_hi(grid, sky).sum())
+    numpy.testing.assert_allclose(sky_irr.ghi.mean(), source_hi(sun).sum() + sky_hi(grid, sky).sum())
