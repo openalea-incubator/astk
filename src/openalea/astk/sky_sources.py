@@ -18,7 +18,7 @@ import numpy
 
 from .icosphere import turtle_mesh, spherical_face_centers
 from openalea.astk.sky_luminance import sky_luminance
-from .sky_map import sky_grid, sky_map, sky_hi, sky_ni, sun_hi
+from .sky_map import sky_grid, sky_map, sky_hi
 
 
 def regular_sky(d_az=10, d_z=10, n_az=None, n_z=None):
@@ -123,8 +123,8 @@ def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, 
     sky_sources = list(zip(sky_elevation, sky_azimuth, sky_irr))
 
     if len(sun) > 0:
-        sun_elevation, sun_azimuth, sun_irr = zip(*sun)
-        sun_irr = sun_hi(sun)
+        sun_elevation, sun_azimuth, _ = zip(*sun)
+        sun_irr = source_hi(sun)
         sun_azimuth = _normalise_angle(sun_azimuth, north)
         sun_sources = list(zip(sun_elevation, sun_azimuth, sun_irr))
     else:
@@ -133,8 +133,18 @@ def sky_sources(sky_type='soc', sky_irradiance=None, sky_dirs=None, scale=None, 
     return sun_sources, sky_sources
 
 
+def source_hi(src_ni):
+    el, az, ni = zip(*src_ni)
+    return ni * numpy.sin(numpy.radians(el))
+
+
+def source_ni(src_hi):
+    el, az, hi = zip(*src_hi)
+    return numpy.where(el == 0, numpy.nan, hi / numpy.sin(numpy.radians(el)))
+
+
 def caribu_light_sources(sun, sky):
-    def _vecteur_direction(elevation, azimuth):
+    def _vect_dir(elevation, azimuth):
         """ coordinate of look_at source vector from elevation and azimuth (deg, f
         rom X+ positive counter-clockwise)"""
         theta = numpy.radians(90 - numpy.array(elevation))
@@ -142,6 +152,10 @@ def caribu_light_sources(sun, sky):
         return -numpy.sin(theta) * numpy.cos(phi), -numpy.sin(theta) * numpy.sin(phi), -numpy.cos(theta)
 
     el, az, irrad = zip(*(sun + sky))
-    x, y, z = _vecteur_direction(el, az)
+    x, y, z = _vect_dir(el, az)
+    
     return [(irr, (xx, yy, zz)) for irr, xx, yy, zz in
             zip(irrad, x, y, z)]
+
+
+
