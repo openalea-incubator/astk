@@ -41,7 +41,7 @@ doc = [
   "ipython_genutils",
   "nbsphinx",
 ]
-user = [
+plot = [
   "matplotlib",
   "jupyterlab"
 ]

@@ -8,4 +8,4 @@ dependencies:
   - pandoc
   - openalea.plantgl
   - pip:
-      - -e ..[doc,test,user]
+      - -e ..[doc,test,plot]
