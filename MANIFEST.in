@@ -4,9 +4,7 @@ include AUTHORS.rst
 include CONTRIBUTING.rst
 include README.rst
 
-include LICENSE
-include requirements.txt
-include dvlpt_requirements.txt
+
 
 recursive-include test *
 
