@@ -31,19 +31,6 @@ from . import sky_sources as sunsky
 from . import data as datadir
 
 
-def septo3d_reader(data_file, sep):
-    """ reader for septo3D meteo files """
-
-    data = pandas.read_csv(data_file, sep=sep)
-    # ,
-    # usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
-
-    data['date'] = pandas.to_datetime(data['An'] * 1000 + data['Jour'], format='%Y%j')+pandas.to_timedelta(data.hhmm/100, unit='h')
-    data.index = data.date
-    data = data.rename(columns={'PAR': 'PPFD', 'Tair': 'temperature_air',
-                                'HR': 'relative_humidity', 'Vent': 'wind_speed',
-                                'Pluie': 'rain'})
-    return data
 
 def PPFD_to_global(data):
     """ Convert the PAR (ppfd in micromol.m-2.sec-1)
@@ -104,22 +91,19 @@ class Weather:
         - timezone indicates the standard timezone name (see pytz infos) to be used for interpreting the date (default 'UTC')
     """
 
-    def __init__(self, data_file='', reader=septo3d_reader,sep='\t', wind_screen=2,
+    def __init__(self, data=None, wind_screen=2,
                  temperature_screen=2,
                  localisation={'city': 'Montpellier', 'latitude': 43.61,
                                'longitude': 3.87},
                  timezone='UTC'):
-        self.data_path = data_file
         self.models = {'global_radiation': PPFD_to_global,
                        'vapor_pressure': humidity_to_vapor_pressure,
                        'PPFD': global_to_PPFD,
                        'degree_days': linear_degree_days}
 
         self.timezone = pytz.timezone(timezone)
-        if data_file == '':
-            self.data = None
-        else:
-            self.data = reader(data_file,sep)
+        self.data = data
+        if self.data is not None:
             date = self.data['date']
             date = [self.timezone.localize(x) for x in date]
             utc = [x.astimezone(pytz.utc) for x in date]

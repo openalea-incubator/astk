@@ -1,18 +1,18 @@
 from openalea.astk.Weather import Weather
-from openalea.astk.data_access import get_path
+from openalea.astk.data_access import meteo00_01
 
 
 def test_instantiate():
     weather = Weather()
     assert weather.data is None
-    path = get_path('meteo00-01.txt')
-    weather = Weather(path)
+    data = meteo00_01()
+    weather = Weather(data)
     assert len(weather.data) == 7296
 
 
 def test_date_range_index():
-    path = get_path('meteo00-01.txt')
-    weather = Weather(path)
+    data = meteo00_01()
+    weather = Weather(data)
     index = weather.date_range_index('2000-12-31')
     assert len(index) == 24
     index = weather.date_range_index('2000-12-31', by=3)
