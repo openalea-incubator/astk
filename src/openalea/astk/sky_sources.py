@@ -153,7 +153,7 @@ def caribu_light_sources(sun, sky):
 
     el, az, irrad = zip(*(sun + sky))
     x, y, z = _vect_dir(el, az)
-    
+
     return [(irr, (xx, yy, zz)) for irr, xx, yy, zz in
             zip(irrad, x, y, z)]
 
