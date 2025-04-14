@@ -8,11 +8,8 @@ Contents:
    :maxdepth: 1
 
    readme
-   installation
    usage
    contributing
-   authors
-   history
    api
 
 Indices and tables

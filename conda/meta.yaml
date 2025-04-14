@@ -5,7 +5,7 @@ package:
   version: {{ GIT_DESCRIBE_TAG }}
 
 source:
-  git_url: ../
+  git_url: {{ pyproject["project"]["urls"]["Repository"] }}
 
 build:
   noarch: python
