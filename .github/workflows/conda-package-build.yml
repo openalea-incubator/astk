@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    uses: openalea/github-action-conda-build/action.yml@git_describe_tag
+    uses: /.github/workflows/conda-package-build.yml@git_describe_tag
     with:
       python-minor-version: "[9, 10, 11, 12]"
     secrets:
