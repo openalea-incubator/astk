@@ -8,11 +8,11 @@ except ImportError:
 import pandas
 
 
-datadir = 'openalea.astk_data'
+datadir = files('openalea.astk_data')
 
 
 def get_data_dir():
-    return files(datadir)
+    return datadir
 
 
 def get(file_name):
@@ -25,7 +25,7 @@ def get(file_name):
     return:
      - (str): content of the file
     """
-    return (files(datadir) / file_name).read_text()
+    return (datadir / file_name).read_text()
 
 
 def ls():
@@ -36,11 +36,11 @@ def ls():
                        without any specific order, items are
                        (entity_name, is_directory)
     """
-    return list(files(datadir).iterdir())
+    return list(datadir.iterdir())
 
     
 def read_meteo_mpt(fn):
-    with as_file(files(datadir)/fn) as p:
+    with as_file(datadir / fn) as p:
         df = pandas.read_csv(p)
         df.index = pandas.to_datetime(df.iloc[:, 0], utc=True)
         df.index = df.index.tz_convert('Europe/Paris')
@@ -57,7 +57,7 @@ def montpellier_winter_2013():
 
 def septo3d_reader(data_file, sep='\t'):
     """ reader for septo3D meteo files """
-    with as_file(files(datadir)/ data_file) as p:
+    with as_file(datadir / data_file) as p:
         data = pandas.read_csv(p, sep=sep)
     # ,
     # usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
