@@ -38,7 +38,7 @@ cd astk
 mamba env create -f ./conda/environment.yml
 # As an alternative, if you want to work in an existing environment:
 mamba install --only-deps -c openalea3 - c conda-forge openalea.astk
-pip install -e .[doc,test,usr]
+pip install -e .[doc,test,plot]
 ```
 
 ## Quick start
