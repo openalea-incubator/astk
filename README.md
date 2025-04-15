@@ -25,11 +25,11 @@ condition or estimate them from meteorological data using pvlib library.
 
 ### Users
 
-```
+```bash
 mamba create -n astk -c openalea3 -c conda-forge openalea.astk openalea.plantgl matplotlib
 ```
 
-### Developpers
+### Developers
 
 ```bash
 git clone 'https://github.com/openalea-incubator/astk.git'
@@ -37,7 +37,7 @@ cd astk
 # this will create a fresh astk_dev env for you
 mamba env create -f ./conda/environment.yml
 # As an alternative, if you want to work in an existing environment:
-mamba install --only-deps -c openalea3 - c conda-forge openalea.astk
+mamba install --only-deps -c openalea3 -c conda-forge openalea.astk
 pip install -e .[doc,test,plot]
 ```
 
