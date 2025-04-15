@@ -5,7 +5,7 @@ package:
   version: {{ GIT_DESCRIBE_TAG }}
 
 source:
-  git_url: ../
+  path: ..
 
 build:
   noarch: python
@@ -37,7 +37,7 @@ test:
    - pytest -v
 
 about:
-#  home: {{ home }}
-  license: CeCILL_C
-#  summary: {{ description }}
+  home: {{ pyproject["project"]["urls"]["Homepage"] }}
+  license: {{ pyproject["project"]["license"] }}
+  summary: {{ pyproject["project"]["description"] }}
 

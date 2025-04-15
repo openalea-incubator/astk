@@ -1,102 +1,74 @@
-# -*- python -*-
-#
-#       Copyright 2016-2025 Inria - CIRAD - INRAe
-#
-#       Distributed under the Cecill-C License.
-#       See accompanying file LICENSE.txt or copy at
-#           http://www.cecill.info/licences/Licence_CeCILL-C_V1-en.html
-#
-#       WebSite : https://github.com/openalea/astk
-#
-#       File author(s): Christian Fournier <christian.fournier@inrae.fr>
-#
-# ==============================================================================
-# {# pkglts, data
-""" Set of function to work with resources that are located inside
-this package data
-"""
 
-from os import listdir
-from os.path import dirname, exists, isdir
-from os.path import join as pj
-from io import open
+""" Set of function to work with data resources
+"""
+try:
+    from importlib.resources import files, as_file
+except ImportError:
+    from importlib_resources import files, as_file
 import pandas
 
-pkg_root_dir = dirname(__file__)
-pkg_data_dir = pj(pkg_root_dir, "data")
-if not exists(pkg_data_dir):
-    # we are certainly using a namespace
-    pkg_root_dir = dirname(pkg_root_dir)
-    pkg_data_dir = pj(pkg_root_dir, "data")
-    if not exists(pkg_data_dir):
-        raise UserWarning("No data dir at this location: %s" % pkg_data_dir)
+
+datadir = files('openalea.astk_data')
 
 
 def get_data_dir():
-    return pkg_data_dir
+    return datadir
 
 
-def get(file_name, mode='r'):
+def get(file_name):
     """ Retrieve the content of a given filename
     located in the data part of this package.
 
     args:
      - filename (str): name of the file to read
-     - mode (str): mode to use to read the file either 'r' or 'rb'
 
     return:
-     - (str): content of the file red in 'r' mode
+     - (str): content of the file
     """
-    with open(pj(pkg_data_dir, file_name), mode) as f:
-        cnt = f.read()
-
-    return cnt
+    return (datadir / file_name).read_text()
 
 
-def ls(dir_name):
-    """ List all files and directories in dir_name
-    located in the data part of this package.
-
-    args:
-     - dir_name (str): name of the directory to walk
+def ls():
+    """ List all files and directories .
 
     return:
      - (list of (str, bool)): list the content of dir_name
                        without any specific order, items are
                        (entity_name, is_directory)
     """
-    pth = pj(pkg_data_dir, dir_name)
-    return [(n, isdir(pj(pth, n))) for n in listdir(pth)]
+    return list(datadir.iterdir())
 
-# #}
-
-def get_path(file_name):
-    """ Retrieve the path of a filename
-    located in the data part of this package.
-
-    args:
-     - filename (str): name of the file to read
- 
-    return:
-     - (str): path of the file
-    """
-    return pj(pkg_data_dir, file_name)
     
-def read_meteo_mpt(when='winter'):
-    if when == 'winter':
-        path = get_path('incoming_radiation_ZA13.csv')
-    else:
-        path = get_path('incoming_radiation_ZB13.csv')
-    df = pandas.read_csv(path)
-    df.index = pandas.to_datetime(df.iloc[:,0], utc=True)
-    df.index = df.index.tz_convert('Europe/Paris')
-    return df.loc[:,['ghi']]
-
+def read_meteo_mpt(fn):
+    with as_file(datadir / fn) as p:
+        df = pandas.read_csv(p)
+        df.index = pandas.to_datetime(df.iloc[:, 0], utc=True)
+        df.index = df.index.tz_convert('Europe/Paris')
+    return df.loc[:, ['ghi']]
 
 
 def montpellier_spring_2013():
-    return read_meteo_mpt('spring')
+    return read_meteo_mpt('incoming_radiation_ZB13.csv')
 
 
 def montpellier_winter_2013():
-    return read_meteo_mpt('winter')
+    return read_meteo_mpt('incoming_radiation_ZA13.csv')
+
+
+def septo3d_reader(data_file, sep='\t'):
+    """ reader for septo3D meteo files """
+    with as_file(datadir / data_file) as p:
+        data = pandas.read_csv(p, sep=sep)
+    # ,
+    # usecols=['An','Jour','hhmm','PAR','Tair','HR','Vent','Pluie'])
+
+    data['date'] = pandas.to_datetime(data['An'] * 1000 + data['Jour'], format='%Y%j')+pandas.to_timedelta(data.hhmm/100, unit='h')
+    data.index = data.date
+    data = data.rename(columns={'PAR': 'PPFD', 'Tair': 'temperature_air',
+                                'HR': 'relative_humidity', 'Vent': 'wind_speed',
+                                'Pluie': 'rain'})
+    return data
+
+
+def meteo00_01():
+    return septo3d_reader("meteo00-01.txt")
