@@ -1,0 +1,17 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: astk
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Christian
+    family-names: Fournier
+    email: christian.fournier@inrae.fr
+    affiliation: INRAE
+    orcid: 'https://orcid.org/0000-0001-7098-8278'
+repository-code: 'https://github.com/openalea-incubator/astk'
+license: CECILL-C
