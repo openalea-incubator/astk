@@ -31,7 +31,10 @@ dynamic = ["version"]
 dependencies = ["pvlib"]
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = [
+  "pytest",
+  "nbmake",
+]
 doc = [
   "pydata-sphinx-theme",
   "myst-parser",

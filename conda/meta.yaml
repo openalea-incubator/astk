@@ -27,14 +27,17 @@ requirements:
 
 test:
   requires:
-    - pytest
+    {% for dep in pyproject["project"]["optional-dependencies"]["test"] %}
+    - {{ dep.lower() }}
+    {% endfor %}
   imports:
     - {{ pyproject["project"]["name"] }}
   source_files:
     - test/test_*.py
+    - doc/notebooks/*.ipynb
   commands:
-   - cd test
    - pytest -v
+   - pytest --nbmake
 
 about:
   home: {{ pyproject["project"]["urls"]["Homepage"] }}

@@ -211,7 +211,7 @@ def show_sky(grid, sky, cmap='jet', shading='flat'):
         sky: a 2-D array of values to be plotted on the grid
     """
     if not matplotlib_installed:
-        raise ImportError('matplotlib not found: consider installation before calling plotting functions')
+        warnings.warn('matplotlib not found: consider installation before calling plotting functions')
     az, z = cell_boundaries(grid)
     theta = numpy.pi/2 - numpy.radians(az)
     r = z
