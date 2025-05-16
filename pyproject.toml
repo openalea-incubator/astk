@@ -53,10 +53,10 @@ plot = [
 "astk" = "openalea.astk_wralea"
 
 [project.urls]
-Repository= "https://github.com/openalea-incubator/astk"
+Repository= "https://github.com/openalea/astk"
 Homepage = "https://openalea_astk.readthedocs.io/"
-"Bug Tracker" = "https://github.com/openalea-incubator/astk/issues"
-Discussions = "https://github.com/openalea-incubator/astk/discussions"
+"Bug Tracker" = "https://github.com/openalea/astk/issues"
+Discussions = "https://github.com/openalea/astk/discussions"
 
 # not used yet
 [tool.conda.environment]
