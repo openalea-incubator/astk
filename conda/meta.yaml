@@ -1,8 +1,17 @@
 {% set pyproject = load_file_data('../pyproject.toml', from_recipe_dir=True) %}
+{# Align version with the one computed by setuptools_scm #}
+{% set base_tag = GIT_DESCRIBE_TAG | default("0.0.0.dev0") | replace("v", "") %}
+{% set distance = GIT_DESCRIBE_NUMBER | default("0") | int %}
+{% set base_parts = base_tag.split('.') %}
+{% set micro = base_parts[2] | int %}
+{% set next_version = base_parts[0] + "." + base_parts[1] + "." + (micro + 1)|string %}
+{% set scm_version = next_version + ".dev" + distance|string if distance > 0 else base_tag %}
+{% set version = environ.get('SETUPTOOLS_SCM_PRETEND_VERSION', scm_version) %}
+
 
 package:
   name: {{ pyproject["project"]["name"] }}
-  version: {{ GIT_DESCRIBE_TAG | replace("v", "")}}
+  version: {{ version }}
 
 source:
   path: ..

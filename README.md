@@ -65,8 +65,8 @@ A detailed overview on how to contribute can be found in the [contributing guide
 
 Thanks to all that ontribute making this package what it is !
 
-<a href="https://github.com/openalea-incubator/astk/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=openalea-incubator/astk" />
+<a href="https://github.com/openalea/astk/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=openalea/astk" />
 </a>
 
 

@@ -11,6 +11,11 @@ where = ["src"]
 
 # enable dynamic version based on git tags
 [tool.setuptools_scm]
+# Configure to align with the one of meta.yaml
+fallback_version = "0.0.0.dev0"
+version_scheme = "guess-next-dev"
+local_scheme = "no-local-version"
+
 
 [project]
 name = "openalea.astk"
@@ -53,10 +58,10 @@ plot = [
 "astk" = "openalea.astk_wralea"
 
 [project.urls]
-Repository= "https://github.com/openalea-incubator/astk"
+Repository= "https://github.com/openalea/astk"
 Homepage = "https://openalea_astk.readthedocs.io/"
-"Bug Tracker" = "https://github.com/openalea-incubator/astk/issues"
-Discussions = "https://github.com/openalea-incubator/astk/discussions"
+"Bug Tracker" = "https://github.com/openalea/astk/issues"
+Discussions = "https://github.com/openalea/astk/discussions"
 
 # not used yet
 [tool.conda.environment]
