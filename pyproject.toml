@@ -39,6 +39,7 @@ dependencies = ["pvlib"]
 test = [
   "pytest",
   "nbmake",
+  "matplotlib",
 ]
 doc = [
   "pydata-sphinx-theme",
