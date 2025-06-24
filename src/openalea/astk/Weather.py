@@ -28,7 +28,7 @@ from pathlib import Path
 from .TimeControl import *
 from openalea.astk.sun_position import sun_position
 from . import sky_sources as sunsky
-from . import data as datadir
+from .data_access import meteo00_01
 
 
 
@@ -245,10 +245,10 @@ def sample_weather(periods=24):
     """ provides a sample weather instance for testing other modules
     """
 
-    meteo_path = str(Path(datadir.__path__[0])/'meteo00-01.txt')
+    data = meteo00_01()
     t_deb = "2000-10-01 01:00:00"
     seq = pandas.date_range(start="2000-10-02", periods=periods, freq='h')
-    weather = Weather(data_file=meteo_path)
+    weather = Weather(data=data)
     weather.check(
         ['temperature_air', 'PPFD', 'relative_humidity', 'wind_speed', 'rain',
          'global_radiation', 'vapor_pressure'])
