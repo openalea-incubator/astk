@@ -1,4 +1,4 @@
-name: build_publish_anaconda
+name: Building Package after Openalea guidelines
 
 on:
   push:
@@ -9,11 +9,10 @@ on:
   pull_request:
     branches:
       - '**'
+  release:
 
 jobs:
   build:
-    uses: openalea/github-action-conda-build/.github/workflows/conda-package-build.yml@relocate_action
-    with:
-      python-minor-version: "[9, 10, 11, 12]"
+    uses: openalea/action-build-publish-anaconda/.github/workflows/build_publish_promote.yml@setup_action
     secrets:
       anaconda_token: ${{ secrets.ANACONDA_TOKEN }}
