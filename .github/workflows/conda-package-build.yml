@@ -13,6 +13,6 @@ on:
 
 jobs:
   build:
-    uses: openalea/action-build-publish-anaconda/.github/workflows/build_publish_promote.yml@v1
+    uses: openalea/action-build-publish-anaconda/.github/workflows/build_publish_promote.yml@setup_action
     secrets:
       anaconda_token: ${{ secrets.ANACONDA_TOKEN }}
