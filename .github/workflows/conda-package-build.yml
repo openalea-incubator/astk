@@ -10,9 +10,10 @@ on:
     branches:
       - '**'
   release:
+    types: [published]
 
 jobs:
   build:
-    uses: openalea/action-build-publish-anaconda/.github/workflows/build_publish_promote.yml@setup_action
+    uses: openalea/action-build-publish-anaconda/.github/workflows/build_publish_promote.yml@ci_frugality
     secrets:
       anaconda_token: ${{ secrets.ANACONDA_TOKEN }}
