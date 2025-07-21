@@ -14,6 +14,6 @@ on:
 
 jobs:
   build:
-    uses: openalea/action-build-publish-anaconda/.github/workflows/openalea_ci.yml@ci_frugality
+    uses: openalea/action-build-publish-anaconda/.github/workflows/openalea_ci.yml@main
     secrets:
       anaconda_token: ${{ secrets.ANACONDA_TOKEN }}
